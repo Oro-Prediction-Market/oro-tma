@@ -4,11 +4,6 @@ import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
-// Eagerly loaded — on the critical render path
-import { IndexPage } from "@/pages/IndexPage/IndexPage";
-import { InitDataPage } from "@/pages/InitDataPage.tsx";
-import { LaunchParamsPage } from "@/pages/LaunchParamsPage.tsx";
-import { ThemeParamsPage } from "@/pages/ThemeParamsPage.tsx";
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
 
 // Lazily loaded — heavy pages not needed on startup
@@ -71,10 +66,6 @@ export const routes: Route[] = [
   { path: "/market/:id", Component: MarketDetailPage },
   { path: "/ton-bet/:id", Component: TONBetPage, title: "Trade with TON" },
   { path: "/dkbank-bet/:id", Component: DKBankBetPage, title: "Trade with DK Bank" },
-  { path: "/dev", Component: IndexPage, title: "Dev Tools" },
-  { path: "/init-data", Component: InitDataPage, title: "Init Data" },
-  { path: "/theme-params", Component: ThemeParamsPage, title: "Theme Params" },
-  { path: "/launch-params", Component: LaunchParamsPage, title: "Launch Params" },
   {
     path: "/ton-connect",
     Component: TONConnectPage,
