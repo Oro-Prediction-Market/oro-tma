@@ -29,17 +29,9 @@ export default defineConfig(async (): Promise<UserConfig> => {
       rollupOptions: {
         treeshake: { propertyReadSideEffects: false },
         output: {
-          manualChunks(id) {
-            if (id.includes("node_modules/react-dom")) return "vendor-react-dom";
-            if (id.includes("node_modules/react/") || id.includes("node_modules/react-router")) return "vendor-react";
-            if (id.includes("node_modules/lucide-react")) return "vendor-lucide";
-            if (id.includes("node_modules/@telegram-apps/telegram-ui")) return "vendor-tg-ui";
-            if (id.includes("node_modules/@tma.js") || id.includes("node_modules/@telegram-apps")) return "vendor-tma-sdk";
-            if (id.includes("node_modules/@tonconnect")) return "vendor-ton";
-            if (id.includes("node_modules/socket.io-client") || id.includes("node_modules/engine.io")) return "vendor-socket";
-            if (id.includes("node_modules/eruda")) return "vendor-eruda";
-            if (id.includes("node_modules/")) return "vendor-misc";
-          },
+          // No manualChunks — Vite's default splitting avoids the
+          // "Cannot read properties of undefined (reading 'createContext')"
+          // race when vendor-misc was evaluated before vendor-react.
           entryFileNames: "assets/[name]-[hash].js",
           chunkFileNames: "assets/[name]-[hash].js",
           assetFileNames: "assets/[name]-[hash][extname]",
