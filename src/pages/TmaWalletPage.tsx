@@ -629,77 +629,93 @@ export const TmaWalletPage: FC = () => {
         }}
       >
         {/* ── Balance Hero Card ─────────────────────────────── */}
-        <div className="wallet-hero-card" style={balanceCard}>
+        <div
+          className="wallet-hero-card"
+          style={{
+            background: "var(--surface)",
+            borderRadius: "0 0 var(--radius-xl) var(--radius-xl)",
+            padding: "20px 20px 0",
+            position: "relative",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          {/* Label row */}
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "rgba(255,255,255,0.6)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: 4,
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 4,
+              marginBottom: 6,
             }}
           >
-            Available Balance
+            <span
+              style={{
+                fontSize: 13,
+                color: "var(--text-secondary)",
+                fontWeight: 500,
+              }}
+            >
+              Est. total balance
+            </span>
             <button
               onClick={() => setBalanceHidden((h) => !h)}
               style={{
                 background: "none",
                 border: "none",
-                padding: 0,
+                padding: "0 0 0 4px",
                 cursor: "pointer",
-                color: "rgba(255,255,255,0.55)",
+                color: "var(--text-secondary)",
                 display: "flex",
                 alignItems: "center",
+                marginLeft: "auto",
               }}
               aria-label={balanceHidden ? "Show balance" : "Hide balance"}
             >
-              {balanceHidden ? <EyeOff size={14} /> : <Eye size={14} />}
+              {balanceHidden ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
 
+          {/* Balance amount */}
           <div
             style={{
               display: "flex",
               alignItems: "baseline",
-              gap: 6,
-              opacity: balanceLoading ? 0.5 : 1,
+              gap: 8,
+              opacity: balanceLoading ? 0.4 : 1,
               transition: "opacity 0.3s",
               marginBottom: 20,
             }}
           >
             <span
               style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.8)",
-              }}
-            >
-              BTN
-            </span>
-            <span
-              style={{
                 fontSize: 36,
-                fontWeight: 900,
-                color: "#fff",
+                fontWeight: 800,
+                color: "var(--text-primary)",
                 letterSpacing: "-1px",
-                filter: balanceHidden ? "blur(10px)" : "none",
-                userSelect: balanceHidden ? "none" : "auto",
-                transition: "filter 0.2s ease",
                 textShadow: balanceFlash
-                  ? "0 0 24px rgba(34,197,94,0.9)"
+                  ? "0 0 20px rgba(34,197,94,0.6)"
                   : "none",
                 animation: balanceFlash ? "balanceWin 1.4s ease-out" : "none",
               }}
             >
-              <AnimatedCounter
-                value={Number(
-                  freshUser?.creditsBalance ?? user?.creditsBalance ?? 0,
-                )}
-              />
+              {balanceHidden ? (
+                "••••"
+              ) : (
+                <AnimatedCounter
+                  value={Number(
+                    freshUser?.creditsBalance ?? user?.creditsBalance ?? 0,
+                  )}
+                />
+              )}
+            </span>
+            <span
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: "var(--text-secondary)",
+              }}
+            >
+              BTN
             </span>
           </div>
 
@@ -708,25 +724,27 @@ export const TmaWalletPage: FC = () => {
             style={{
               display: "flex",
               gap: 0,
-              borderTop: "1px solid rgba(255,255,255,0.15)",
-              paddingTop: 14,
+              borderTop: "1px solid var(--border)",
+              paddingTop: 12,
+              paddingBottom: 14,
             }}
           >
             {[
               {
                 label: "Total Won",
                 value: `+${totalWon.toLocaleString()}`,
-                color: "#6ee7b7",
+                color: "var(--success)",
               },
               {
                 label: "Deposited",
                 value: `+${totalDeposited.toLocaleString()}`,
-                color: "rgba(255,255,255,0.7)",
+                color: "var(--text-primary)",
               },
               {
                 label: "This Week",
                 value: `${weeklyProfit >= 0 ? "+" : ""}${weeklyProfit.toLocaleString()}`,
-                color: weeklyProfit >= 0 ? "#6ee7b7" : "#fca5a5",
+                color:
+                  weeklyProfit >= 0 ? "var(--success)" : "var(--error, #ef4444)",
               },
             ].map((s, i) => (
               <div
@@ -734,14 +752,14 @@ export const TmaWalletPage: FC = () => {
                 style={{
                   flex: 1,
                   borderLeft:
-                    i > 0 ? "1px solid rgba(255,255,255,0.12)" : "none",
+                    i > 0 ? "1px solid var(--border)" : "none",
                   paddingLeft: i > 0 ? 14 : 0,
                 }}
               >
                 <div
                   style={{
                     fontSize: 10,
-                    color: "rgba(255,255,255,0.55)",
+                    color: "var(--text-secondary)",
                     fontWeight: 600,
                     marginBottom: 3,
                     textTransform: "uppercase",
@@ -750,7 +768,13 @@ export const TmaWalletPage: FC = () => {
                 >
                   {s.label}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: s.color }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: s.color,
+                  }}
+                >
                   {s.value}
                 </div>
               </div>
@@ -2532,15 +2556,5 @@ const spinner: React.CSSProperties = {
   animation: "spin 0.8s linear infinite",
 };
 
-const balanceCard: React.CSSProperties = {
-  background: "var(--balance-card-bg)",
-  borderRadius: "0 0 var(--radius-xl) var(--radius-xl)",
-  padding: "var(--space-md) var(--space-md) var(--space-lg)",
-  color: "#fff",
-  position: "relative",
-  overflow: "hidden",
-  boxShadow: "var(--balance-card-shadow)",
-  borderBottom: "1px solid rgba(255,255,255,0.1)",
-};
 
 // actionBtnPrimary, actionBtnSecondary, card — removed; use <Button> and <Card> from ui/
