@@ -1362,7 +1362,7 @@ export function TmaPaymentModal({
                           color: "#ef4444",
                         }}
                       >
-                        ⚠️ No DK Bank account linked. Go to Profile → Link DK
+                        ⚠️ No DK Bank account linked. Go to Wallet Page → Link DK
                         Bank Account first.
                       </p>
                     )}

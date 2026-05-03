@@ -109,7 +109,7 @@ export function PoolDetails({ market, lastUpdated }: { market: Market; lastUpdat
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontWeight: 600 }}>House edge</span>
+            <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontWeight: 600 }}>Platform fee</span>
             <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontWeight: 600 }}>{market.houseEdgePct}%</span>
           </div>
 
