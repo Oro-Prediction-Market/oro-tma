@@ -13,7 +13,7 @@ env:
   IMAGE: harbor.oro.fun/oro/tma
   NS: prod
   DEPLOY: oro-tma
-  VITE_API_URL: https://api.oro.fun
+  VITE_API_URL: https://api.oro.fun/api
 
 jobs:
   ship:
