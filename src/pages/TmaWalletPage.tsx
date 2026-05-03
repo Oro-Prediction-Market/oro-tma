@@ -655,7 +655,7 @@ export const TmaWalletPage: FC = () => {
                 fontWeight: 500,
               }}
             >
-              Est. total balance
+              Available Balance
             </span>
             <button
               onClick={() => setBalanceHidden((h) => !h)}
