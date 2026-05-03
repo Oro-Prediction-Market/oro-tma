@@ -8,6 +8,7 @@ import {
   getDisputes,
   submitDispute,
   getDisputeRequirements,
+  bustCache,
   Market,
   Dispute,
   DisputeRequirements,
@@ -90,10 +91,12 @@ export const MarketDetailPage: FC = () => {
   // Also poll every 15s as fallback when WebSocket is unavailable
   useEffect(() => {
     if (!id) return;
-    const refetch = () =>
-      getMarket(id)
+    const refetch = () => {
+      bustCache(`/markets/${id}`);
+      return getMarket(id)
         .then(setMarket)
         .catch(() => {});
+    };
 
     const onVisibility = () => {
       if (!document.hidden) refetch();
