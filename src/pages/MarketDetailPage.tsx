@@ -86,6 +86,28 @@ export const MarketDetailPage: FC = () => {
       .catch(() => {});
   }, [id]);
 
+  // Refetch market data when page becomes visible (e.g. returning from bet page)
+  // Also poll every 15s as fallback when WebSocket is unavailable
+  useEffect(() => {
+    if (!id) return;
+    const refetch = () =>
+      getMarket(id)
+        .then(setMarket)
+        .catch(() => {});
+
+    const onVisibility = () => {
+      if (!document.hidden) refetch();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const interval = setInterval(refetch, 15_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(interval);
+    };
+  }, [id]);
+
   useEffect(() => {
     if (!id || !market || market.status !== "resolving") return;
     getDisputes(id)
@@ -620,12 +642,49 @@ export const MarketDetailPage: FC = () => {
                       gap: 12,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: "rgba(245,158,11,0.1)", border: "1.5px solid #fde68a" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#b45309", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dispute Bond</span>
-                      <span style={{ fontSize: "1rem", fontWeight: 900, color: "#b45309" }}>Nu 5,000</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        background: "rgba(245,158,11,0.1)",
+                        border: "1.5px solid #fde68a",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "#b45309",
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Dispute Bond
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 900,
+                          color: "#b45309",
+                        }}
+                      >
+                        Nu 5,000
+                      </span>
                     </div>
-                    <div style={{ fontSize: "0.7rem", color: "#b45309", fontWeight: 600, lineHeight: 1.5 }}>
-                      This bond is locked when you raise an objection. You get it back + a reward if the admin agrees the outcome was wrong. You lose it if the admin upholds their decision.
+                    <div
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "#b45309",
+                        fontWeight: 600,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      This bond is locked when you raise an objection. You get
+                      it back + a reward if the admin agrees the outcome was
+                      wrong. You lose it if the admin upholds their decision.
                     </div>
                     <textarea
                       value={disputeReason}
