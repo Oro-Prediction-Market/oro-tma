@@ -1,16 +1,28 @@
 import { FC, useEffect, useState } from "react";
 import { Spinner } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
-import { getMarkets, Market } from "@shared/api/client";
+import { getMarkets, getMe, Market, AuthUser } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
 
 export const MarketsPage: FC = () => {
   const { user } = useAuth();
+  const [freshUser, setFreshUser] = useState<AuthUser | null>(user);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Listen for SSE-triggered balance updates
+  useEffect(() => {
+    const handler = () => {
+      getMe()
+        .then(setFreshUser)
+        .catch(() => {});
+    };
+    window.addEventListener("oro:balance-changed", handler);
+    return () => window.removeEventListener("oro:balance-changed", handler);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -153,7 +165,12 @@ export const MarketsPage: FC = () => {
                     fontSize: "1.1rem",
                   }}
                 >
-                  Nu {(user.creditsBalance ?? 0).toLocaleString()}
+                  Nu{" "}
+                  {(
+                    freshUser?.creditsBalance ??
+                    user.creditsBalance ??
+                    0
+                  ).toLocaleString()}
                 </div>
               </div>
             </div>
