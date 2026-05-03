@@ -46,7 +46,7 @@ const _cache = new Map<
   string,
   { data: unknown; expiresAt: number; inflight?: Promise<unknown> }
 >();
-const CACHE_TTL_MS = 15_000;
+const CACHE_TTL_MS = 5_000;
 
 export function bustCache(pathPrefix?: string) {
   if (!pathPrefix) {
@@ -503,6 +503,8 @@ export async function placeBetWithWallet(
   marketId: string,
   payload: WalletBetPayload,
 ) {
+  bustCache(`/markets/${marketId}`);
+  bustCache("/markets");
   // No auth token needed — wallet address is the identifier
   const res = await fetch(`${API_URL}/markets/${marketId}/bets/wallet`, {
     method: "POST",
