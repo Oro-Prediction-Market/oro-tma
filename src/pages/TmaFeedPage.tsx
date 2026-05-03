@@ -432,9 +432,8 @@ const MarketCard = memo(function MarketCard({
   const [showShareModal, setShowShareModal] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  // A Legend-tier user has bet here if any outcome carries a reputation signal
   const hasLegendBet = market.outcomes.some(
-    (o) => o.reputationSignal != null && o.reputationSignal > 0,
+    (o) => (o as any).hasLegendBet === true,
   );
 
   const isUpcoming = market.status === "upcoming";
