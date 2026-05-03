@@ -18,7 +18,7 @@ COPY public ./public
 COPY src ./src
 COPY shared ./shared
 
-ARG VITE_API_URL=https://api.oro.fun/api
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 RUN bun run build
 
