@@ -424,6 +424,8 @@ export function placeBet(
   marketId: string,
   payload: PlaceBetPayload,
 ): Promise<PlaceBetResult> {
+  bustCache(`/markets/${marketId}`);
+  bustCache("/markets");
   return request<PlaceBetResult>(`/markets/${marketId}/bets`, {
     method: "POST",
     body: JSON.stringify(payload),
