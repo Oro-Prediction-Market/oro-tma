@@ -66,6 +66,8 @@
   --surface: var(--bg-card);
   --text-primary: var(--text-main);
   --text-secondary: var(--text-muted);
+  --success: var(--color-success);
+  --error: var(--color-danger);
 }
 
 html.dark {
