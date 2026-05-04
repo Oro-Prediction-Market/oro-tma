@@ -5,7 +5,7 @@ import { getResolvedMarkets, ResolvedMarket } from "@shared/api/client";
 
 const categoryLabel: Record<string, string> = {
   sports: "Sports",
-  politics: "Politics",
+  gaming: "Gaming",
   weather: "Weather",
   entertainment: "Entertainment",
   economy: "Economy",

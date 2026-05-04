@@ -7,9 +7,9 @@ export const CATEGORY_VISUAL: Record<
     gradient: "linear-gradient(135deg, #1a3a5c 0%, #0f5132 60%, #1e4d2b 100%)",
     accentColor: "#22c55e",
   },
-  politics: {
-    gradient: "linear-gradient(135deg, #3b1f6e 0%, #1e3a8a 60%, #0f172a 100%)",
-    accentColor: "#818cf8",
+  gaming: {
+    gradient: "linear-gradient(135deg, #1a0533 0%, #3b0764 60%, #0f0f23 100%)",
+    accentColor: "#c084fc",
   },
   weather: {
     gradient: "linear-gradient(135deg, #0c4a6e 0%, #075985 60%, #082f49 100%)",
