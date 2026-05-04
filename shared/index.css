@@ -61,6 +61,11 @@
   --balance-card-bg: var(--grad-primary);
   --balance-card-shadow: 0 10px 25px -5px rgba(39, 117, 208, 0.4);
   --deposit-btn-bg: var(--color-primary);
+
+  /* Aliases */
+  --surface: var(--bg-card);
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
 }
 
 html.dark {

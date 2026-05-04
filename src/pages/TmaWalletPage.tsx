@@ -49,6 +49,7 @@ import {
   Lightbulb,
   CheckCircle,
   Users,
+  Gift,
 } from "lucide-react";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ const TX_ICON: Record<Transaction["type"], React.ReactNode> = {
   referral_bonus: <UserPlus size={18} />,
   duel_wager: <Swords size={18} />,
   duel_payout: <Swords size={18} />,
+  free_credit: <Gift size={18} />,
 };
 
 const TX_LABEL: Record<Transaction["type"], string> = {
@@ -88,6 +90,7 @@ const TX_LABEL: Record<Transaction["type"], string> = {
   referral_bonus: "Referral bonus",
   duel_wager: "Duel wager locked",
   duel_payout: "Duel payout",
+  free_credit: "Welcome bonus",
 };
 
 // ── AnimatedCounter ────────────────────────────────────────────────────────────

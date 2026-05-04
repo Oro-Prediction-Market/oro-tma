@@ -236,7 +236,7 @@ function OracleVisual() {
         </div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
-            Oracle Score
+            Prediction Rating
           </div>
           <div style={{ fontSize: 10, color: "#22c55e", fontWeight: 700 }}>
             Rookie · 3 correct
@@ -355,7 +355,7 @@ const STEPS = [
   },
   {
     visual: <OracleVisual />,
-    title: "Build your Oracle Score",
+    title: "Build your Prediction Rating",
     body: "Every correct prediction boosts your score. Rise through Rookie, Scholar, Expert, to Legend.",
   },
   {

@@ -457,7 +457,8 @@ export interface Transaction {
     | "dispute_refund"
     | "referral_bonus"
     | "duel_wager"
-    | "duel_payout";
+    | "duel_payout"
+    | "free_credit";
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
