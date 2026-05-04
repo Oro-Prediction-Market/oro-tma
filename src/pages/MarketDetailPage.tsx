@@ -674,7 +674,7 @@ export const MarketDetailPage: FC = () => {
                           color: "#b45309",
                         }}
                       >
-                        Nu 5,000
+                        Nu 10
                       </span>
                     </div>
                     <div
