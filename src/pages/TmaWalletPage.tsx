@@ -699,7 +699,7 @@ export const TmaWalletPage: FC = () => {
               }}
             >
               {balanceHidden ? (
-                "••••"
+                "****"
               ) : (
                 <AnimatedCounter
                   value={Number(
