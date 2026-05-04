@@ -23,7 +23,6 @@ import {
   CheckCircle2,
   XCircle,
   Link2,
-  Smartphone,
   AlertCircle,
   Loader2,
   ShieldCheck,
@@ -256,6 +255,16 @@ export const TmaWalletPage: FC = () => {
   const [payError, setPayError] = useState("");
   const [payProcessing, setPayProcessing] = useState(false);
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
+
+  // Auto-focus OTP input when step becomes "otp" so keyboard opens immediately
+  useEffect(() => {
+    if (payStep === "otp") {
+      const t = setTimeout(() => {
+        document.getElementById("otp-hidden-input")?.focus();
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [payStep]);
 
   // DK Bank setup state — single flow: link CID then auto-verify phone
   const [cid, setCid] = useState("");
@@ -593,6 +602,14 @@ export const TmaWalletPage: FC = () => {
         @keyframes nudgePulse {
           0%, 100% { transform: scale(1); }
           50%       { transform: scale(1.015); }
+        }
+        @keyframes otpStepIn {
+          from { opacity: 0; transform: translateX(-10px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes otpStepDot {
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50%       { transform: scale(1.4); opacity: 1; }
         }
         @keyframes bonusBannerShimmer {
           0%   { background-position: -200% center; }
@@ -2030,24 +2047,9 @@ export const TmaWalletPage: FC = () => {
                   alignItems: "center",
                 }}
               >
-                <div
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                    background:
-                      "linear-gradient(135deg, rgba(37,117,208,0.2), rgba(37,117,208,0.08))",
-                    border: "2px solid rgba(37,117,208,0.35)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Smartphone size={28} style={{ color: "#2575d0" }} />
-                </div>
                 <p
                   style={{
-                    margin: "0 0 4px",
+                    margin: "0 0 2px",
                     fontWeight: 800,
                     fontSize: 17,
                     color: "var(--text-main)",
@@ -2057,24 +2059,75 @@ export const TmaWalletPage: FC = () => {
                     ? "Confirm Your Deposit"
                     : "Confirm Withdrawal"}
                 </p>
-                <p
+
+                {/* Animated step-by-step instruction banner */}
+                <div
                   style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    textAlign: "center",
-                    lineHeight: 1.5,
+                    width: "100%",
+                    borderRadius: 14,
+                    background: "rgba(39,117,208,0.07)",
+                    border: "1px solid rgba(39,117,208,0.2)",
+                    padding: "14px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
                   }}
                 >
-                  We sent a code to your{" "}
-                  <strong style={{ color: "var(--text-main)" }}>
-                    Telegram bot
-                  </strong>{" "}
-                  to confirm{" "}
-                  <strong style={{ color: "#2775d0" }}>
-                    Nu {parseFloat(payAmountStr).toLocaleString()}
-                  </strong>
-                </p>
+                  {[
+                    { icon: "📱", text: "Open Oro Bot in Telegram", delay: "0ms" },
+                    { icon: "🔢", text: "Copy the 6-digit code sent to you", delay: "120ms" },
+                    { icon: "✏️", text: "Enter it below to confirm", delay: "240ms" },
+                  ].map((step, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        animation: `otpStepIn 0.35s ease both`,
+                        animationDelay: step.delay,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: "rgba(39,117,208,0.15)",
+                          border: "1.5px solid rgba(39,117,208,0.3)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 14,
+                          flexShrink: 0,
+                          animation: `otpStepDot 1.8s ease-in-out ${step.delay} infinite`,
+                        }}
+                      >
+                        {step.icon}
+                      </div>
+                      <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, lineHeight: 1.4 }}>
+                        {i === 0 ? (
+                          <>
+                            Open{" "}
+                            <a
+                              href="https://t.me/OroPredictBot"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#2775d0", fontWeight: 700, textDecoration: "none" }}
+                            >
+                              @OroPredictBot
+                            </a>{" "}
+                            in Telegram
+                          </>
+                        ) : (
+                          step.text
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* OTP digit boxes — tapping any box re-focuses the hidden input */}
                 <div
                   style={{
                     display: "flex",
@@ -2082,7 +2135,9 @@ export const TmaWalletPage: FC = () => {
                     justifyContent: "center",
                     margin: "4px 0",
                     width: "100%",
+                    cursor: "text",
                   }}
+                  onClick={() => document.getElementById("otp-hidden-input")?.focus()}
                 >
                   {Array.from({ length: 6 }).map((_, i) => {
                     const digit = payOtp[i];
@@ -2126,8 +2181,7 @@ export const TmaWalletPage: FC = () => {
                                 height: 22,
                                 background: "#2775d0",
                                 borderRadius: 2,
-                                animation:
-                                  "nudgePulse 0.8s ease-in-out infinite",
+                                animation: "nudgePulse 0.8s ease-in-out infinite",
                               }}
                             />
                           ) : (
@@ -2156,26 +2210,20 @@ export const TmaWalletPage: FC = () => {
                   autoFocus
                   id="otp-hidden-input"
                 />
+                {/* Subtle fallback — only shown, not prominent */}
                 <button
-                  onClick={() =>
-                    document.getElementById("otp-hidden-input")?.focus()
-                  }
+                  onClick={() => document.getElementById("otp-hidden-input")?.focus()}
                   style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: 10,
-                    border: "1.5px dashed var(--glass-border)",
-                    background: "transparent",
+                    background: "none",
+                    border: "none",
                     color: "var(--text-subtle)",
-                    fontSize: 12,
+                    fontSize: 11,
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
+                    opacity: 0.6,
+                    padding: "2px 0",
                   }}
                 >
-                  <Smartphone size={14} /> Tap here to enter OTP
+                  Keyboard not showing? Tap here
                 </button>
                 {payError && (
                   <div
