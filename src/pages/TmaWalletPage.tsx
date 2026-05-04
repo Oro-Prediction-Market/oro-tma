@@ -49,6 +49,8 @@ import {
   CheckCircle,
   Users,
   Gift,
+  Hash,
+  PenLine,
 } from "lucide-react";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -2074,9 +2076,9 @@ export const TmaWalletPage: FC = () => {
                   }}
                 >
                   {[
-                    { icon: "📱", text: "Open Oro Bot in Telegram", delay: "0ms" },
-                    { icon: "🔢", text: "Copy the 6-digit code sent to you", delay: "120ms" },
-                    { icon: "✏️", text: "Enter it below to confirm", delay: "240ms" },
+                    { icon: <Send size={14} color="#2775d0" />, text: "Open Oro Bot in Telegram", delay: "0ms" },
+                    { icon: <Hash size={14} color="#2775d0" />, text: "Copy the 6-digit code sent to you", delay: "120ms" },
+                    { icon: <PenLine size={14} color="#2775d0" />, text: "Enter it below to confirm", delay: "240ms" },
                   ].map((step, i) => (
                     <div
                       key={i}
