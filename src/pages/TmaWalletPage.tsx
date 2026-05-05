@@ -897,7 +897,7 @@ export const TmaWalletPage: FC = () => {
         {depositStreakDays > 0 && (
           <div
             style={{
-              margin: "0 16px",
+              margin: "-4px 16px 0",
               borderRadius: 14,
               padding: "12px 14px",
               background:
@@ -905,6 +905,7 @@ export const TmaWalletPage: FC = () => {
               border: "1px solid rgba(99,102,241,0.25)",
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 10,
             }}
           >
