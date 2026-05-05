@@ -766,15 +766,16 @@ export const TmaWalletPage: FC = () => {
                 label: "This Week",
                 value: `${weeklyProfit >= 0 ? "+" : ""}${weeklyProfit.toLocaleString()}`,
                 color:
-                  weeklyProfit >= 0 ? "var(--success)" : "var(--error, #ef4444)",
+                  weeklyProfit >= 0
+                    ? "var(--success)"
+                    : "var(--error, #ef4444)",
               },
             ].map((s, i) => (
               <div
                 key={i}
                 style={{
                   flex: 1,
-                  borderLeft:
-                    i > 0 ? "1px solid var(--border)" : "none",
+                  borderLeft: i > 0 ? "1px solid var(--border)" : "none",
                   paddingLeft: i > 0 ? 14 : 0,
                 }}
               >
@@ -2032,8 +2033,9 @@ export const TmaWalletPage: FC = () => {
                     textAlign: "center",
                   }}
                 >
-                  An OTP will be sent to your Telegram bot to confirm this
-                  transaction.
+                  {paymentModal === "deposit"
+                    ? "An OTP will be sent via SMS to your DK Bank registered phone."
+                    : "An OTP will be sent to your Telegram bot to confirm this transaction."}
                 </p>
               </div>
             )}
@@ -2075,11 +2077,37 @@ export const TmaWalletPage: FC = () => {
                     gap: 10,
                   }}
                 >
-                  {[
-                    { icon: <Send size={14} color="#2775d0" />, text: "Open Oro Bot in Telegram", delay: "0ms" },
-                    { icon: <Hash size={14} color="#2775d0" />, text: "Copy the 6-digit code sent to you", delay: "120ms" },
-                    { icon: <PenLine size={14} color="#2775d0" />, text: "Enter it below to confirm", delay: "240ms" },
-                  ].map((step, i) => (
+                  {(paymentModal === "deposit"
+                    ? [
+                        {
+                          icon: <Hash size={14} color="#2775d0" />,
+                          text: "An OTP will be sent to your DK Bank registered phone",
+                          delay: "0ms",
+                        },
+                        {
+                          icon: <PenLine size={14} color="#2775d0" />,
+                          text: "Enter the 6-digit code below to confirm",
+                          delay: "120ms",
+                        },
+                      ]
+                    : [
+                        {
+                          icon: <Send size={14} color="#2775d0" />,
+                          text: "Open Oro Bot in Telegram",
+                          delay: "0ms",
+                        },
+                        {
+                          icon: <Hash size={14} color="#2775d0" />,
+                          text: "Copy the 6-digit code sent to you",
+                          delay: "120ms",
+                        },
+                        {
+                          icon: <PenLine size={14} color="#2775d0" />,
+                          text: "Enter it below to confirm",
+                          delay: "240ms",
+                        },
+                      ]
+                  ).map((step, i) => (
                     <div
                       key={i}
                       style={{
@@ -2107,15 +2135,26 @@ export const TmaWalletPage: FC = () => {
                       >
                         {step.icon}
                       </div>
-                      <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500, lineHeight: 1.4 }}>
-                        {i === 0 ? (
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "var(--text-muted)",
+                          fontWeight: 500,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {paymentModal === "withdraw" && i === 0 ? (
                           <>
                             Open{" "}
                             <a
                               href="https://t.me/OroPredictBot"
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{ color: "#2775d0", fontWeight: 700, textDecoration: "none" }}
+                              style={{
+                                color: "#2775d0",
+                                fontWeight: 700,
+                                textDecoration: "none",
+                              }}
                             >
                               @OroPredictBot
                             </a>{" "}
@@ -2139,7 +2178,9 @@ export const TmaWalletPage: FC = () => {
                     width: "100%",
                     cursor: "text",
                   }}
-                  onClick={() => document.getElementById("otp-hidden-input")?.focus()}
+                  onClick={() =>
+                    document.getElementById("otp-hidden-input")?.focus()
+                  }
                 >
                   {Array.from({ length: 6 }).map((_, i) => {
                     const digit = payOtp[i];
@@ -2183,7 +2224,8 @@ export const TmaWalletPage: FC = () => {
                                 height: 22,
                                 background: "#2775d0",
                                 borderRadius: 2,
-                                animation: "nudgePulse 0.8s ease-in-out infinite",
+                                animation:
+                                  "nudgePulse 0.8s ease-in-out infinite",
                               }}
                             />
                           ) : (
@@ -2214,7 +2256,9 @@ export const TmaWalletPage: FC = () => {
                 />
                 {/* Subtle fallback — only shown, not prominent */}
                 <button
-                  onClick={() => document.getElementById("otp-hidden-input")?.focus()}
+                  onClick={() =>
+                    document.getElementById("otp-hidden-input")?.focus()
+                  }
                   style={{
                     background: "none",
                     border: "none",
@@ -2608,6 +2652,5 @@ const spinner: React.CSSProperties = {
   borderRadius: "50%",
   animation: "spin 0.8s linear infinite",
 };
-
 
 // actionBtnPrimary, actionBtnSecondary, card — removed; use <Button> and <Card> from ui/
