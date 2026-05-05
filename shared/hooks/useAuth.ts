@@ -27,7 +27,14 @@ export function useAuth() {
     setState((s) => ({ ...s, loading: true, error: null }));
 
     try {
-      if (getToken()) {
+      const telegramInitData = (window as any).Telegram?.WebApp?.initData;
+      const startParam: string | undefined = (window as any).Telegram?.WebApp
+        ?.initDataUnsafe?.start_param;
+      const referralCode = startParam?.startsWith("ref_")
+        ? startParam
+        : undefined;
+
+      if (getToken() && !referralCode) {
         try {
           const user = await getMe();
           setState({ user, token: getToken(), loading: false, error: null });
@@ -37,7 +44,6 @@ export function useAuth() {
         }
       }
 
-      const telegramInitData = (window as any).Telegram?.WebApp?.initData;
       let sdkRaw: string | undefined;
       if (!telegramInitData) {
         try {
@@ -48,11 +54,6 @@ export function useAuth() {
       }
       const raw = telegramInitData || sdkRaw;
       if (raw) {
-        const startParam: string | undefined = (window as any).Telegram?.WebApp
-          ?.initDataUnsafe?.start_param;
-        const referralCode = startParam?.startsWith("ref_")
-          ? startParam
-          : undefined;
         const { user, token } = await loginWithTelegram(raw, referralCode);
         setState({ user, token, loading: false, error: null });
         return;
