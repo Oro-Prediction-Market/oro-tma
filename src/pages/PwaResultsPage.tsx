@@ -83,7 +83,7 @@ export function PwaResultsPage() {
       <div style={{ marginBottom: 28 }}>
         <h1
           style={{
-            fontSize: "1.4rem",
+            fontSize: "1.3rem",
             fontWeight: 900,
             marginBottom: 6,
             color: "var(--text-main)",
