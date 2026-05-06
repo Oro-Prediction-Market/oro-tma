@@ -1107,14 +1107,9 @@ export const TmaSettingsPage: FC = () => {
             <SettingsRow
               icon={<MessageCircle size={17} />}
               label="Support"
-              value="Chat with us on Telegram"
+              value="oro@romtech.bt"
               onClick={() => {
-                const url = `https://t.me/${BOT_USERNAME}`;
-                if (window.Telegram?.WebApp?.openTelegramLink) {
-                  window.Telegram.WebApp.openTelegramLink(url);
-                } else {
-                  window.open(url, "_blank");
-                }
+                window.open("https://mail.google.com/mail/?view=cm&to=oro@romtech.bt", "_blank");
               }}
             >
               <ExternalLink size={15} color="var(--text-subtle)" />
