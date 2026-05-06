@@ -241,15 +241,34 @@ export async function verifyPhoneTma(params: {
   userId: number;
   authDate: number;
   hash: string;
-}): Promise<{ linked: boolean; message: string }> {
-  const result = await request<{ linked: boolean; message: string }>(
-    "/auth/verify-phone-tma",
+}): Promise<{ linked: boolean; requiresAccountVerification?: boolean; message: string }> {
+  const result = await request<{
+    linked: boolean;
+    requiresAccountVerification?: boolean;
+    message: string;
+  }>("/auth/verify-phone-tma", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+  bustCache("/users/me");
+  return result;
+}
+
+/**
+ * Fallback verification for users whose Telegram phone differs from their
+ * DK Bank registered phone (e.g. Bhutanese users abroad with a foreign SIM).
+ * User proves account ownership by entering their full DK Bank account number.
+ */
+export async function verifyDKAccount(
+  accountNumber: string,
+): Promise<{ verified: boolean; message: string }> {
+  const result = await request<{ verified: boolean; message: string }>(
+    "/auth/verify-dk-account",
     {
       method: "POST",
-      body: JSON.stringify(params),
+      body: JSON.stringify({ accountNumber }),
     },
   );
-  // Bust the /users/me cache so isPhoneVerified is reflected immediately.
   bustCache("/users/me");
   return result;
 }

@@ -4,6 +4,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import {
   linkDKBank,
   verifyPhoneTma,
+  verifyDKAccount,
   getMe,
   getMyTransactions,
   AuthUser,
@@ -271,9 +272,19 @@ export const TmaWalletPage: FC = () => {
   // DK Bank setup state — single flow: link CID then auto-verify phone
   const [cid, setCid] = useState("");
   const [setupStep, setSetupStep] = useState<
-    "idle" | "linking" | "verifying" | "bot-pending" | "success" | "error"
+    | "idle"
+    | "linking"
+    | "verifying"
+    | "bot-pending"
+    | "success"
+    | "error"
+    | "acct-verify"
   >("idle");
   const [setupError, setSetupError] = useState("");
+
+  // Account number fallback verification state
+  const [acctNumber, setAcctNumber] = useState("");
+  const [acctVerifLoading, setAcctVerifLoading] = useState(false);
 
   useEffect(() => {
     getMe()
@@ -529,16 +540,22 @@ export const TmaWalletPage: FC = () => {
         // the authenticated user's own telegramId so the backend check passes.
         const contactUserId: number =
           result.contact.user_id ?? Number(user?.telegramId);
-        await verifyPhoneTma({
+        const phoneResult = await verifyPhoneTma({
           phoneNumber: result.contact.phone_number,
           userId: contactUserId,
           authDate: result.auth_date,
           hash: result.hash,
         });
-        setSetupStep("success");
-        getMe()
-          .then((u) => setFreshUser(u))
-          .catch(() => {});
+        if (phoneResult.requiresAccountVerification) {
+          setSetupStep("acct-verify");
+          const updated = await getMe().catch(() => null);
+          if (updated) setFreshUser(updated);
+        } else {
+          setSetupStep("success");
+          getMe()
+            .then((u) => setFreshUser(u))
+            .catch(() => {});
+        }
       } catch (err: any) {
         setSetupError(
           err.message || "Phone verification failed. Please try again.",
@@ -552,6 +569,24 @@ export const TmaWalletPage: FC = () => {
     });
 
     tg.requestContact();
+  };
+
+  const handleAcctVerify = async () => {
+    setAcctVerifLoading(true);
+    setSetupError("");
+    try {
+      await verifyDKAccount(acctNumber.trim());
+      setSetupStep("success");
+      getMe()
+        .then((u) => setFreshUser(u))
+        .catch(() => {});
+    } catch (err: any) {
+      setSetupError(
+        err.message || "Account number does not match. Please try again.",
+      );
+    } finally {
+      setAcctVerifLoading(false);
+    }
   };
 
   if (loading) {
@@ -1162,8 +1197,120 @@ export const TmaWalletPage: FC = () => {
                 </div>
               )}
 
+              {/* Account number fallback verification */}
+              {setupStep === "acct-verify" && (
+                <>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 13,
+                      color: "var(--text-muted)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Your Telegram phone doesn't match your DK Bank registered
+                    phone. Enter your full DK Bank account number to verify
+                    ownership — you can find it in your DK Bank app or passbook.
+                  </p>
+                  <input
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      fontSize: 16,
+                      borderRadius: 10,
+                      border: "1.5px solid var(--glass-border)",
+                      background: "var(--bg-main)",
+                      color: "var(--text-main)",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      letterSpacing: 2,
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="DK Bank account number"
+                    value={acctNumber}
+                    onChange={(e) => {
+                      setAcctNumber(e.target.value);
+                      setSetupError("");
+                    }}
+                  />
+                  {setupError && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 13,
+                        color: "#dc2626",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <XCircle size={14} color="#dc2626" />
+                      {setupError}
+                    </p>
+                  )}
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      background: "linear-gradient(135deg, #00499c, #1a5bb5)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 12,
+                      cursor:
+                        acctVerifLoading || !acctNumber.trim()
+                          ? "not-allowed"
+                          : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      opacity:
+                        acctVerifLoading || !acctNumber.trim() ? 0.7 : 1,
+                    }}
+                    disabled={acctVerifLoading || !acctNumber.trim()}
+                    onClick={handleAcctVerify}
+                  >
+                    {acctVerifLoading ? (
+                      <>
+                        <Loader2
+                          size={15}
+                          style={{ animation: "spin 0.8s linear infinite" }}
+                        />{" "}
+                        Verifying…
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck size={15} /> Verify Account Number
+                      </>
+                    )}
+                  </button>
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      fontSize: 13,
+                      background: "transparent",
+                      border: "1px solid var(--glass-border)",
+                      borderRadius: 10,
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setSetupStep("idle");
+                      setAcctNumber("");
+                      setSetupError("");
+                    }}
+                  >
+                    ← Try a different method
+                  </button>
+                </>
+              )}
+
               {/* Primary action button */}
-              {setupStep !== "bot-pending" && (
+              {setupStep !== "bot-pending" && setupStep !== "acct-verify" && (
                 <button
                   style={{
                     width: "100%",
@@ -1201,16 +1348,20 @@ export const TmaWalletPage: FC = () => {
                         try {
                           const contactUserId: number =
                             result.contact.user_id ?? Number(user?.telegramId);
-                          await verifyPhoneTma({
+                          const phoneResult = await verifyPhoneTma({
                             phoneNumber: result.contact.phone_number,
                             userId: contactUserId,
                             authDate: result.auth_date,
                             hash: result.hash,
                           });
-                          setSetupStep("success");
-                          getMe()
-                            .then((u) => setFreshUser(u))
-                            .catch(() => {});
+                          if (phoneResult.requiresAccountVerification) {
+                            setSetupStep("acct-verify");
+                          } else {
+                            setSetupStep("success");
+                            getMe()
+                              .then((u) => setFreshUser(u))
+                              .catch(() => {});
+                          }
                         } catch (err: any) {
                           setSetupError(
                             err.message ||
@@ -1273,7 +1424,8 @@ export const TmaWalletPage: FC = () => {
               {/* Check Status — prominent when bot-pending, secondary otherwise */}
               {(setupStep === "bot-pending" ||
                 setupStep === "idle" ||
-                setupStep === "error") && (
+                setupStep === "error" ||
+                setupStep === "acct-verify") && (
                 <button
                   style={{
                     width: "100%",
