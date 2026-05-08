@@ -1277,9 +1277,12 @@ export const TmaFeedPage: FC = () => {
     ...Array.from(new Set(markets.map((m) => m.category || "other"))).sort(),
   ];
 
-  const filteredOpen = filterByQuery(openMarkets).sort(
-    (a, b) => Number(b.totalPool) - Number(a.totalPool),
-  );
+  const filteredOpen = filterByQuery(openMarkets).sort((a, b) => {
+    // TER markets always appear first
+    if (a.externalSource === "ter" && b.externalSource !== "ter") return -1;
+    if (b.externalSource === "ter" && a.externalSource !== "ter") return 1;
+    return Number(b.totalPool) - Number(a.totalPool);
+  });
   const filteredResolving = filterByQuery(resolvingMarkets);
   const filteredUpcoming = filterByQuery(upcomingMarkets);
 
