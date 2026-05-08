@@ -249,3 +249,180 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
 }
+
+/* ── TER Market Card Styles ── */
+.ter-market-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.ter-header {
+  margin-bottom: var(--space-md);
+}
+
+.ter-badge {
+  display: inline-block;
+  background: var(--color-primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.ter-price-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.ter-price-container {
+  text-align: center;
+}
+
+.ter-price-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.ter-price-value {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+
+.ter-arrow {
+  font-size: 24px;
+  font-weight: 300;
+}
+
+.ter-diff-badge {
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+}
+
+.ter-winner-label {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 8px;
+  margin-bottom: var(--space-sm);
+}
+
+.ter-sentiment-bar {
+  display: flex;
+  height: 8px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+}
+
+.ter-sentiment-up,
+.ter-sentiment-down {
+  transition: width 0.3s ease;
+}
+
+.ter-sentiment-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+.ter-action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.ter-btn-up,
+.ter-btn-down {
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ter-btn-up {
+  background: #10b981;
+  color: white;
+}
+
+.ter-btn-up:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.ter-btn-down {
+  background: #ef4444;
+  color: white;
+}
+
+.ter-btn-down:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.ter-btn-up:disabled,
+.ter-btn-down:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ter-betting-closed {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ter-action-hint {
+  text-align: center;
+  padding: 12px;
+  background: var(--grad-primary);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Make TER card clickable with hover effect */
+a:has(.ter-market-card) {
+  display: block;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+a:has(.ter-market-card):hover {
+  transform: translateY(-2px);
+}
+
+a:has(.ter-market-card):hover .ter-market-card {
+  box-shadow: var(--shadow-md);
+}

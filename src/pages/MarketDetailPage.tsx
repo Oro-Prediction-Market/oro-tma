@@ -9,15 +9,241 @@ import {
   submitDispute,
   getDisputeRequirements,
   bustCache,
+  getTerPrice,
   Market,
   Dispute,
   DisputeRequirements,
   Bet,
+  TerPrice,
 } from "@shared/api/client";
 import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
+import { TrendingUp, TrendingDown } from "lucide-react";
+
+// ── TER Price Panel ──────────────────────────────────────────────────────────
+
+function TerPricePanel({ market }: { market: Market }) {
+  const meta = market.metadata;
+  const refPrice = meta?.referenceBuyPrice ?? meta?.referenceTerPrice ?? 0;
+  const settlementPrice = meta?.settlementBuyPrice ?? meta?.settlementTerPrice;
+  const isSettled = market.status === "settled" || market.status === "resolved";
+  const isClosed = market.status === "closed" || market.status === "resolving";
+
+  const [live, setLive] = useState<TerPrice | null>(null);
+
+  useEffect(() => {
+    if (isSettled || isClosed) return;
+    const fetch_ = () =>
+      getTerPrice()
+        .then(setLive)
+        .catch(() => {});
+    fetch_();
+    const id = setInterval(fetch_, 30_000);
+    return () => clearInterval(id);
+  }, [isSettled, isClosed]);
+
+  const displayPrice = isSettled
+    ? settlementPrice
+    : (live?.buyPrice ?? live?.midPrice);
+  const diff = displayPrice != null ? displayPrice - refPrice : null;
+  const pct =
+    diff != null && refPrice ? ((diff / refPrice) * 100).toFixed(2) : null;
+  const refMid = meta?.referenceTerPrice ?? 0;
+  const liveMid = isSettled ? meta?.settlementTerPrice : live?.midPrice;
+  const dir =
+    liveMid == null
+      ? null
+      : liveMid > refMid
+        ? "up"
+        : liveMid < refMid
+          ? "down"
+          : "flat";
+  const winLabel = isSettled
+    ? market.outcomes.find((o) => o.id === market.resolvedOutcomeId)?.label
+    : null;
+
+  return (
+    <div
+      style={{
+        background: "var(--bg-card)",
+        border: `1px solid ${dir === "up" ? "rgba(34,197,94,0.3)" : dir === "down" ? "rgba(239,68,68,0.3)" : "var(--glass-border)"}`,
+        borderRadius: "var(--radius-lg)",
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        boxShadow: "var(--shadow-premium)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "0.65rem",
+          fontWeight: 800,
+          color: "var(--accent, #a78bfa)",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
+      >
+        TER · 5 Minute Price Prediction
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              fontSize: "0.7rem",
+              color: "var(--text-subtle)",
+              marginBottom: 2,
+            }}
+          >
+            Open price
+          </div>
+          <div
+            style={{
+              fontSize: "1.3rem",
+              fontWeight: 800,
+              color: "var(--text-main)",
+            }}
+          >
+            Nu {refPrice.toFixed(4)}
+          </div>
+        </div>
+        <div style={{ fontSize: 22, color: "var(--text-subtle)" }}>→</div>
+        <div style={{ flex: 1, textAlign: "right" }}>
+          <div
+            style={{
+              fontSize: "0.7rem",
+              color: "var(--text-subtle)",
+              marginBottom: 2,
+            }}
+          >
+            {isSettled ? "Close price" : "Live price"}
+          </div>
+          <div
+            style={{
+              fontSize: "1.3rem",
+              fontWeight: 800,
+              color:
+                dir === "up"
+                  ? "#22c55e"
+                  : dir === "down"
+                    ? "#ef4444"
+                    : "var(--text-main)",
+            }}
+          >
+            {displayPrice != null ? `Nu ${displayPrice.toFixed(4)}` : "—"}
+          </div>
+        </div>
+      </div>
+      {diff != null && dir !== "flat" && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 12px",
+            borderRadius: 10,
+            background:
+              dir === "up" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+            color: dir === "up" ? "#22c55e" : "#ef4444",
+            fontWeight: 700,
+            fontSize: 14,
+          }}
+        >
+          {dir === "up" ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+          <span>
+            {dir === "up" ? "+" : ""}
+            {diff.toFixed(4)} BTN ({dir === "up" ? "+" : ""}
+            {pct}%)
+          </span>
+          {isSettled && winLabel && (
+            <span style={{ marginLeft: "auto", fontSize: 12, opacity: 0.9 }}>
+              {winLabel === "UP" ? "▲ UP won" : "▼ DOWN won"}
+            </span>
+          )}
+        </div>
+      )}
+      {/* Resolution data — styled like api.ter.bt/prices */}
+      {isSettled && meta && (
+        <div
+          style={{
+            background: "rgba(0,0,0,0.4)",
+            borderRadius: 12,
+            padding: "14px 16px",
+            fontFamily: "monospace",
+            fontSize: "0.72rem",
+            lineHeight: 1.7,
+            color: "#e2e8f0",
+            overflowX: "auto",
+          }}
+        >
+          <div
+            style={{
+              color: "#94a3b8",
+              marginBottom: 4,
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+            }}
+          >
+            Resolution · api.ter.bt/prices
+          </div>
+          <div>
+            <span style={{ color: "#94a3b8" }}>{"{"}</span>
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"product_symbol"</span>:{" "}
+            <span style={{ color: "#fbbf24" }}>"TERBTN"</span>,
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"ask_price"</span>:{" "}
+            <span style={{ color: "#86efac" }}>
+              {(
+                (meta.settlementBuyPrice ?? meta.settlementTerPrice ?? 0) *
+                10000
+              ).toFixed(0)}
+            </span>
+            ,
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"bid_price"</span>:{" "}
+            <span style={{ color: "#86efac" }}>
+              {(
+                (meta.settlementSellPrice ?? meta.settlementTerPrice ?? 0) *
+                10000
+              ).toFixed(0)}
+            </span>
+            ,
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"spread"</span>:{" "}
+            <span style={{ color: "#86efac" }}>
+              {(
+                ((meta.settlementBuyPrice ?? 0) -
+                  (meta.settlementSellPrice ?? 0)) *
+                10000
+              ).toFixed(0)}
+            </span>
+            ,
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"tradeable"</span>:{" "}
+            <span style={{ color: "#c4b5fd" }}>true</span>,
+          </div>
+          <div style={{ paddingLeft: 14 }}>
+            <span style={{ color: "#7dd3fc" }}>"effective_at"</span>:{" "}
+            <span style={{ color: "#fbbf24" }}>"{market.closesAt ?? ""}"</span>
+          </div>
+          <div>
+            <span style={{ color: "#94a3b8" }}>{"}"}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const MarketDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -305,7 +531,7 @@ export const MarketDetailPage: FC = () => {
                 Nu {Number(m.totalPool).toLocaleString()}
               </div>
             </div>
-            {m.description && (
+            {m.description && m.externalSource !== "ter" && (
               <p
                 style={{
                   color: "var(--text-muted)",
@@ -319,6 +545,11 @@ export const MarketDetailPage: FC = () => {
               </p>
             )}
           </div>
+
+          {/* TER Price Panel */}
+          {m.externalSource === "ter" && m.metadata?.isTer && (
+            <TerPricePanel market={m} />
+          )}
 
           {/* Timeline */}
           <div
@@ -344,7 +575,6 @@ export const MarketDetailPage: FC = () => {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                { label: "Created", date: m.createdAt },
                 { label: "Opens", date: m.opensAt },
                 { label: "Closes", date: m.closesAt },
                 ...(m.resolvedAt

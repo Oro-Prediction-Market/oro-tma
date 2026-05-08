@@ -10,7 +10,7 @@ interface ChallengeAFriendProps {
   botUsername?: string;
 }
 
-const BOT_USERNAME = "OroPredictBot";
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
 
 export const ChallengeAFriend: FC<ChallengeAFriendProps> = ({
   pickedOutcomeLabel,

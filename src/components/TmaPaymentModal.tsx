@@ -8,11 +8,18 @@ import {
 } from "@shared/api/dkbank";
 import { getMe } from "@shared/api/client";
 import type { Market } from "@shared/api/client";
-import type { DKBankPaymentRequest, PaymentResponse } from "@shared/types/payment";
+import type {
+  DKBankPaymentRequest,
+  PaymentResponse,
+} from "@shared/types/payment";
 import { PayoutBreakdown } from "@shared/components/PayoutBreakdown";
 
-const QUICK_AMOUNTS = [50, 100, 200, 500];
-const MIN_BET = 50;
+const QUICK_AMOUNTS_DEFAULT = [50, 100, 200, 500];
+const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
+
+function getMinBet(market: Market): number {
+  return market.externalSource === "ter" ? 10 : 50;
+}
 
 interface TmaPaymentModalProps {
   isOpen: boolean;
@@ -90,6 +97,9 @@ export function TmaPaymentModal({
   })();
 
   const betAmount = parseFloat(amountStr) || 0;
+  const MIN_BET = getMinBet(market);
+  const QUICK_AMOUNTS =
+    market.externalSource === "ter" ? QUICK_AMOUNTS_TER : QUICK_AMOUNTS_DEFAULT;
   const isValidAmount = betAmount >= MIN_BET;
   // Payment is only allowed when using the user's own linked CID
   const canPay =
@@ -1362,8 +1372,8 @@ export function TmaPaymentModal({
                           color: "#ef4444",
                         }}
                       >
-                        ⚠️ No DK Bank account linked. Go to Wallet Page → Link DK
-                        Bank Account first.
+                        ⚠️ No DK Bank account linked. Go to Wallet Page → Link
+                        DK Bank Account first.
                       </p>
                     )}
                   </div>

@@ -9,9 +9,10 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
 
-const { minBet } = config.payments.dkBank;
+const configMinBet = config.payments.dkBank.minBet;
 
-const QUICK_AMOUNTS = [100, 200, 500, 1000];
+const QUICK_AMOUNTS_DEFAULT = [100, 200, 500, 1000];
+const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
 
 /** Returns true if the user's chosen outcome has an intelligence signal < 50%
  *  — meaning they're going against Expert consensus. */
@@ -100,6 +101,9 @@ export const DKBankBetPage: FC = () => {
   }
 
   const canBet = market.status === "open";
+  const minBet = market.externalSource === "ter" ? 10 : configMinBet;
+  const QUICK_AMOUNTS =
+    market.externalSource === "ter" ? QUICK_AMOUNTS_TER : QUICK_AMOUNTS_DEFAULT;
   const selectedOutcome = market.outcomes.find(
     (o) => o.id === selectedOutcomeId,
   );

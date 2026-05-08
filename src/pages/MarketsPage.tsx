@@ -5,6 +5,7 @@ import { getMarkets, getMe, Market, AuthUser } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
+import { TerMarketCard } from "@/components/TerMarketCard";
 
 export const MarketsPage: FC = () => {
   const { user } = useAuth();
@@ -241,6 +242,12 @@ export const MarketsPage: FC = () => {
                 style={{ display: "flex", flexDirection: "column", gap: 14 }}
               >
                 {openMarkets.map((market) => {
+                  // Render TER markets with TerMarketCard
+                  if (market.externalSource === "ter") {
+                    return <TerMarketCard key={market.id} market={market} />;
+                  }
+
+                  // Regular market card rendering
                   const totalPool = Number(market.totalPool);
                   const bettorCount =
                     market.signalMeta?.participantCount ?? null;

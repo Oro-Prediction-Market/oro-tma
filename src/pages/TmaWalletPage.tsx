@@ -58,6 +58,8 @@ import {
 type PaymentModalType = "deposit" | "withdraw" | null;
 type PaymentStep = "amount" | "otp" | "success" | "failed";
 
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
+
 const QUICK_DEPOSIT_AMOUNTS = [100, 200, 500, 1000];
 const QUICK_WITHDRAW_AMOUNTS = [100, 200, 500, 1000];
 const MIN_DEPOSIT = 50;
@@ -1374,7 +1376,7 @@ export const TmaWalletPage: FC = () => {
                     } else {
                       // requestContact not available — open bot chat which shows
                       // a "Share Phone Number" keyboard button.
-                      const url = "https://t.me/OroPredictBot?start=verify";
+                      const url = `https://t.me/${BOT_USERNAME}?start=verify`;
                       const tg2 = (window as any).Telegram?.WebApp;
                       if (typeof tg2?.openTelegramLink === "function") {
                         tg2.openTelegramLink(url);
@@ -2121,7 +2123,7 @@ export const TmaWalletPage: FC = () => {
                       <span>{payError}</span>
                     </div>
                     <a
-                      href="https://t.me/OroPredictBot"
+                      href={`https://t.me/${BOT_USERNAME}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
@@ -2300,7 +2302,7 @@ export const TmaWalletPage: FC = () => {
                           <>
                             Open{" "}
                             <a
-                              href="https://t.me/OroPredictBot"
+                              href={`https://t.me/${BOT_USERNAME}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{
@@ -2309,7 +2311,7 @@ export const TmaWalletPage: FC = () => {
                                 textDecoration: "none",
                               }}
                             >
-                              @OroPredictBot
+                              @{BOT_USERNAME}
                             </a>{" "}
                             in Telegram
                           </>
@@ -2448,7 +2450,7 @@ export const TmaWalletPage: FC = () => {
                       <span>{payError}</span>
                     </div>
                     <a
-                      href="https://t.me/OroPredictBot"
+                      href={`https://t.me/${BOT_USERNAME}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{

@@ -10,8 +10,12 @@ import { ChallengeAFriend } from "@shared/components/ChallengeAFriend";
 import { StreakBanner } from "@shared/components/StreakBanner";
 import { useAuth } from "@shared/hooks/useAuth";
 
-const QUICK_AMOUNTS = [100, 500, 1000];
-const MIN_BET = 50;
+const QUICK_AMOUNTS_DEFAULT = [100, 500, 1000];
+const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
+
+function getMinBet(market: Market): number {
+  return market.externalSource === "ter" ? 10 : 50;
+}
 
 interface TmaBetModalProps {
   isOpen: boolean;
@@ -79,6 +83,9 @@ export function TmaBetModal({
   })();
 
   const betAmount = parseFloat(amountStr) || 0;
+  const MIN_BET = getMinBet(market);
+  const QUICK_AMOUNTS =
+    market.externalSource === "ter" ? QUICK_AMOUNTS_TER : QUICK_AMOUNTS_DEFAULT;
   const isValidAmount = betAmount >= MIN_BET;
   const hasEnoughBalance =
     creditsBalance !== null && creditsBalance >= betAmount;

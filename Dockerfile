@@ -19,7 +19,9 @@ COPY src ./src
 COPY shared ./shared
 
 ARG VITE_API_URL=/api
+ARG VITE_BOT_USERNAME
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_BOT_USERNAME=${VITE_BOT_USERNAME}
 RUN bun run build
 
 # ── runtime: nginx:alpine on :8080 ─────────────────────────────────────────

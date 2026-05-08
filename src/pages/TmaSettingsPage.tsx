@@ -32,7 +32,7 @@ import {
   EyeOff,
 } from "lucide-react";
 
-const BOT_USERNAME = "OroPredictBot";
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
 
 // ── How It Works modal ────────────────────────────────────────────────────────
 const STEPS = [

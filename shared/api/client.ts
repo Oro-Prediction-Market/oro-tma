@@ -241,7 +241,11 @@ export async function verifyPhoneTma(params: {
   userId: number;
   authDate: number;
   hash: string;
-}): Promise<{ linked: boolean; requiresAccountVerification?: boolean; message: string }> {
+}): Promise<{
+  linked: boolean;
+  requiresAccountVerification?: boolean;
+  message: string;
+}> {
   const result = await request<{
     linked: boolean;
     requiresAccountVerification?: boolean;
@@ -313,12 +317,17 @@ export interface Market {
   houseEdgePct: string;
   opensAt: string | null;
   closesAt: string | null;
+  bettingClosesAt: string | null;
   resolvedAt: string | null;
   proposedOutcomeId: string | null;
   resolvedOutcomeId: string | null;
   disputeDeadlineAt: string | null;
   resolutionCriteria: string | null;
   category: string | null;
+  externalSource: string | null;
+  externalMarketType: string | null;
+  metadata: Record<string, any> | null;
+  evidenceNote: string | null;
   signalMeta: SignalMeta | null;
   createdAt: string;
   outcomes: Outcome[];
@@ -721,4 +730,23 @@ export function trackEvent(payload: TrackEventPayload): void {
   }).catch(() => {
     // Silently discard — tracking must never break the user flow
   });
+}
+
+// ── TER Price API ─────────────────────────────────────────────────────────────
+
+export interface TerPrice {
+  midPrice: number;
+  buyPrice: number;
+  sellPrice: number;
+  xauUsd: number;
+  usdInr: number;
+  fetchedAt: string;
+}
+
+/**
+ * Fetch current TER price (cached 30s on backend).
+ * Used by TER market cards and detail pages to show live prices.
+ */
+export function getTerPrice(): Promise<TerPrice> {
+  return request<TerPrice>("/ter/price");
 }

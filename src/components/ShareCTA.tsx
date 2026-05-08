@@ -28,8 +28,7 @@ export const ShareCTA: FC<ShareCTAProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // e.g., https://t.me/OroPredictBot/app?startapp=ref_user123
-  const botUsername = "OroPredictBot";
+  const botUsername = import.meta.env.VITE_BOT_USERNAME as string;
   const refLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegramId || user?.id || ""}`;
 
   const handleShare = () => {

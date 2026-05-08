@@ -11,6 +11,7 @@ import {
 } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { TmaBetModal } from "@/components/TmaBetModal";
+import { TerMarketCard } from "@/components/TerMarketCard";
 import { Link } from "@/components/Link/Link";
 import { Flame, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -269,11 +270,7 @@ function OpenPicksStrip({
             : isResolving
               ? "#f59e0b"
               : "#94a3b8";
-          const statusLabel = isOpen
-            ? "LIVE"
-            : isResolving
-              ? "WAIT"
-              : "CLOSED";
+          const statusLabel = isOpen ? "LIVE" : isResolving ? "WAIT" : "CLOSED";
 
           return (
             <button
@@ -361,7 +358,11 @@ function OpenPicksStrip({
                 </div>
               ) : (
                 <div
-                  style={{ fontSize: 10, fontWeight: 700, color: "var(--text-subtle)" }}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "var(--text-subtle)",
+                  }}
                 >
                   Awaiting result
                 </div>
@@ -656,9 +657,10 @@ const MarketCard = memo(function MarketCard({
                   border: "none",
                   cursor: "pointer",
                   overflow: "hidden",
-                  boxShadow: s.id === userPickedOutcomeId
-                    ? `4px 4px 10px rgba(0,0,0,0.25), -2px -2px 8px rgba(255,255,255,0.04), inset 0 0 0 2px ${s.color}70`
-                    : `4px 4px 10px rgba(0,0,0,0.25), -2px -2px 8px rgba(255,255,255,0.04), inset 0 0 0 1px ${s.color}30`,
+                  boxShadow:
+                    s.id === userPickedOutcomeId
+                      ? `4px 4px 10px rgba(0,0,0,0.25), -2px -2px 8px rgba(255,255,255,0.04), inset 0 0 0 2px ${s.color}70`
+                      : `4px 4px 10px rgba(0,0,0,0.25), -2px -2px 8px rgba(255,255,255,0.04), inset 0 0 0 1px ${s.color}30`,
                   transition: "box-shadow 0.15s ease, transform 0.12s ease",
                   display: "block",
                   textAlign: "left",
@@ -947,7 +949,11 @@ const MarketCard = memo(function MarketCard({
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            {isResolving ? disputeCountdown : !isUpcoming ? countdown : "Closed"}
+            {isResolving
+              ? disputeCountdown
+              : !isUpcoming
+                ? countdown
+                : "Closed"}
           </div>
           {/* Share button */}
           <button
@@ -1130,14 +1136,19 @@ export const TmaFeedPage: FC = () => {
     }
   }, []);
 
-  // Auto-refresh market data every 30 seconds so odds/pool stay current
+  // Auto-refresh market data every 10s + SSE push for fast TER transitions
   useEffect(() => {
-    const id = setInterval(() => {
+    const reload = () => {
       getMarkets()
         .then((d) => setMarkets(filterActive(d)))
         .catch(() => {});
-    }, 30_000);
-    return () => clearInterval(id);
+    };
+    const id = setInterval(reload, 10_000);
+    window.addEventListener("oro:market-changed", reload);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("oro:market-changed", reload);
+    };
   }, []);
 
   const handlePaymentSuccess = async () => {
@@ -1238,10 +1249,17 @@ export const TmaFeedPage: FC = () => {
 
   const filterByQuery = (list: Market[]) => {
     let filtered = list;
-    
+
     // Category Filter
     if (selectedCategory !== "All") {
-      filtered = filtered.filter(m => (m.category ?? "other").toLowerCase() === selectedCategory.toLowerCase());
+      filtered = filtered.filter(
+        (m) =>
+          (m.category ?? "other").toLowerCase() ===
+          selectedCategory.toLowerCase(),
+      );
+    } else {
+      // Hide TER markets from "All" — only show under Economy
+      filtered = filtered.filter((m) => m.externalSource !== "ter");
     }
 
     // Search Filter
@@ -1254,7 +1272,10 @@ export const TmaFeedPage: FC = () => {
     );
   };
 
-  const availableCategories = ["All", ...Array.from(new Set(markets.map(m => m.category || "other"))).sort()];
+  const availableCategories = [
+    "All",
+    ...Array.from(new Set(markets.map((m) => m.category || "other"))).sort(),
+  ];
 
   const filteredOpen = filterByQuery(openMarkets).sort(
     (a, b) => Number(b.totalPool) - Number(a.totalPool),
@@ -1301,7 +1322,14 @@ export const TmaFeedPage: FC = () => {
         {/* ── Personalized greeting ── */}
         {user && (
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 13, color: "var(--text-subtle)", fontWeight: 600, marginBottom: 2 }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text-subtle)",
+                fontWeight: 600,
+                marginBottom: 2,
+              }}
+            >
               {(() => {
                 const h = new Date().getHours();
                 if (h < 12) return "Good morning";
@@ -1309,8 +1337,18 @@ export const TmaFeedPage: FC = () => {
                 return "Good evening";
               })()}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text-main)", letterSpacing: "-0.03em", fontFamily: "var(--font-display)" }}>
-              {user.firstName ?? (user.username ? `@${user.username}` : "Oracle")} 👋
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 900,
+                color: "var(--text-main)",
+                letterSpacing: "-0.03em",
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              {user.firstName ??
+                (user.username ? `@${user.username}` : "Oracle")}{" "}
+              👋
             </div>
           </div>
         )}
@@ -1326,7 +1364,8 @@ export const TmaFeedPage: FC = () => {
             style={{
               marginBottom: 18,
               borderRadius: 16,
-              background: "linear-gradient(135deg, rgba(124,58,237,0.18), rgba(167,139,250,0.1))",
+              background:
+                "linear-gradient(135deg, rgba(124,58,237,0.18), rgba(167,139,250,0.1))",
               border: "1px solid rgba(167,139,250,0.3)",
               padding: "14px 16px",
               display: "flex",
@@ -1351,10 +1390,23 @@ export const TmaFeedPage: FC = () => {
               💜
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", marginBottom: 2 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "var(--text-main)",
+                  marginBottom: 2,
+                }}
+              >
                 Fund your wallet to start predicting
               </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  fontWeight: 600,
+                }}
+              >
                 +10% bonus on your first deposit
               </div>
             </div>
@@ -1461,12 +1513,12 @@ export const TmaFeedPage: FC = () => {
         </div>
 
         {/* ── Category Tabs ── */}
-        <div 
-          style={{ 
-            display: "flex", 
-            gap: 8, 
-            overflowX: "auto", 
-            marginBottom: 20, 
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            overflowX: "auto",
+            marginBottom: 20,
             paddingBottom: 4,
             scrollbarWidth: "none", // standard
             msOverflowStyle: "none", // IE/Edge
@@ -1487,14 +1539,20 @@ export const TmaFeedPage: FC = () => {
                   borderRadius: 12,
                   fontSize: 13,
                   fontWeight: 700,
-                  border: isActive ? `1.5px solid ${vis.accentColor}60` : "1px solid var(--glass-border)",
-                  background: isActive ? `${vis.accentColor}15` : "var(--glass-bg)",
+                  border: isActive
+                    ? `1.5px solid ${vis.accentColor}60`
+                    : "1px solid var(--glass-border)",
+                  background: isActive
+                    ? `${vis.accentColor}15`
+                    : "var(--glass-bg)",
                   color: isActive ? vis.accentColor : "var(--text-muted)",
                   backdropFilter: "blur(8px)",
                   WebkitBackdropFilter: "blur(8px)",
                   transition: "all 0.2s ease",
                   textTransform: "capitalize",
-                  boxShadow: isActive ? `0 4px 12px ${vis.accentColor}20` : "none",
+                  boxShadow: isActive
+                    ? `0 4px 12px ${vis.accentColor}20`
+                    : "none",
                 }}
               >
                 {cat}
@@ -1792,24 +1850,38 @@ export const TmaFeedPage: FC = () => {
                   </div>
                 </div>
               )}
-              <MarketCard
-                market={market}
-                hasBet={bettedMarketIds.has(market.id)}
-                userPickedOutcomeId={
-                  myPendingBets.find((b) => b.marketId === market.id)
-                    ?.outcomeId
-                }
-                telegramId={user?.telegramId}
-                userName={
-                  user?.username
-                    ? `@${user.username}`
-                    : (user?.firstName ?? null)
-                }
-                userPhotoUrl={user?.photoUrl ?? null}
-                onBet={(outcomeId) =>
-                  setActiveBet({ marketId: market.id, outcomeId })
-                }
-              />
+              {market.externalSource === "ter" ? (
+                <TerMarketCard
+                  market={market}
+                  hasBet={bettedMarketIds.has(market.id)}
+                  userPickedOutcomeId={
+                    myPendingBets.find((b) => b.marketId === market.id)
+                      ?.outcomeId
+                  }
+                  onBet={(outcomeId) =>
+                    setActiveBet({ marketId: market.id, outcomeId })
+                  }
+                />
+              ) : (
+                <MarketCard
+                  market={market}
+                  hasBet={bettedMarketIds.has(market.id)}
+                  userPickedOutcomeId={
+                    myPendingBets.find((b) => b.marketId === market.id)
+                      ?.outcomeId
+                  }
+                  telegramId={user?.telegramId}
+                  userName={
+                    user?.username
+                      ? `@${user.username}`
+                      : (user?.firstName ?? null)
+                  }
+                  userPhotoUrl={user?.photoUrl ?? null}
+                  onBet={(outcomeId) =>
+                    setActiveBet({ marketId: market.id, outcomeId })
+                  }
+                />
+              )}
             </div>
           );
         })}
@@ -1859,7 +1931,6 @@ export const TmaFeedPage: FC = () => {
           onGoToWallet={() => navigate("/wallet")}
         />
       )}
-
     </Page>
   );
 };

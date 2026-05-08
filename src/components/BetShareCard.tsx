@@ -19,7 +19,7 @@ interface BetShareCardProps {
   referralId?: string;
 }
 
-const BOT_USERNAME = "OroPredictBot";
+const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
 const CARD_W = 640;
 const CARD_H = 360;
 

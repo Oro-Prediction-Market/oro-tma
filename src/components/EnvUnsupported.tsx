@@ -44,7 +44,7 @@ export function EnvUnsupported() {
           >
             <li>Open Telegram on your device</li>
             <li>
-              Search for <strong>@OroPredictBot</strong>
+              Search for <strong>@{import.meta.env.VITE_BOT_USERNAME}</strong>
             </li>
             <li>Start the bot and tap "Open App"</li>
           </ol>
