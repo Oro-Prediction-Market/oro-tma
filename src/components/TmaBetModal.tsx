@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 import confetti from "canvas-confetti";
-import { getMe, placeBet } from "@shared/api/client";
+import { getMe, placeBet, trackEvent } from "@shared/api/client";
 import type { Market, BetStreak } from "@shared/api/client";
 import { PayoutBreakdown } from "@shared/components/PayoutBreakdown";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -53,6 +53,11 @@ export function TmaBetModal({
   // Fetch user's balance when modal opens
   useEffect(() => {
     if (!isOpen) return;
+    trackEvent({
+      eventType: "bet.modal.open",
+      platform: "tma",
+      meta: { marketId: market.id, marketTitle: market.title },
+    });
     getMe()
       .then((u) => {
         setCreditsBalance(u.creditsBalance ?? 0);
