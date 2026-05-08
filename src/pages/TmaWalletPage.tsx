@@ -574,10 +574,15 @@ export const TmaWalletPage: FC = () => {
   };
 
   const handleAcctVerify = async () => {
+    const cleaned = acctNumber.trim().replace(/\s/g, "");
+    if (cleaned.length !== 12 || !/^\d+$/.test(cleaned)) {
+      setSetupError("Please enter your DK Bank account number.");
+      return;
+    }
     setAcctVerifLoading(true);
     setSetupError("");
     try {
-      await verifyDKAccount(acctNumber.trim());
+      await verifyDKAccount(cleaned);
       setSetupStep("success");
       getMe()
         .then((u) => setFreshUser(u))
@@ -1213,6 +1218,7 @@ export const TmaWalletPage: FC = () => {
                     Your Telegram phone doesn't match your DK Bank registered
                     phone. Enter your full DK Bank account number to verify
                     ownership — you can find it in your DK Bank app or passbook.
+                    It's different from your CID.
                   </p>
                   <input
                     style={{
@@ -1269,8 +1275,7 @@ export const TmaWalletPage: FC = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: 8,
-                      opacity:
-                        acctVerifLoading || !acctNumber.trim() ? 0.7 : 1,
+                      opacity: acctVerifLoading || !acctNumber.trim() ? 0.7 : 1,
                     }}
                     disabled={acctVerifLoading || !acctNumber.trim()}
                     onClick={handleAcctVerify}
