@@ -1073,15 +1073,20 @@ export const MarketDetailPage: FC = () => {
               {m.outcomes.map((outcome, idx) => {
                 const totalBets = Number(m.totalPool);
                 // Priority:
-                // 1. lmsrProbability  — live WS-updated value (most accurate)
-                // 2. pool ratio       — raw parimutuel share (when LMSR not yet computed)
+                // 1. lmsrProbability  — live WS-updated value (most accurate, naturally smoothed)
+                // 2. Laplace-smoothed pool ratio — avoids misleading 100%/0% at thin liquidity
                 // 3. equal weight     — fallback before any bets
+                const prior = 1000; // virtual BTN spread evenly across outcomes
+                const n = m.outcomes.length || 1;
                 const pct =
                   outcome.lmsrProbability != null && outcome.lmsrProbability > 0
                     ? outcome.lmsrProbability * 100
-                    : totalBets > 0
-                      ? (Number(outcome.totalBetAmount) / totalBets) * 100
-                      : 100 / m.outcomes.length;
+                    : (() => {
+                        const smoothedAmount =
+                          Number(outcome.totalBetAmount) + prior / n;
+                        const smoothedTotal = totalBets + prior;
+                        return (smoothedAmount / smoothedTotal) * 100;
+                      })();
 
                 // Intelligence delta: show expert vs crowd gap (only when hasBet & both values exist)
                 const rawPct =
