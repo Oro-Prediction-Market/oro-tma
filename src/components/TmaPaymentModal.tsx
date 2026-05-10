@@ -1503,7 +1503,7 @@ export function TmaPaymentModal({
                         marginBottom: 12,
                       }}
                     >
-                      ⚠️ Insufficient balance. Deposit via DK Bank first.
+                      ⚠️ Insufficient balance. Top up via DK Bank first.
                     </div>
                   )}
 

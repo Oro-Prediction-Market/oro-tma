@@ -963,7 +963,7 @@ export const TmaWalletPage: FC = () => {
                   color: "var(--text-main)",
                 }}
               >
-                Deposit Streak
+                Top Up Streak
               </div>
               <div
                 style={{
@@ -1959,7 +1959,7 @@ export const TmaWalletPage: FC = () => {
                         color: "#a5b4fc",
                       }}
                     />
-                    Users like you typically deposit Nu 500
+                    Users like you typically top up Nu 500
                   </div>
                 )}
                 <p
@@ -2180,8 +2180,8 @@ export const TmaWalletPage: FC = () => {
                     <>
                       <Send size={16} />{" "}
                       {paymentModal === "deposit"
-                        ? "Deposit & Send OTP"
-                        : "Withdraw & Send OTP"}
+                        ? "Top Up & Send OTP"
+                        : "Cash Out & Send OTP"}
                     </>
                   )}
                 </button>
@@ -2220,8 +2220,8 @@ export const TmaWalletPage: FC = () => {
                   }}
                 >
                   {paymentModal === "deposit"
-                    ? "Confirm Your Deposit"
-                    : "Confirm Withdrawal"}
+                    ? "Confirm Your Top Up"
+                    : "Confirm Cash Out"}
                 </p>
 
                 {/* Animated step-by-step instruction banner */}
@@ -2609,8 +2609,8 @@ export const TmaWalletPage: FC = () => {
                   }}
                 >
                   {paymentModal === "deposit"
-                    ? "Deposit Confirmed!"
-                    : "Withdrawal Confirmed!"}
+                    ? "Top Up Confirmed!"
+                    : "Cash Out Confirmed!"}
                 </p>
                 {paymentModal === "deposit" && (
                   <div

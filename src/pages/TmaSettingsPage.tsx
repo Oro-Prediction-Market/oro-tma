@@ -49,7 +49,7 @@ const STEPS = [
   {
     emoji: <Coins />,
     title: "Add funds to your wallet",
-    desc: "Tap Wallet → Deposit and pay via DK Bank. Your Oro credits top up instantly. Minimum deposit is Nu 50.",
+    desc: "Tap Wallet → Top Up and pay via DK Bank. Your Oro credits top up instantly. Minimum top up is Nu 50.",
   },
   {
     emoji: <Target />,

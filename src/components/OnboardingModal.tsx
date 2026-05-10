@@ -64,7 +64,7 @@ function WalletVisual() {
           marginBottom: 8,
         }}
       >
-        + Deposit funds
+        + Top Up
       </div>
       <div style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textAlign: "center" }}>
         ✨ +10% bonus on your first deposit
@@ -346,7 +346,7 @@ const STEPS = [
   {
     visual: <WalletVisual />,
     title: "Set up your wallet",
-    body: "Link your DK Bank account, deposit BTN, and you're ready to predict. Takes under 2 minutes.",
+    body: "Link your DK Bank account, top up, and you're ready to predict. Takes under 2 minutes.",
   },
   {
     visual: <MarketsVisual />,

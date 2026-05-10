@@ -647,7 +647,7 @@ export function DKBankConfirmModal({
                       DK Bank
                     </div>
                     <div style={{ fontSize: 10, color: "var(--text-subtle)" }}>
-                      Deposit & bet
+                      Top Up & Predict
                     </div>
                   </div>
                 </button>
@@ -669,7 +669,7 @@ export function DKBankConfirmModal({
                 >
                   ⚠️ Insufficient balance (Nu{" "}
                   {creditsBalance?.toLocaleString() ?? 0}). Switch to DK Bank to
-                  deposit.
+                  top up.
                 </div>
               )}
 
