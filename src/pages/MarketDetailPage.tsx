@@ -22,6 +22,7 @@ import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { UnderdogBanner, getUnderdogLabel } from "@shared/components/UnderdogBanner";
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
 
@@ -1088,6 +1089,10 @@ export const MarketDetailPage: FC = () => {
                 );
               })()}
             </div>
+            {(() => {
+              const ul = isOpen ? getUnderdogLabel(m.outcomes, Number(m.totalPool)) : null;
+              return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
+            })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {m.outcomes.map((outcome, idx) => {
                 const totalBets = Number(m.totalPool);

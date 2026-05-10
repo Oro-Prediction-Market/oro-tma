@@ -17,6 +17,7 @@ import { Flame, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { UnderdogBanner, getUnderdogLabel } from "@shared/components/UnderdogBanner";
 
 // Live Activity Ticker
 
@@ -584,6 +585,12 @@ const MarketCard = memo(function MarketCard({
           ? "api.ter.bt"
           : (market.settlementSource || "Admin review")}
       </div>
+
+      {/* Underdog banner */}
+      {(() => {
+        const ul = market.status === "open" ? getUnderdogLabel(market.outcomes, totalPool) : null;
+        return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
+      })()}
 
       {/* ── Outcome buttons ── */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
