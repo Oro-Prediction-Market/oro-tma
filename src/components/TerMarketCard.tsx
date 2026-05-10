@@ -2,7 +2,6 @@ import { useState, useEffect, memo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTerPrice, type Market, type TerPrice } from "@shared/api/client";
 import { TrendingUp, TrendingDown, Clock } from "lucide-react";
-import { UnderdogBanner } from "@shared/components/UnderdogBanner";
 
 function useCountdown(targetAt: string | null): string {
   const [label, setLabel] = useState("");
@@ -382,21 +381,22 @@ export const TerMarketCard: FC<Props> = memo(
               </span>
             ) : (
               <>
-                <span style={{ fontSize: 11, color: upColor }}>▲ Higher {upPct}%</span>
-                <span style={{ fontSize: 11, color: downColor }}>▼ Lower {downPct}%</span>
+                <span style={{ fontSize: 11, color: upColor }}>
+                  ▲ Higher {upPct}%
+                  {!isSettled && downPct > 85 && (
+                    <span style={{ marginLeft: 4, fontSize: 9, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", padding: "1px 4px", borderRadius: 3 }}>⚡</span>
+                  )}
+                </span>
+                <span style={{ fontSize: 11, color: downColor }}>
+                  {!isSettled && upPct > 85 && (
+                    <span style={{ marginRight: 4, fontSize: 9, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", padding: "1px 4px", borderRadius: 3 }}>⚡</span>
+                  )}
+                  ▼ Lower {downPct}%
+                </span>
               </>
             )}
           </div>
         </div>
-
-        {/* Underdog banner */}
-        {!isSettled && totalPool > 0 && (
-          upPct > 85
-            ? <UnderdogBanner underdogLabel="Lower" />
-            : downPct > 85
-            ? <UnderdogBanner underdogLabel="Higher" />
-            : null
-        )}
 
         {/* Action area */}
         {isSettled ? (

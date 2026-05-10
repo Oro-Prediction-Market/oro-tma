@@ -46,8 +46,8 @@ export function UnderdogBanner({ underdogLabel }: { underdogLabel: string }) {
     >
       <span>⚡</span>
       <span>
-        <b>{underdogLabel}</b> is the underdog right now. Picking{" "}
-        {underdogLabel} guarantees a profit if it wins.
+        Most picks are against <b>{underdogLabel}</b>. Fewer bets on this side
+        means a bigger payout if it wins.
       </span>
     </div>
   );
