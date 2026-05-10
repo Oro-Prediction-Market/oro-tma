@@ -44,7 +44,7 @@ const STEPS = [
   {
     emoji: <Building2 />,
     title: "Link your DK Bank account",
-    desc: "Go to Wallet → Enter your 11-digit CID. This links your real bank account so you can deposit and withdraw real money.",
+    desc: "Go to Wallet → Enter your 11-digit CID. This links your real bank account so you can top up and cash out.",
   },
   {
     emoji: <Coins />,
@@ -69,7 +69,7 @@ const STEPS = [
   {
     emoji: <Sword />,
     title: "Challenge a friend (Duels)",
-    desc: "Already placed a bet? Create a duel on the same market. Pick your outcome, set a wager, and share the link. First person to accept takes the opposite side — winner takes the pot.",
+    desc: "Already predicted on a market? Create a duel on the same market. Pick your outcome, set a stake amount, and share the link. First person to accept takes the opposite side — winner takes the pot.",
   },
 ];
 
@@ -684,7 +684,7 @@ export const TmaSettingsPage: FC = () => {
                       ? currentUser?.dkAccountName
                         ? `Linked · ${currentUser.dkAccountName}`
                         : "Linked"
-                      : "Not linked — required for deposits"}
+                      : "Not linked — required to top up"}
                   </div>
                 </div>
                 {hasDKBank ? (

@@ -67,7 +67,7 @@ function WalletVisual() {
         + Top Up
       </div>
       <div style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textAlign: "center" }}>
-        ✨ +10% bonus on your first deposit
+        ✨ +10% bonus on your first top up
       </div>
     </div>
   );

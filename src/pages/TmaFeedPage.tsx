@@ -1418,7 +1418,7 @@ export const TmaFeedPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                +10% bonus on your first deposit
+                +10% bonus on your first top up
               </div>
             </div>
             <button
