@@ -22,7 +22,10 @@ import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { UnderdogBanner, getUnderdogLabel } from "@shared/components/UnderdogBanner";
+import {
+  UnderdogBanner,
+  getUnderdogLabel,
+} from "@shared/components/UnderdogBanner";
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
 
@@ -352,6 +355,24 @@ export const MarketDetailPage: FC = () => {
       .catch(() => {});
   }, [id, market?.status]);
 
+  // ── Haptic feedback on win
+  const resolvedOutcomeId = market?.resolvedOutcomeId;
+  const isResolvedForHaptic =
+    market?.status === "resolved" || market?.status === "settled";
+  const hasWonForHaptic = useMemo(() => {
+    if (!isResolvedForHaptic || !resolvedOutcomeId) return false;
+    return (
+      userBets
+        .filter((b) => b.status === "won" || b.outcomeId === resolvedOutcomeId)
+        .reduce((sum, b) => sum + (b.payout || 0), 0) > 0
+    );
+  }, [isResolvedForHaptic, resolvedOutcomeId, userBets]);
+
+  useEffect(() => {
+    if (hasWonForHaptic) haptic.confirm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasWonForHaptic]);
+
   const handleSubmitDispute = async () => {
     if (!id) return;
     if (!disputeReason.trim()) {
@@ -415,11 +436,6 @@ export const MarketDetailPage: FC = () => {
     .reduce((sum, b) => sum + (b.payout || 0), 0);
 
   const hasWon = wonTotalPayout > 0;
-
-  useEffect(() => {
-    if (hasWon) haptic.confirm();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasWon]);
 
   const proposedOutcome =
     isResolving && m.proposedOutcomeId
@@ -1011,7 +1027,14 @@ export const MarketDetailPage: FC = () => {
               }
             `}</style>
             {(m.externalSource === "ter" || m.settlementSource) && (
-              <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: "0.68rem",
+                  color: "var(--text-subtle)",
+                  fontWeight: 600,
+                  marginBottom: 10,
+                }}
+              >
                 Resolves via{" "}
                 {m.externalSource === "ter" ? "api.ter.bt" : m.settlementSource}
               </div>
@@ -1090,7 +1113,9 @@ export const MarketDetailPage: FC = () => {
               })()}
             </div>
             {(() => {
-              const ul = isOpen ? getUnderdogLabel(m.outcomes, Number(m.totalPool)) : null;
+              const ul = isOpen
+                ? getUnderdogLabel(m.outcomes, Number(m.totalPool))
+                : null;
               return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
             })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
