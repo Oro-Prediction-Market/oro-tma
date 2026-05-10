@@ -868,10 +868,10 @@ export function TmaBetModal({
                       style={{
                         fontSize: 18,
                         fontWeight: 800,
-                        color: "#16a34a",
+                        color: estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                       }}
                     >
-                      Nu {estPayout.toFixed(2)}
+                      {estProfit >= 0 ? `Nu ${estPayout.toFixed(2)}` : "—"}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -886,15 +886,28 @@ export function TmaBetModal({
                     >
                       Est. profit
                     </div>
-                    <div
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
-                      }}
-                    >
-                      {estProfit >= 0 ? "+" : ""}Nu {estProfit.toFixed(2)}
-                    </div>
+                    {estProfit >= 0 ? (
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: "#16a34a",
+                        }}
+                      >
+                        +Nu {estProfit.toFixed(2)}
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-subtle)",
+                          maxWidth: 120,
+                          textAlign: "right",
+                        }}
+                      >
+                        Grows as more bets join
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
