@@ -13,11 +13,20 @@ function ErrorBoundaryError({ error }: { error: unknown }) {
         Something didn't load.
       </p>
       <p style={{ fontSize: '0.875rem', color: '#555', marginBottom: 24 }}>
-        Pull to refresh, or{' '}
-        <a href="/" style={{ color: '#6d28d9', textDecoration: 'underline' }}>
+        <button
+          onClick={() => { window.location.replace('/#/'); }}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#6d28d9',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            fontSize: 'inherit',
+            padding: 0,
+          }}
+        >
           Open Oro
-        </a>
-        .
+        </button>
       </p>
     </div>
   );

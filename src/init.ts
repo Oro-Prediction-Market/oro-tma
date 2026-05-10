@@ -10,6 +10,7 @@ import {
   emitEvent,
   miniApp,
   backButton,
+  swipeBehavior,
 } from "@tma.js/sdk-react";
 
 /**
@@ -86,5 +87,12 @@ export async function init(options: {
     viewport.mount().then(() => {
       viewport.bindCssVars();
     });
+  }
+
+  // Disable Telegram's native pull-to-refresh so users don't accidentally
+  // reload the app mid-scroll or land back on a deep-linked page.
+  if (swipeBehavior.mount.isAvailable()) {
+    swipeBehavior.mount();
+    swipeBehavior.disableVerticalFp();
   }
 }
