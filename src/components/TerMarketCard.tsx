@@ -370,10 +370,16 @@ export const TerMarketCard: FC<Props> = memo(
               marginTop: 4,
             }}
           >
-            <span style={{ fontSize: 11, color: upColor }}>▲ Higher {upPct}%</span>
-            <span style={{ fontSize: 11, color: downColor }}>
-              ▼ Lower {downPct}%
-            </span>
+            {isSettled && userPicked ? (
+              <span style={{ fontSize: 11, color: userPicked === "UP" ? upColor : downColor }}>
+                {userPicked === "UP" ? `▲ Higher ${upPct}%` : `▼ Lower ${downPct}%`} · Your pick
+              </span>
+            ) : (
+              <>
+                <span style={{ fontSize: 11, color: upColor }}>▲ Higher {upPct}%</span>
+                <span style={{ fontSize: 11, color: downColor }}>▼ Lower {downPct}%</span>
+              </>
+            )}
           </div>
         </div>
 
