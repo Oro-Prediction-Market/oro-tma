@@ -78,7 +78,7 @@ export function PoolDetails({ market, lastUpdated }: { market: Market; lastUpdat
             }
           `}</style>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-            Pool Liquidity
+            Pool
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {outcomes.map((o) => (

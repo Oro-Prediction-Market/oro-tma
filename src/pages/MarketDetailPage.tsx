@@ -20,6 +20,7 @@ import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
+import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
@@ -248,6 +249,7 @@ function TerPricePanel({ market }: { market: Market }) {
 export const MarketDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const track = useTrack();
+  const haptic = useTmaHaptic();
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -412,6 +414,11 @@ export const MarketDetailPage: FC = () => {
     .reduce((sum, b) => sum + (b.payout || 0), 0);
 
   const hasWon = wonTotalPayout > 0;
+
+  useEffect(() => {
+    if (hasWon) haptic.confirm();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasWon]);
 
   const proposedOutcome =
     isResolving && m.proposedOutcomeId
@@ -715,6 +722,11 @@ export const MarketDetailPage: FC = () => {
               amount={wonTotalPayout}
               marketTitle={m.title}
             />
+          )}
+
+          {/* Share CTA for losing prediction */}
+          {resolvedOutcome && !hasWon && userBets.length > 0 && (
+            <ShareCTA type="lose" marketTitle={m.title} />
           )}
 
           {/* Dispute Section */}
@@ -1139,6 +1151,7 @@ export const MarketDetailPage: FC = () => {
                       }}
                       onMouseDown={(e) => {
                         if (!isOpen) return;
+                        haptic.tap();
                         const el = e.currentTarget as HTMLDivElement;
                         el.style.transform = "scale(0.982)";
                         el.style.boxShadow = `inset 3px 3px 8px rgba(0,0,0,0.28), inset 0 0 0 1px ${color}50`;

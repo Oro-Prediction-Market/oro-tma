@@ -18,6 +18,7 @@ import {
   formatNu,
 } from "@shared/api/dkbank";
 import { Page } from "@/components/Page";
+import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { Button, Card } from "@/components/ui";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import {
@@ -228,6 +229,7 @@ function TxRow({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export const TmaWalletPage: FC = () => {
   const { user: authUser, loading: authLoading } = useAuth();
+  const haptic = useTmaHaptic();
 
   const [freshUser, setFreshUser] = useState<AuthUser | null>(null);
   const [freshLoading, setFreshLoading] = useState(true);
@@ -466,6 +468,7 @@ export const TmaWalletPage: FC = () => {
           ? `Nu ${parseFloat(payAmountStr).toLocaleString()} topped up successfully!`
           : `Nu ${parseFloat(payAmountStr).toLocaleString()} cash out confirmed. Funds on their way to DK Bank.`,
       );
+      haptic.confirm();
       setPayStep("success");
       if (paymentModal === "deposit") {
         setShowCoins(true);

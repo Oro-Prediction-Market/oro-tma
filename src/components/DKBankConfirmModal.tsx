@@ -319,7 +319,7 @@ export function DKBankConfirmModal({
                 is now open.
               </div>
               
-              <ShareCTA type="bet" amount={amount} marketTitle={market.title} />
+              <ShareCTA type="predict" amount={amount} marketTitle={market.title} />
             </div>
           )}
 

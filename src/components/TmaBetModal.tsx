@@ -287,7 +287,7 @@ export function TmaBetModal({
                     marginBottom: 4,
                   }}
                 >
-                  Bet Placed!
+                  Prediction Locked In!
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                   Your position is now active
@@ -395,7 +395,7 @@ export function TmaBetModal({
               }}
             >
               <ShareCTA
-                type="bet"
+                type="predict"
                 amount={betAmount}
                 marketTitle={market.title}
               />
@@ -467,7 +467,7 @@ export function TmaBetModal({
                 animation: "tmaFadeIn 0.35s ease 0.3s both",
               }}
             >
-              Bet Failed
+              Prediction Failed
             </div>
             <div
               style={{
@@ -532,7 +532,7 @@ export function TmaBetModal({
                     marginBottom: 3,
                   }}
                 >
-                  Placing a bet on
+                  Predicting on
                 </div>
                 <div
                   style={{
@@ -734,7 +734,7 @@ export function TmaBetModal({
                   marginBottom: 8,
                 }}
               >
-                Bet Amount (Nu)
+                Amount (Nu)
               </div>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 {QUICK_AMOUNTS.map((q) => (
@@ -971,7 +971,7 @@ export function TmaBetModal({
                     >
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
-                    Placing Bet…
+                    Locking In…
                   </span>
                 ) : !isValidAmount ? (
                   `Min Nu ${MIN_BET}`

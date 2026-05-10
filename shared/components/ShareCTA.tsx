@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Share, Send, Trophy, Sparkles } from "lucide-react";
+import { Share, Send, Trophy, Sparkles, TrendingDown } from "lucide-react";
 import { useAuth } from "@shared/hooks/useAuth";
 import { trackEvent } from "@shared/api/client";
 
@@ -14,7 +14,7 @@ declare global {
 }
 
 interface ShareCTAProps {
-  type: "win" | "bet" | "profile";
+  type: "win" | "lose" | "predict" | "profile";
   amount?: number;
   marketTitle?: string;
   reputation?: string;
@@ -38,8 +38,10 @@ export const ShareCTA: FC<ShareCTAProps> = ({
 
     if (type === "win") {
       shareText = `🔥 Just bagged Nu ${amount?.toLocaleString() || "some money"} on Oro! 💸\n\nMarket: "${marketTitle}"\n\nThink you can predict better? Prove it 👇\n${refLink}`;
-    } else if (type === "bet") {
-      shareText = `🧠 I'm calling it! Just dropped Nu ${amount?.toLocaleString() || ""} on:\n"${marketTitle}"\n\nLet's see who's got the best foresight. Join the pool 👇\n${refLink}`;
+    } else if (type === "lose") {
+      shareText = `📊 Missed this one — "${marketTitle}"\n\nThink you can call it better? Come prove it on Oro 👇\n${refLink}`;
+    } else if (type === "predict") {
+      shareText = `🧠 I'm predicting on:\n"${marketTitle}"\n\nLet's see who's got the best foresight. Join the pool 👇\n${refLink}`;
     } else if (type === "profile") {
       const tierLabel =
         reputation === "expert"
@@ -68,14 +70,16 @@ export const ShareCTA: FC<ShareCTAProps> = ({
       <div style={styles.content}>
         <div style={styles.iconWrapper}>
           {type === "win" && <Trophy size={20} color="#f59e0b" />}
-          {type === "bet" && <Sparkles size={20} color="#3b82f6" />}
+          {type === "lose" && <TrendingDown size={20} color="#9ca3af" />}
+          {type === "predict" && <Sparkles size={20} color="#3b82f6" />}
           {type === "profile" && <Share size={20} color="#10b981" />}
         </div>
 
         <div style={styles.textSection}>
           <h4 style={styles.title}>
             {type === "win" && "Share Your Win!"}
-            {type === "bet" && "Share Your Position"}
+            {type === "lose" && "Share Your Pick"}
+            {type === "predict" && "Share Your Prediction"}
             {type === "profile" && "Challenge Friends"}
           </h4>
           <p style={styles.subtitle}>

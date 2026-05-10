@@ -3,6 +3,7 @@ import doubleDownImg from "@shared/assets/card/doubleDown.png";
 import shieldImg from "@shared/assets/card/shield.png";
 import ghostImg from "@shared/assets/card/ghost.png";
 import { Page } from "@/components/Page";
+import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
   getMarkets,
@@ -212,7 +213,7 @@ function WagerPicker({
           letterSpacing: "0.06em",
         }}
       >
-        Stake (Oro credits)
+        Stake amount
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         {WAGER_PRESETS.map((amt) => (
@@ -661,6 +662,7 @@ function CreateChallengeCard({
   cardInventory: CardInventory;
   onCreated?: (challenge: Challenge) => void;
 }) {
+  const haptic = useTmaHaptic();
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>("");
   const [wagerAmount, setWagerAmount] = useState(0);
@@ -692,6 +694,7 @@ function CreateChallengeCard({
       setLink(challenge.link);
       setCreatedChallenge(challenge);
       setCreated(true);
+      haptic.confirm();
       onCreated?.(challenge);
     } catch (err: any) {
       setCreateError(err?.message ?? "Failed to create challenge");
@@ -770,7 +773,7 @@ function CreateChallengeCard({
             }}
           >
             <Coins size={12} />
-            Nu {createdChallenge.wagerAmount} staked — winner takes Nu{" "}
+            Nu {createdChallenge.wagerAmount} in the pool — winner takes Nu{" "}
             {createdChallenge.equippedCard === "doubleDown"
               ? (Number(createdChallenge.wagerAmount) * 2).toFixed(0)
               : (Number(createdChallenge.wagerAmount) * 2 * 0.9).toFixed(0)}
@@ -1075,7 +1078,7 @@ function CreateChallengeCard({
             {creating
               ? "Creating…"
               : wagerAmount > 0
-                ? `Stake Nu ${wagerAmount} & Challenge`
+                ? `Pick Nu ${wagerAmount} & Challenge`
                 : "Challenge (Free)"}
           </button>
           {createError && (
@@ -1107,9 +1110,17 @@ function ChallengeCard({
   currentUserId?: string;
   onJoin?: (c: Challenge) => void;
 }) {
+  const haptic = useTmaHaptic();
   const [joining, setJoining] = useState(false);
   const [ghostConfirm, setGhostConfirm] = useState(false);
   const color = statusColor(challenge.status);
+
+  const isWinner =
+    challenge.status === "settled" && challenge.winnerId === currentUserId;
+  useEffect(() => {
+    if (isWinner) haptic.confirm();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWinner]);
   const isGhost = challenge.wagerAmount === null; // Ghost card: wager hidden from non-owner
   const wager = isGhost ? 0 : Number(challenge.wagerAmount ?? 0);
   const isOwner = challenge.creatorId === currentUserId;
