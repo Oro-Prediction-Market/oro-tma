@@ -356,7 +356,7 @@ const STEPS = [
   {
     visual: <OracleVisual />,
     title: "Build your Prediction Rating",
-    body: "Every correct prediction boosts your score. Rise through Rookie, Scholar, Expert, to Legend.",
+    body: "Every correct prediction boosts your score. Rise through Rookie, Sharpshooter, Hot Hand, to Legend.",
   },
   {
     visual: <CompeteVisual />,
