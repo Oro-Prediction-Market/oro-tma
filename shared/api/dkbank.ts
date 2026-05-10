@@ -136,10 +136,10 @@ export async function confirmDKBankWithdrawal(
 }
 
 /**
- * Format BTN currency for display
+ * Format Nu currency for display
  */
-export function formatBTN(amount: number): string {
-  return `Nu. ${amount.toLocaleString("en-BT", {
+export function formatNu(amount: number): string {
+  return `Nu ${amount.toLocaleString("en-BT", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

@@ -1,6 +1,5 @@
 // ============================================================
 //   ORO APP CONFIGURATION
-//   Bhutanese Archery Parimutuel Betting Platform
 // ============================================================
 
 const config = {
@@ -9,7 +8,7 @@ const config = {
   // ----------------------------------------------------------
   appName: "Oro",
   appDescription:
-    "Bhutanese Archery Prediction Markets - Trade event contracts with BTN or TON",
+    "Predict the future. Win real money. Sports · Crypto · Weather. Yes or No.",
   version: "1.0.0-phase1",
 
   // ----------------------------------------------------------

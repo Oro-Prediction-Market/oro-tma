@@ -4,7 +4,7 @@ import {
   initiateDKBankPayment,
   confirmDKBankPayment,
   checkDKBankPaymentStatus,
-  formatBTN,
+  formatNu,
 } from "@shared/api/dkbank";
 import { getMe } from "@shared/api/client";
 import type { Market } from "@shared/api/client";
@@ -528,7 +528,7 @@ export function DKBankConfirmModal({
                   <span
                     style={{ fontSize: 15, fontWeight: 800, color: "#3b82f6" }}
                   >
-                    {formatBTN(amount)}
+                    {formatNu(amount)}
                   </span>
                 </div>
               </div>
@@ -799,7 +799,7 @@ export function DKBankConfirmModal({
                     }}
                   >
                     {canPayWithCredits
-                      ? `Place Bet — ${formatBTN(amount)}`
+                      ? `Place Bet — ${formatNu(amount)}`
                       : "Insufficient Balance"}
                   </button>
                 ) : (
@@ -819,7 +819,7 @@ export function DKBankConfirmModal({
                     }}
                   >
                     {canPay
-                      ? `Pay ${formatBTN(amount)} via DK`
+                      ? `Pay ${formatNu(amount)} via DK`
                       : "No linked account"}
                   </button>
                 )}

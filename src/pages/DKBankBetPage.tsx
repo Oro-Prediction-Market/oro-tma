@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { Spinner, Placeholder } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import { getMarket, placeBet, type Market } from "@shared/api/client";
-import { formatBTN } from "@shared/api/dkbank";
+import { formatNu } from "@shared/api/dkbank";
 import { useAuth } from "@shared/hooks/useAuth";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
@@ -610,7 +610,7 @@ export const DKBankBetPage: FC = () => {
                           color: "#16a34a",
                         }}
                       >
-                        {formatBTN(winAmount)}
+                        {formatNu(winAmount)}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -744,7 +744,7 @@ export const DKBankBetPage: FC = () => {
             >
               {isReady ? (
                 <>
-                  Pay {formatBTN(betAmount)} via
+                  Pay {formatNu(betAmount)} via
                   <span
                     style={{
                       background: "#fff",

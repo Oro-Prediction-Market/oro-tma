@@ -4,7 +4,7 @@ import {
   initiateDKBankPayment,
   confirmDKBankPayment,
   checkDKBankPaymentStatus,
-  formatBTN,
+  formatNu,
 } from "@shared/api/dkbank";
 import { getMe } from "@shared/api/client";
 import type { Market } from "@shared/api/client";
@@ -773,7 +773,7 @@ export function TmaPaymentModal({
                 cursor: otpValue.length < 4 ? "not-allowed" : "pointer",
               }}
             >
-              {`Confirm & Pay ${formatBTN(betAmount)}`}
+              {`Confirm & Pay ${formatNu(betAmount)}`}
             </button>
             <button
               onClick={() => {
@@ -983,7 +983,7 @@ export function TmaPaymentModal({
                           : "var(--text-muted)",
                     }}
                   >
-                    BTN · Nu
+                    Nu
                   </span>
                 </button>
 
@@ -1809,7 +1809,7 @@ export function TmaPaymentModal({
                         gap: 8,
                       }}
                     >
-                      Pay {formatBTN(betAmount)} with
+                      Pay {formatNu(betAmount)} with
                       <span
                         style={{
                           background: "#fff",

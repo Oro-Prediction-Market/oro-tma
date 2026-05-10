@@ -15,7 +15,7 @@ import {
   confirmDKBankDeposit,
   initiateDKBankWithdrawal,
   confirmDKBankWithdrawal,
-  formatBTN,
+  formatNu,
 } from "@shared/api/dkbank";
 import { Page } from "@/components/Page";
 import { Button, Card } from "@/components/ui";
@@ -779,7 +779,7 @@ export const TmaWalletPage: FC = () => {
                 color: "var(--text-secondary)",
               }}
             >
-              BTN
+              Nu
             </span>
           </div>
 
@@ -1743,7 +1743,7 @@ export const TmaWalletPage: FC = () => {
                           marginTop: 1,
                         }}
                       >
-                        BTN earned
+                        Earnings
                       </div>
                     </div>
                   </div>
@@ -1975,8 +1975,8 @@ export const TmaWalletPage: FC = () => {
                 >
                   <span>
                     {paymentModal === "deposit"
-                      ? "Top-up amount (BTN)"
-                      : "Cash out amount (BTN)"}
+                      ? "Top-up amount (Nu)"
+                      : "Cash out amount (Nu)"}
                   </span>
                   {paymentModal === "withdraw" && (
                     <button
@@ -2063,7 +2063,7 @@ export const TmaWalletPage: FC = () => {
                         setPayError("");
                       }}
                     >
-                      {formatBTN(amt).replace("Nu. ", "Nu ")}
+                      {formatNu(amt)}
                     </button>
                   ))}
                 </div>
@@ -2641,7 +2641,7 @@ export const TmaWalletPage: FC = () => {
                         color: "#10b981",
                       }}
                     >
-                      BTN{" "}
+                      Nu{" "}
                       <AnimatedCounter
                         value={
                           depositPrevBalance.current + parseFloat(payAmountStr)
