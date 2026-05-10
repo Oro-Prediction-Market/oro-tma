@@ -1010,12 +1010,12 @@ export const MarketDetailPage: FC = () => {
                 50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(34,197,94,0.1); }
               }
             `}</style>
-            <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 10 }}>
-              Resolves via{" "}
-              {m.externalSource === "ter"
-                ? "api.ter.bt"
-                : (m.settlementSource || "Admin review")}
-            </div>
+            {(m.externalSource === "ter" || m.settlementSource) && (
+              <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 10 }}>
+                Resolves via{" "}
+                {m.externalSource === "ter" ? "api.ter.bt" : m.settlementSource}
+              </div>
+            )}
 
             <div
               style={{

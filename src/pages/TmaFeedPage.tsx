@@ -579,12 +579,12 @@ const MarketCard = memo(function MarketCard({
       })()}
 
       {/* Settlement source */}
-      <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 4 }}>
-        Resolves via{" "}
-        {market.externalSource === "ter"
-          ? "api.ter.bt"
-          : (market.settlementSource || "Admin review")}
-      </div>
+      {(market.externalSource === "ter" || market.settlementSource) && (
+        <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 4 }}>
+          Resolves via{" "}
+          {market.externalSource === "ter" ? "api.ter.bt" : market.settlementSource}
+        </div>
+      )}
 
       {/* Underdog banner */}
       {(() => {

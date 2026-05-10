@@ -361,12 +361,12 @@ export const MarketsPage: FC = () => {
                       </div>
 
                       {/* Settlement source */}
-                      <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600 }}>
-                        Resolves via{" "}
-                        {market.externalSource === "ter"
-                          ? "api.ter.bt"
-                          : (market.settlementSource || "Admin review")}
-                      </div>
+                      {(market.externalSource === "ter" || market.settlementSource) && (
+                        <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600 }}>
+                          Resolves via{" "}
+                          {market.externalSource === "ter" ? "api.ter.bt" : market.settlementSource}
+                        </div>
+                      )}
 
                       {/* Outcome buttons as CTA */}
                       <div
