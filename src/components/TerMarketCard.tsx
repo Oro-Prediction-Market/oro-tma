@@ -343,6 +343,11 @@ export const TerMarketCard: FC<Props> = memo(
           </div>
         )}
 
+        {/* Settlement source */}
+        <div style={{ fontSize: 10, color: "var(--text-secondary, #9ca3af)", fontWeight: 600, marginBottom: 8 }}>
+          Resolves via api.ter.bt
+        </div>
+
         {/* Sentiment bar */}
         <div style={{ marginBottom: 12 }}>
           <div
