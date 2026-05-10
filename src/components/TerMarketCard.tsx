@@ -370,9 +370,9 @@ export const TerMarketCard: FC<Props> = memo(
               marginTop: 4,
             }}
           >
-            <span style={{ fontSize: 11, color: upColor }}>▲ UP {upPct}%</span>
+            <span style={{ fontSize: 11, color: upColor }}>▲ Higher {upPct}%</span>
             <span style={{ fontSize: 11, color: downColor }}>
-              ▼ DOWN {downPct}%
+              ▼ Lower {downPct}%
             </span>
           </div>
         </div>
@@ -393,7 +393,7 @@ export const TerMarketCard: FC<Props> = memo(
               fontSize: 13,
             }}
           >
-            {winLabel === "UP" ? "▲ UP won" : "▼ DOWN won"}
+            {winLabel === "UP" ? "▲ Higher won" : "▼ Lower won"}
             {userPicked && (
               <span style={{ marginLeft: 8, fontSize: 12, opacity: 0.8 }}>
                 {userPicked === winLabel ? "· You won 🎉" : "· You lost"}
@@ -411,7 +411,7 @@ export const TerMarketCard: FC<Props> = memo(
           >
             You picked{" "}
             <b style={{ color: userPicked === "UP" ? upColor : downColor }}>
-              {userPicked}
+              {userPicked === "UP" ? "Higher" : "Lower"}
             </b>
           </div>
         ) : bettingClosed ? (
@@ -449,7 +449,7 @@ export const TerMarketCard: FC<Props> = memo(
                 gap: 6,
               }}
             >
-              <TrendingUp size={14} /> UP
+              <TrendingUp size={14} /> Higher
             </button>
             <button
               onClick={(e) => {
@@ -471,7 +471,7 @@ export const TerMarketCard: FC<Props> = memo(
                 gap: 6,
               }}
             >
-              <TrendingDown size={14} /> DOWN
+              <TrendingDown size={14} /> Lower
             </button>
           </div>
         )}

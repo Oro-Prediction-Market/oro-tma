@@ -159,7 +159,7 @@ function TerPricePanel({ market }: { market: Market }) {
           </span>
           {isSettled && winLabel && (
             <span style={{ marginLeft: "auto", fontSize: 12, opacity: 0.9 }}>
-              {winLabel === "UP" ? "▲ UP won" : "▼ DOWN won"}
+              {winLabel === "UP" ? "▲ Higher won" : "▼ Lower won"}
             </span>
           )}
         </div>
