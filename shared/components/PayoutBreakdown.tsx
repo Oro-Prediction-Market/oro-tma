@@ -84,7 +84,7 @@ export function PayoutBreakdown({ market, outcomeId, betAmount }: {
           </div>
           <Row label={`[${outcome?.label}] pool`} value={nuInt(newOutcomePool)} />
           <Row label="Total pool" value={nuInt(newTotalPool)} />
-          <Row label="Your share" value={`${(yourShare * 100).toFixed(2)}%`} />
+          <Row label="Your share" value={`${Math.round(yourShare * 100)}%`} />
 
           <div style={{ height: 1, background: '#e5e7eb', margin: '8px 0' }} />
 

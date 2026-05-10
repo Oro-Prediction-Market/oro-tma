@@ -178,7 +178,7 @@ export const TONBetPage: FC = () => {
             // Use LMSR probability if available, fallback to 50%
             const lmsrProb = Number(outcome.lmsrProbability || 0);
             const probability = lmsrProb > 0 ? lmsrProb : 1 / market.outcomes.length;
-            const probabilityPercent = (probability * 100).toFixed(1);
+            const probabilityPercent = Math.round(probability * 100);
             const decimalOdds = probability > 0 ? (1 / probability).toFixed(2) : "—";
 
             return (
