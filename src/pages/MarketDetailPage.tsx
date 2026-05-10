@@ -1013,7 +1013,7 @@ export const MarketDetailPage: FC = () => {
               Resolves via{" "}
               {m.externalSource === "ter"
                 ? "api.ter.bt"
-                : (m.externalSource ?? "Admin review")}
+                : (m.settlementSource || "Admin review")}
             </div>
 
             <div

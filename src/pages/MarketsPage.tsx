@@ -365,7 +365,7 @@ export const MarketsPage: FC = () => {
                         Resolves via{" "}
                         {market.externalSource === "ter"
                           ? "api.ter.bt"
-                          : (market.externalSource ?? "Admin review")}
+                          : (market.settlementSource || "Admin review")}
                       </div>
 
                       {/* Outcome buttons as CTA */}

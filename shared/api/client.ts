@@ -326,6 +326,7 @@ export interface Market {
   category: string | null;
   externalSource: string | null;
   externalMarketType: string | null;
+  settlementSource: string | null;
   metadata: Record<string, any> | null;
   evidenceNote: string | null;
   signalMeta: SignalMeta | null;
