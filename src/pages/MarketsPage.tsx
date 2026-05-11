@@ -242,10 +242,8 @@ export const MarketsPage: FC = () => {
                 style={{ display: "flex", flexDirection: "column", gap: 14 }}
               >
                 {openMarkets.map((market) => {
-                  // Render TER markets with TerMarketCard
-                  if (market.externalSource === "ter") {
-                    return <TerMarketCard key={market.id} market={market} />;
-                  }
+                  // TER markets temporarily hidden — will be re-enabled soon
+                  if (market.externalSource === "ter") return null;
 
                   // Regular market card rendering
                   const totalPool = Number(market.totalPool);

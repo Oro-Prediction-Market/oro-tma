@@ -1273,6 +1273,9 @@ export const TmaFeedPage: FC = () => {
   const filterByQuery = (list: Market[]) => {
     let filtered = list;
 
+    // TER markets temporarily hidden — will be re-enabled soon
+    filtered = filtered.filter((m) => m.externalSource !== "ter");
+
     // Category Filter
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
@@ -1280,9 +1283,6 @@ export const TmaFeedPage: FC = () => {
           (m.category ?? "other").toLowerCase() ===
           selectedCategory.toLowerCase(),
       );
-    } else {
-      // Hide TER markets from "All" — only show under Economy
-      filtered = filtered.filter((m) => m.externalSource !== "ter");
     }
 
     // Search Filter
@@ -1316,7 +1316,7 @@ export const TmaFeedPage: FC = () => {
 
   const HOT_THRESHOLD = 1000;
   const trendingMarkets = openMarkets
-    .filter((m) => Number(m.totalPool) >= HOT_THRESHOLD)
+    .filter((m) => m.externalSource !== "ter" && Number(m.totalPool) >= HOT_THRESHOLD)
     .sort((a, b) => Number(b.totalPool) - Number(a.totalPool))
     .slice(0, 5);
   const hasResults =
