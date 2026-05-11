@@ -75,20 +75,18 @@ export const TerMarketCard: FC<Props> = memo(
       ? (meta?.settlementBuyPrice ?? meta?.settlementTerPrice)
       : (livePrice?.buyPrice ?? livePrice?.midPrice);
 
-    // Direction based on mid (objective, matches resolution logic)
-    const refMid = meta?.referenceTerPrice ?? 0;
-    const liveMid = isSettled ? meta?.settlementTerPrice : livePrice?.midPrice;
+    // Direction based on displayed price (buy price) for consistency
+    const priceDiff =
+      liveDisplayPrice != null ? liveDisplayPrice - refPrice : null;
     const direction =
-      liveMid == null
+      priceDiff == null
         ? null
-        : liveMid > refMid
+        : priceDiff > 0
           ? "up"
-          : liveMid < refMid
+          : priceDiff < 0
             ? "down"
             : "flat";
 
-    const priceDiff =
-      liveDisplayPrice != null ? liveDisplayPrice - refPrice : null;
     const pricePct =
       priceDiff != null && refPrice
         ? ((priceDiff / refPrice) * 100).toFixed(2)
@@ -344,7 +342,14 @@ export const TerMarketCard: FC<Props> = memo(
         )}
 
         {/* Settlement source */}
-        <div style={{ fontSize: 10, color: "var(--text-secondary, #9ca3af)", fontWeight: 600, marginBottom: 8 }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--text-secondary, #9ca3af)",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
           Resolves via api.ter.bt
         </div>
 
@@ -376,20 +381,54 @@ export const TerMarketCard: FC<Props> = memo(
             }}
           >
             {isSettled && userPicked ? (
-              <span style={{ fontSize: 11, color: userPicked === "UP" ? upColor : downColor }}>
-                {userPicked === "UP" ? `▲ Higher ${upPct}%` : `▼ Lower ${downPct}%`} · Your pick
+              <span
+                style={{
+                  fontSize: 11,
+                  color: userPicked === "UP" ? upColor : downColor,
+                }}
+              >
+                {userPicked === "UP"
+                  ? `▲ Higher ${upPct}%`
+                  : `▼ Lower ${downPct}%`}{" "}
+                · Your pick
               </span>
             ) : (
               <>
                 <span style={{ fontSize: 11, color: upColor }}>
                   ▲ Higher {upPct}%
                   {!isSettled && downPct > 85 && (
-                    <span style={{ marginLeft: 4, fontSize: 9, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", padding: "1px 4px", borderRadius: 3 }}>⚡</span>
+                    <span
+                      style={{
+                        marginLeft: 4,
+                        fontSize: 9,
+                        fontWeight: 800,
+                        color: "#f59e0b",
+                        background: "rgba(245,158,11,0.15)",
+                        border: "1px solid rgba(245,158,11,0.3)",
+                        padding: "1px 4px",
+                        borderRadius: 3,
+                      }}
+                    >
+                      ⚡
+                    </span>
                   )}
                 </span>
                 <span style={{ fontSize: 11, color: downColor }}>
                   {!isSettled && upPct > 85 && (
-                    <span style={{ marginRight: 4, fontSize: 9, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", padding: "1px 4px", borderRadius: 3 }}>⚡</span>
+                    <span
+                      style={{
+                        marginRight: 4,
+                        fontSize: 9,
+                        fontWeight: 800,
+                        color: "#f59e0b",
+                        background: "rgba(245,158,11,0.15)",
+                        border: "1px solid rgba(245,158,11,0.3)",
+                        padding: "1px 4px",
+                        borderRadius: 3,
+                      }}
+                    >
+                      ⚡
+                    </span>
                   )}
                   ▼ Lower {downPct}%
                 </span>

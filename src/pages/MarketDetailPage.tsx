@@ -55,16 +55,8 @@ function TerPricePanel({ market }: { market: Market }) {
   const diff = displayPrice != null ? displayPrice - refPrice : null;
   const pct =
     diff != null && refPrice ? ((diff / refPrice) * 100).toFixed(2) : null;
-  const refMid = meta?.referenceTerPrice ?? 0;
-  const liveMid = isSettled ? meta?.settlementTerPrice : live?.midPrice;
   const dir =
-    liveMid == null
-      ? null
-      : liveMid > refMid
-        ? "up"
-        : liveMid < refMid
-          ? "down"
-          : "flat";
+    diff == null ? null : diff > 0 ? "up" : diff < 0 ? "down" : "flat";
   const winLabel = isSettled
     ? market.outcomes.find((o) => o.id === market.resolvedOutcomeId)?.label
     : null;
@@ -369,9 +361,13 @@ export const MarketDetailPage: FC = () => {
   }, [isResolvedForHaptic, resolvedOutcomeId, userBets]);
 
   useEffect(() => {
-    if (hasWonForHaptic) haptic.confirm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasWonForHaptic]);
+    if (!hasWonForHaptic || !id) return;
+    const key = `win-haptic-${id}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      haptic.confirm();
+    }
+  }, [hasWonForHaptic, id]);
 
   const handleSubmitDispute = async () => {
     if (!id) return;
@@ -1181,7 +1177,6 @@ export const MarketDetailPage: FC = () => {
                       }}
                       onMouseDown={(e) => {
                         if (!isOpen) return;
-                        haptic.tap();
                         const el = e.currentTarget as HTMLDivElement;
                         el.style.transform = "scale(0.982)";
                         el.style.boxShadow = `inset 3px 3px 8px rgba(0,0,0,0.28), inset 0 0 0 1px ${color}50`;
