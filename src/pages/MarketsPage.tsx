@@ -5,7 +5,6 @@ import { getMarkets, getMe, Market, AuthUser } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
-import { TerMarketCard } from "@/components/TerMarketCard";
 
 export const MarketsPage: FC = () => {
   const { user } = useAuth();
