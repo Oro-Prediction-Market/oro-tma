@@ -67,9 +67,11 @@ export const MarketsPage: FC = () => {
     );
   }
 
-  const openMarkets = markets.filter((m) => m.status === "open");
-  const upcomingMarkets = markets.filter((m) => m.status === "upcoming");
-  const otherMarkets = markets.filter(
+  // TER markets temporarily hidden — will be re-enabled soon
+  const visibleMarkets = markets.filter((m) => m.externalSource !== "ter");
+  const openMarkets = visibleMarkets.filter((m) => m.status === "open");
+  const upcomingMarkets = visibleMarkets.filter((m) => m.status === "upcoming");
+  const otherMarkets = visibleMarkets.filter(
     (m) => !["open", "upcoming"].includes(m.status),
   );
 
@@ -242,8 +244,6 @@ export const MarketsPage: FC = () => {
                 style={{ display: "flex", flexDirection: "column", gap: 14 }}
               >
                 {openMarkets.map((market) => {
-                  // TER markets temporarily hidden — will be re-enabled soon
-                  if (market.externalSource === "ter") return null;
 
                   // Regular market card rendering
                   const totalPool = Number(market.totalPool);
