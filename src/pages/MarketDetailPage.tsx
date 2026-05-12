@@ -999,7 +999,25 @@ export const MarketDetailPage: FC = () => {
                 }}
               >
                 Resolves via{" "}
-                {m.externalSource === "ter" ? "api.ter.bt" : m.settlementSource}
+                {m.externalSource === "ter" ? (
+                  "api.ter.bt"
+                ) : (() => {
+                  try {
+                    const url = new URL(m.settlementSource!);
+                    return (
+                      <a
+                        href={m.settlementSource!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "inherit", textDecoration: "underline", wordBreak: "break-all" }}
+                      >
+                        {url.hostname.replace(/^www\./, "")}
+                      </a>
+                    );
+                  } catch {
+                    return m.settlementSource;
+                  }
+                })()}
               </div>
             )}
 
