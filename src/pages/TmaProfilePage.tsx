@@ -1388,15 +1388,6 @@ export const TmaProfilePage: FC = () => {
 };
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
-const spinner: React.CSSProperties = {
-  width: 36,
-  height: 36,
-  border: "4px solid #e5e7eb",
-  borderTop: "4px solid #2775d0",
-  borderRadius: "50%",
-  animation: "spin 0.8s linear infinite",
-};
-
 const heroCard: React.CSSProperties = {
   background: "var(--balance-card-bg)",
   borderRadius: "0 0 var(--radius-xl) var(--radius-xl)",
