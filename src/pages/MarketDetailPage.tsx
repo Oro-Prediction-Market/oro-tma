@@ -161,80 +161,61 @@ function TerPricePanel({ market }: { market: Market }) {
           )}
         </div>
       )}
-      {/* Resolution data — styled like api.ter.bt/prices */}
+      {/* Resolution price */}
       {isSettled && meta && (
         <div
           style={{
             background: "rgba(0,0,0,0.4)",
             borderRadius: 12,
             padding: "14px 16px",
-            fontFamily: "monospace",
-            fontSize: "0.72rem",
-            lineHeight: 1.7,
+            fontSize: "0.8rem",
+            lineHeight: 1.8,
             color: "#e2e8f0",
-            overflowX: "auto",
           }}
         >
           <div
             style={{
               color: "#94a3b8",
-              marginBottom: 4,
+              marginBottom: 8,
               fontSize: "0.65rem",
               fontWeight: 700,
               letterSpacing: "0.05em",
               textTransform: "uppercase",
             }}
           >
-            Resolution · api.ter.bt/prices
+            Resolution price
           </div>
-          <div>
-            <span style={{ color: "#94a3b8" }}>{"{"}</span>
-          </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"product_symbol"</span>:{" "}
-            <span style={{ color: "#fbbf24" }}>"TERBTN"</span>,
-          </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"ask_price"</span>:{" "}
-            <span style={{ color: "#86efac" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#94a3b8" }}>Ask price</span>
+            <span>
               {(
                 (meta.settlementBuyPrice ?? meta.settlementTerPrice ?? 0) *
                 10000
               ).toFixed(0)}
             </span>
-            ,
           </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"bid_price"</span>:{" "}
-            <span style={{ color: "#86efac" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#94a3b8" }}>Bid price</span>
+            <span>
               {(
                 (meta.settlementSellPrice ?? meta.settlementTerPrice ?? 0) *
                 10000
               ).toFixed(0)}
             </span>
-            ,
           </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"spread"</span>:{" "}
-            <span style={{ color: "#86efac" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#94a3b8" }}>Spread</span>
+            <span>
               {(
                 ((meta.settlementBuyPrice ?? 0) -
                   (meta.settlementSellPrice ?? 0)) *
                 10000
               ).toFixed(0)}
             </span>
-            ,
           </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"tradeable"</span>:{" "}
-            <span style={{ color: "#c4b5fd" }}>true</span>,
-          </div>
-          <div style={{ paddingLeft: 14 }}>
-            <span style={{ color: "#7dd3fc" }}>"effective_at"</span>:{" "}
-            <span style={{ color: "#fbbf24" }}>"{market.closesAt ?? ""}"</span>
-          </div>
-          <div>
-            <span style={{ color: "#94a3b8" }}>{"}"}</span>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#94a3b8" }}>Effective at</span>
+            <span>{market.closesAt ?? ""}</span>
           </div>
         </div>
       )}
