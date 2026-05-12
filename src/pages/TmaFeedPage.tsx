@@ -13,7 +13,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { Link } from "@/components/Link/Link";
-import { Flame, X } from "lucide-react";
+import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
@@ -1275,7 +1275,7 @@ export const TmaFeedPage: FC = () => {
                 border: "1px solid rgba(124, 58, 237, 0.2)",
               }}
             />
-            <div style={{ fontSize: 40, zIndex: 1 }}>🔮</div>
+            <TrendingUp size={26} strokeWidth={1.5} color="var(--color-primary, #7c3aed)" style={{ zIndex: 1 }} />
           </div>
           <div
             style={{
