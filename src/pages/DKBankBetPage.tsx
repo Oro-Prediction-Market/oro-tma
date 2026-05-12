@@ -1,13 +1,14 @@
 import { FC, useState, useEffect } from "react";
 import dkBankLogo from "@shared/assets/dk blue.png";
 import { useParams } from "react-router-dom";
-import { Spinner, Placeholder } from "@telegram-apps/telegram-ui";
+import { Placeholder } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import { getMarket, placeBet, type Market } from "@shared/api/client";
 import { formatNu } from "@shared/api/dkbank";
 import { useAuth } from "@shared/hooks/useAuth";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 const configMinBet = config.payments.dkBank.minBet;
 
@@ -80,17 +81,7 @@ export const DKBankBetPage: FC = () => {
     setSelectedOutcomeId(null);
   };
 
-  if (loading) {
-    return (
-      <Page back>
-        <div
-          style={{ display: "flex", justifyContent: "center", padding: "3rem" }}
-        >
-          <Spinner size="l" />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <Page back><LoadingScreen message="Loading market…" fullPage={false} /></Page>;
 
   if (error || !market) {
     return (

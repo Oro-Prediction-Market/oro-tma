@@ -16,6 +16,7 @@ import {
   type Transaction,
 } from "@shared/api/client";
 import { BetShareCard } from "@shared/components/BetShareCard";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   Trophy,
   Flame,
@@ -1447,31 +1448,7 @@ export const TmaLeaderboardPage: FC = () => {
     month: "This Month",
   };
 
-  if (loading) {
-    return (
-      <Page>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "60vh",
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              border: "3px solid var(--glass-border)",
-              borderTopColor: "var(--color-primary)",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <LoadingScreen message="Calculating standings…" />;
 
   const board = lb?.board ?? [];
   const shownBoard = board.slice(0, visibleCount);

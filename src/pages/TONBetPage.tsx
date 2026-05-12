@@ -9,7 +9,6 @@ import {
   Section,
   Cell,
   List,
-  Spinner,
   Placeholder,
   Button,
   Input,
@@ -19,6 +18,7 @@ import {
 } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import { getMarket, placeBetWithWallet, Market } from "@shared/api/client";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 export const TONBetPage: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,17 +93,7 @@ export const TONBetPage: FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Page back={true}>
-        <div
-          style={{ display: "flex", justifyContent: "center", padding: "2rem" }}
-        >
-          <Spinner size="l" />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <Page back={true}><LoadingScreen message="Loading market…" fullPage={false} /></Page>;
 
   if (error || !market) {
     return (

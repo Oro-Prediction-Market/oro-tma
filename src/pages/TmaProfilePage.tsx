@@ -10,6 +10,7 @@ import {
 import { Page } from "@/components/Page";
 import { StreakBenefitsModal } from "@/components/StreakBenefitsModal";
 import { ProfileShareCard } from "@/components/ProfileShareCard";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   BadgeGrid,
   buildBadges,
@@ -94,22 +95,7 @@ export const TmaProfilePage: FC = () => {
   const user = freshUser ?? authUser;
   const loading = authLoading && freshLoading;
 
-  if (loading) {
-    return (
-      <Page>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "50vh",
-          }}
-        >
-          <div style={spinner} />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <LoadingScreen message="Loading profile…" />;
 
   const tier = user?.reputationTier ?? "rookie";
   const tierLabel =

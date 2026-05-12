@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef, useCallback, memo } from "react";
-import { Spinner } from "@telegram-apps/telegram-ui";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { Page } from "@/components/Page";
 import {
   getMarkets,
@@ -1235,16 +1235,7 @@ export const TmaFeedPage: FC = () => {
   if (loading)
     return (
       <Page>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "60vh",
-          }}
-        >
-          <Spinner size="l" />
-        </div>
+        <LoadingScreen message="Reading the Oracles…" />
       </Page>
     );
 
@@ -1263,7 +1254,29 @@ export const TmaFeedPage: FC = () => {
             padding: "0 32px",
           }}
         >
-          <div style={{ fontSize: 48 }}>🔮</div>
+          <div
+            style={{
+              position: "relative",
+              width: 100,
+              height: 100,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: "rgba(124, 58, 237, 0.1)",
+                border: "1px solid rgba(124, 58, 237, 0.2)",
+              }}
+            />
+            <div style={{ fontSize: 40, zIndex: 1 }}>🔮</div>
+          </div>
           <div
             style={{
               fontSize: 20,

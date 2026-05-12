@@ -2,6 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { Page } from "@/components/Page";
 import { Link } from "@/components/Link/Link";
 import { getResolvedMarkets, ResolvedMarket } from "@shared/api/client";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 const categoryLabel: Record<string, string> = {
   sports: "Sports",
@@ -227,26 +228,7 @@ export const ResolvedMarketsPage: FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <Page back={true}>
-        <div
-          style={{ display: "flex", justifyContent: "center", padding: "2rem" }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              border: "3px solid var(--glass-border)",
-              borderTopColor: "var(--color-primary)",
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <LoadingScreen message="Loading resolution record…" />;
 
   if (error) {
     return (
@@ -308,17 +290,26 @@ export const ResolvedMarketsPage: FC = () => {
           {markets.length === 0 && (
             <div
               style={{
-                padding: "40px 16px",
+                padding: "60px 20px",
                 textAlign: "center",
-                color: "var(--text-muted)",
               }}
             >
-              <strong style={{ color: "var(--text-main)" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>📜</div>
+              <div
+                style={{
+                  fontWeight: 900,
+                  color: "var(--text-main)",
+                  fontSize: "1.1rem",
+                  marginBottom: 8,
+                  fontFamily: "var(--font-display)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
                 No resolved markets yet
-              </strong>
-              <p style={{ margin: "8px 0 0", fontSize: 14 }}>
-                Settled markets will appear here.
-              </p>
+              </div>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 500 }}>
+                Settled markets will appear here once markets close and resolve.
+              </div>
             </div>
           )}
 

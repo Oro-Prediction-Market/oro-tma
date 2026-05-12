@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from "react";
-import { Spinner } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { getMarkets, getMe, Market, AuthUser } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
@@ -38,17 +38,7 @@ export const MarketsPage: FC = () => {
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <Page back={false}>
-        <div
-          style={{ display: "flex", justifyContent: "center", padding: "2rem" }}
-        >
-          <Spinner size="l" />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <LoadingScreen message="Syncing markets…" />;
 
   if (error) {
     return (

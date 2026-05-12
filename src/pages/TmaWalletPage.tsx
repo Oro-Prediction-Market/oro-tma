@@ -21,6 +21,7 @@ import { Page } from "@/components/Page";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { Button, Card } from "@/components/ui";
 import { BetShareCard } from "@shared/components/BetShareCard";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   CheckCircle2,
   XCircle,
@@ -599,22 +600,7 @@ export const TmaWalletPage: FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <Page>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "50vh",
-          }}
-        >
-          <div style={spinner} />
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <LoadingScreen message="Syncing wallet…" />;
 
   return (
     <Page>
