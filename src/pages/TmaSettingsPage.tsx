@@ -59,7 +59,7 @@ const STEPS = [
   {
     emoji: <BarChart2 />,
     title: "Watch the odds move",
-    desc: "Oro uses a parimutuel pool — odds shift as more people bet. The more people agree with you, the lower your payout multiplier.",
+    desc: "Oro uses a parimutuel pool — odds shift as more people predict. The more people agree with you, the lower your payout multiplier.",
   },
   {
     emoji: <Trophy />,

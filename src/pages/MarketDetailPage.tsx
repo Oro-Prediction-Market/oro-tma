@@ -193,7 +193,15 @@ function TerPricePanel({ market }: { market: Market }) {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#94a3b8" }}>Effective at</span>
-            <span>{market.closesAt ?? ""}</span>
+            <span>
+              {market.closesAt
+                ? new Date(market.closesAt).toLocaleString("en-BT", {
+                    timeZone: "Asia/Thimphu",
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })
+                : ""}
+            </span>
           </div>
         </div>
       )}
