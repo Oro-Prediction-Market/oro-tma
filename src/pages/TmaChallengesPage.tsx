@@ -2131,7 +2131,7 @@ export const TmaChallengesPage: FC = () => {
       ),
     ])
       .then(([allMarkets, allBets, pendingBets, mine, cards]) => {
-        setMarkets(allMarkets.filter((m) => m.status === "open" && m.externalSource !== "ter"));
+        setMarkets(allMarkets.filter((m) => m.status === "open"));
         setTotalBetCount((allBets as Bet[]).length);
         setMyBetMarketIds(
           new Set((pendingBets as Bet[]).map((b) => b.marketId)),
