@@ -186,31 +186,9 @@ function TerPricePanel({ market }: { market: Market }) {
             Resolution price
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#94a3b8" }}>Ask price</span>
+            <span style={{ color: "#94a3b8" }}>Price resolved at</span>
             <span>
-              {(
-                (meta.settlementBuyPrice ?? meta.settlementTerPrice ?? 0) *
-                10000
-              ).toFixed(0)}
-            </span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#94a3b8" }}>Bid price</span>
-            <span>
-              {(
-                (meta.settlementSellPrice ?? meta.settlementTerPrice ?? 0) *
-                10000
-              ).toFixed(0)}
-            </span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#94a3b8" }}>Spread</span>
-            <span>
-              {(
-                ((meta.settlementBuyPrice ?? 0) -
-                  (meta.settlementSellPrice ?? 0)) *
-                10000
-              ).toFixed(0)}
+              {(meta.settlementBuyPrice ?? meta.settlementTerPrice ?? 0).toFixed(4)}
             </span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
