@@ -1304,6 +1304,10 @@ export const TmaFeedPage: FC = () => {
   const filterByQuery = (list: Market[]) => {
     let filtered = list;
 
+    if (selectedCategory === "All") {
+      filtered = filtered.filter((m) => m.externalSource !== "ter");
+    }
+
     // Category Filter
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
