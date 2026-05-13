@@ -1128,13 +1128,9 @@ export const MarketDetailPage: FC = () => {
                     ? Math.round(outcome.intelligenceProb * 100) -
                       Math.round(rawPct)
                     : null;
-                const colors = [
-                  "#22c55e",
-                  "#ef4444",
-                  "#f59e0b",
-                  "#3b82f6",
-                  "#8b5cf6",
-                ];
+                const colors = isResolved
+                  ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
+                  : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
                 const color = colors[idx % colors.length];
                 const signal = outcome.reputationSignal;
                 const barWidth = Math.max(4, Math.min(100, pct));

@@ -376,10 +376,14 @@ function OpenPicksStrip({
   );
 }
 
-function outcomeColor(rank: number, total: number): string {
-  if (rank === 0) return "#22c55e";
-  if (rank === total - 1 && total > 1) return "#ef4444";
-  return "#f59e0b";
+function outcomeColor(rank: number, total: number, resolved: boolean): string {
+  if (resolved) {
+    if (rank === 0) return "#22c55e";
+    if (rank === total - 1 && total > 1) return "#ef4444";
+    return "#f59e0b";
+  }
+  const neutral = ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
+  return neutral[rank % neutral.length];
 }
 
 function useCountdown(targetAt: string | null): string {
@@ -466,7 +470,8 @@ const MarketCard = memo(function MarketCard({
     const sorted = [...raw].sort((a, b) => b.pct - a.pct);
     return raw.map((o) => {
       const rank = sorted.findIndex((s) => s.id === o.id);
-      return { ...o, color: outcomeColor(rank, raw.length) };
+      const resolved = market.status === "resolved" || market.status === "settled";
+      return { ...o, color: outcomeColor(rank, raw.length, resolved) };
     });
   })();
 
@@ -852,7 +857,7 @@ const MarketCard = memo(function MarketCard({
                             display: "inline-block",
                           }}
                         >
-                          ⚡ Better odds
+                          ⚡ Higher payout if correct
                         </span>
                       )}
                       {s.reputationSignal != null && hasBet && (

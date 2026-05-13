@@ -75,16 +75,14 @@ export function TmaBetModal({
 
   const outcome = market.outcomes.find((o) => o.id === outcomeId);
 
-  // Derive the outcome color
+  // Derive the outcome color — neutral palette since betting only happens on open markets
   const outcomeColor = (() => {
     const sorted = [...market.outcomes].sort(
       (a, b) => Number(b.totalBetAmount) - Number(a.totalBetAmount),
     );
     const rank = sorted.findIndex((o) => o.id === outcomeId);
-    const total = market.outcomes.length;
-    if (rank === 0) return "#22c55e";
-    if (rank === total - 1 && total > 1) return "#ef4444";
-    return "#f59e0b";
+    const neutral = ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
+    return neutral[rank % neutral.length];
   })();
 
   const betAmount = parseFloat(amountStr) || 0;
