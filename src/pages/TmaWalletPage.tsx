@@ -125,13 +125,17 @@ const AnimatedCounter = ({ value }: { value: number }) => {
 function TxRow({
   tx,
   onShareWin,
+  stakeAmount,
 }: {
   tx: Transaction;
   onShareWin?: (tx: Transaction) => void;
+  stakeAmount?: number;
 }) {
   const isCredit = tx.amount > 0;
   const color = isCredit ? TX_COLOR_IN : TX_COLOR_OUT;
   const isWin = tx.type === "bet_payout";
+  const isPositiveNet = !stakeAmount || Number(tx.amount) > stakeAmount;
+  const isShareableWin = isWin && isPositiveNet;
 
   return (
     <div
@@ -141,7 +145,7 @@ function TxRow({
         gap: 12,
         padding: "13px 16px",
         borderBottom: "1px solid var(--glass-border)",
-        background: isWin ? "rgba(34,197,94,0.04)" : "transparent",
+        background: isShareableWin ? "rgba(34,197,94,0.04)" : "transparent",
       }}
     >
       <div
@@ -168,7 +172,7 @@ function TxRow({
             marginBottom: tx.note ? 2 : 0,
           }}
         >
-          {tx.note ? tx.note : TX_LABEL[tx.type]}
+          {tx.note ? tx.note : isWin && !isPositiveNet ? "Payout received" : TX_LABEL[tx.type]}
         </div>
         {tx.note && (
           <div
@@ -178,7 +182,7 @@ function TxRow({
               marginBottom: 2,
             }}
           >
-            {TX_LABEL[tx.type]}
+            {isWin && !isPositiveNet ? "Payout received" : TX_LABEL[tx.type]}
           </div>
         )}
         <div style={{ fontSize: 11, color: "var(--text-subtle)" }}>
@@ -200,7 +204,7 @@ function TxRow({
         >
           Bal {Number(tx.balanceAfter).toLocaleString()}
         </div>
-        {isWin && onShareWin && (
+        {isShareableWin && onShareWin && (
           <button
             onClick={() => onShareWin(tx)}
             style={{
@@ -1766,7 +1770,12 @@ export const TmaWalletPage: FC = () => {
                   txs
                     .slice(0, showAllTxs ? undefined : 5)
                     .map((tx) => (
-                      <TxRow key={tx.id} tx={tx} onShareWin={setShareWinTx} />
+                      <TxRow
+                        key={tx.id}
+                        tx={tx}
+                        onShareWin={setShareWinTx}
+                        stakeAmount={tx.stakeAmount ?? undefined}
+                      />
                     ))
                 )}
               </div>
@@ -2781,7 +2790,7 @@ export const TmaWalletPage: FC = () => {
               userPhotoUrl={user?.photoUrl ?? null}
               marketTitle={shareWinTx.note ?? "My prediction"}
               outcomePicked="Correct call!"
-              stakeAmount={Number(shareWinTx.amount)}
+              stakeAmount={shareWinTx.stakeAmount ?? Number(shareWinTx.amount)}
               outcomeColor="#22c55e"
               referralId={String(user?.telegramId ?? user?.id ?? "")}
             />

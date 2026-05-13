@@ -240,26 +240,28 @@ function BetCard({ bet, onBrag }: { bet: Bet; onBrag: (bet: Bet) => void }) {
 
         {bet.payout != null ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              onClick={() => onBrag(bet)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: "linear-gradient(135deg, #10b981, #059669)",
-                color: "#fff",
-                border: "none",
-                padding: "6px 14px",
-                borderRadius: 20,
-                fontSize: "0.75rem",
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)",
-              }}
-            >
-              <Share2 size={12} />
-              Share
-            </button>
+            {bet.payout > bet.amount && (
+              <button
+                onClick={() => onBrag(bet)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "linear-gradient(135deg, #10b981, #059669)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)",
+                }}
+              >
+                <Share2 size={12} />
+                Share
+              </button>
+            )}
             <div
               style={{
                 display: "flex",

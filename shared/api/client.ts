@@ -494,6 +494,7 @@ export interface Transaction {
   note: string | null;
   positionId: string | null;
   paymentId: string | null;
+  stakeAmount: number | null;
   createdAt: string;
 }
 
