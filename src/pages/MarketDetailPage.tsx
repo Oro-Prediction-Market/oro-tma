@@ -83,7 +83,7 @@ function TerPricePanel({ market }: { market: Market }) {
           textTransform: "uppercase",
         }}
       >
-        TER · 15 Minute Price Prediction
+        TER · 1 Hour Price Prediction
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ flex: 1 }}>
