@@ -99,7 +99,7 @@ export function PwaResultsPage() {
             fontWeight: 600,
           }}
         >
-          Your betting history
+          Your prediction history
         </p>
       </div>
 
@@ -949,7 +949,7 @@ export function PwaResultsPage() {
                           fontWeight: 700,
                         }}
                       >
-                        {m.participantCount} bettors
+                        {m.participantCount} predictor{m.participantCount !== 1 ? "s" : ""}
                       </span>
                     </div>
                     {m.resolvedAt && (

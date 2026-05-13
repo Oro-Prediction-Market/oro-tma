@@ -382,7 +382,7 @@ export function PwaMyBetsPage() {
           fontWeight: 600,
         }}
       >
-        Tracking your betting performance
+        Tracking your prediction performance
       </p>
 
       {/* Filter tabs */}

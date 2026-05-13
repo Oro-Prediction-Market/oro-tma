@@ -444,7 +444,7 @@ export function TmaPaymentModal({
               }}
             >
               <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 700 }}>
-                Bet placed · Nu {betAmount.toLocaleString()} 🎯
+                Prediction placed · Nu {betAmount.toLocaleString()} 🎯
               </span>
             </div>
           </div>
@@ -622,7 +622,7 @@ export function TmaPaymentModal({
                   marginBottom: 4,
                 }}
               >
-                Confirm Your Bet
+                Confirm Your Prediction
               </div>
               <div
                 style={{
@@ -1748,7 +1748,7 @@ export function TmaPaymentModal({
                   ) : !hasEnoughCredits ? (
                     "Insufficient Balance"
                   ) : (
-                    `Place Bet — Nu ${betAmount.toLocaleString()}`
+                    `Predict — Nu ${betAmount.toLocaleString()}`
                   )}
                 </button>
               ) : (

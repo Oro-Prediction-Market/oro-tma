@@ -17,7 +17,6 @@ import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
-import { getUnderdogLabel } from "@shared/components/UnderdogBanner";
 
 // Live Activity Ticker
 
@@ -476,8 +475,6 @@ const MarketCard = memo(function MarketCard({
   })();
 
   const displayOutcomes = showAll ? sentiment : sentiment.slice(0, 2);
-  const underdogLabel = market.status === "open" ? getUnderdogLabel(market.outcomes, totalPool) : null;
-
   return (
     <div
       style={{
@@ -842,22 +839,6 @@ const MarketCard = memo(function MarketCard({
                           }}
                         >
                           Your pick
-                        </span>
-                      )}
-                      {underdogLabel === s.label && (
-                        <span
-                          style={{
-                            fontSize: "0.6rem",
-                            fontWeight: 800,
-                            color: "#f59e0b",
-                            background: "rgba(245,158,11,0.12)",
-                            border: "1px solid rgba(245,158,11,0.3)",
-                            padding: "1px 5px",
-                            borderRadius: 4,
-                            display: "inline-block",
-                          }}
-                        >
-                          ⚡ Higher payout if correct
                         </span>
                       )}
                       {s.reputationSignal != null && hasBet && (

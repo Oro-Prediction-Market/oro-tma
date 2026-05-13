@@ -718,7 +718,7 @@ function CreateChallengeCard({
       wagerAmount > 0
         ? `\n\nStake: Nu ${wagerAmount} each — winner takes Nu ${(wagerAmount * 2 * 0.9).toFixed(0)}`
         : "";
-    const text = `${userName} challenged you to a Prediction Duel!\n\nI bet on "${outcome?.label}" in:\n"${selectedMarket?.title}"${wagerLine}\n\nThink you can predict better? Beat me\n${link}`;
+    const text = `${userName} challenged you to a Prediction Duel!\n\nI predicted "${outcome?.label}" in:\n"${selectedMarket?.title}"${wagerLine}\n\nThink you can predict better? Beat me\n${link}`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
     if (window.Telegram?.WebApp?.openTelegramLink) {
       window.Telegram.WebApp.openTelegramLink(url);
@@ -926,7 +926,7 @@ function CreateChallengeCard({
             color: "var(--text-muted)",
           }}
         >
-          Place a bet on an open market first, then come back to challenge
+          Make a prediction on an open market first, then come back to challenge
           someone on it.
         </div>
       ) : (
@@ -1209,7 +1209,7 @@ function ChallengeCard({
           {challenge.creatorName ?? "Someone"}
         </span>
         <span>·</span>
-        <span>betting</span>
+        <span>predicting</span>
         <span style={{ fontWeight: 700, color: "var(--text-main)" }}>
           {challenge.outcomeLabel}
         </span>
@@ -1926,7 +1926,7 @@ function DuelLeaderboardVisual() {
 
 function HowToChallengeVisual() {
   const steps = [
-    { n: "1", icon: <Target size={13} color="#3b82f6" />,  label: "Place a bet on any open market" },
+    { n: "1", icon: <Target size={13} color="#3b82f6" />,  label: "Make a prediction on any open market" },
     { n: "2", icon: <Swords size={13} color="#2563eb" />,  label: "Create a duel — set stake & pick a card" },
     { n: "3", icon: <Send size={13} color="#6366f1" />,    label: "Share the link — opponent has 24h to accept" },
   ];
@@ -1963,7 +1963,7 @@ const DUELS_STEPS = [
   {
     visual: <HowToChallengeVisual />,
     title: "How to challenge",
-    body: "Place a bet on any market, create a duel on it, then share the link. Equip a Power Card for an edge — unlock them by winning duels.",
+    body: "Make a prediction on any market, create a duel on it, then share the link. Equip a Power Card for an edge — unlock them by winning duels.",
   },
 ];
 

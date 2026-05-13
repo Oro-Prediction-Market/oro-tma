@@ -799,7 +799,7 @@ export function DKBankConfirmModal({
                     }}
                   >
                     {canPayWithCredits
-                      ? `Place Bet — ${formatNu(amount)}`
+                      ? `Predict — ${formatNu(amount)}`
                       : "Insufficient Balance"}
                   </button>
                 ) : (

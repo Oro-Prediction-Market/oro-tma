@@ -483,7 +483,7 @@ export const TerMarketCard: FC<Props> = memo(
               padding: "8px 0",
             }}
           >
-            Betting closed — results incoming
+            Predictions closed — results incoming
           </div>
         ) : (
           <div

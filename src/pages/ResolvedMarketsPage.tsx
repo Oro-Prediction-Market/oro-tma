@@ -438,7 +438,7 @@ export const ResolvedMarketsPage: FC = () => {
                       fontWeight: 700,
                     }}
                   >
-                    {m.participantCount} bettors
+                    {m.participantCount} predictor{m.participantCount !== 1 ? "s" : ""}
                   </div>
                   {m.resolvedAt && (
                     <div

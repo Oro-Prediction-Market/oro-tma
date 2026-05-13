@@ -46,7 +46,6 @@ import {
   Eye,
   EyeOff,
   UserPlus,
-  CalendarDays,
   Swords,
   Lightbulb,
   CheckCircle,
@@ -88,9 +87,9 @@ const TX_ICON: Record<Transaction["type"], React.ReactNode> = {
 const TX_LABEL: Record<Transaction["type"], string> = {
   deposit: "Top Up",
   withdrawal: "Cash Out",
-  bet_placed: "Bet placed",
+  bet_placed: "Prediction placed",
   bet_payout: "Win — payout received",
-  refund: "Bet refunded",
+  refund: "Prediction refunded",
   dispute_bond: "Dispute bond",
   dispute_refund: "Dispute bond refunded",
   referral_bonus: "Referral bonus",
@@ -250,7 +249,6 @@ export const TmaWalletPage: FC = () => {
   const [showCoins, setShowCoins] = useState(false);
 
   // Deposit UX state
-  const [depositStreakDays, setDepositStreakDays] = useState(0);
   const [referralDepositNudge, setReferralDepositNudge] = useState<{
     friendName: string;
     amount: number;
@@ -328,28 +326,6 @@ export const TmaWalletPage: FC = () => {
     getMyTransactions()
       .then((txList) => {
         setTxs(txList);
-
-        const depositTxs = txList.filter((t) => t.type === "deposit");
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const depositDays = new Set(
-          depositTxs.map((t) => {
-            const d = new Date(t.createdAt);
-            d.setHours(0, 0, 0, 0);
-            return d.getTime();
-          }),
-        );
-        let streak = 0;
-        for (let i = 0; i < 365; i++) {
-          const day = new Date(today.getTime() - i * 86_400_000);
-          if (depositDays.has(day.getTime())) {
-            streak++;
-          } else if (i > 0) {
-            break;
-          }
-        }
-        setDepositStreakDays(streak);
 
         const latestReferralBonus = txList.find(
           (t) => t.type === "referral_bonus",
@@ -925,95 +901,6 @@ export const TmaWalletPage: FC = () => {
             >
               <X size={14} />
             </button>
-          </div>
-        )}
-
-        {/* ── Deposit Streak Progress ────────────────────────── */}
-        {depositStreakDays > 0 && (
-          <div
-            style={{
-              margin: "-4px 16px 0",
-              borderRadius: 14,
-              padding: "12px 14px",
-              background:
-                "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.06))",
-              border: "1px solid rgba(99,102,241,0.25)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}
-          >
-            <CalendarDays
-              size={20}
-              style={{ color: "#6366f1", flexShrink: 0 }}
-            />
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "var(--text-main)",
-                }}
-              >
-                Top Up Streak
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  marginTop: 5,
-                }}
-              >
-                {Array.from({ length: Math.min(depositStreakDays, 7) }).map(
-                  (_, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: 22,
-                        height: 8,
-                        borderRadius: 4,
-                        background:
-                          i < depositStreakDays
-                            ? "linear-gradient(90deg, #6366f1, #818cf8)"
-                            : "var(--glass-border)",
-                        transition: "background 0.3s",
-                      }}
-                    />
-                  ),
-                )}
-                {depositStreakDays < 7 && (
-                  <div
-                    style={{
-                      width: 22,
-                      height: 8,
-                      borderRadius: 4,
-                      background: "var(--glass-border)",
-                      opacity: 0.4,
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#818cf8" }}>
-                {depositStreakDays}
-              </div>
-              <div style={{ fontSize: 10, color: "var(--text-subtle)" }}>
-                day{depositStreakDays !== 1 ? "s" : ""}
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: "#6366f1",
-                fontWeight: 700,
-                marginLeft: 2,
-              }}
-            >
-              keep it going →
-            </div>
           </div>
         )}
 
@@ -1715,7 +1602,7 @@ export const TmaWalletPage: FC = () => {
                         }}
                       >
                         {referralTxs.length} friend
-                        {referralTxs.length !== 1 ? "s" : ""} placed a bet ·
+                        {referralTxs.length !== 1 ? "s" : ""} made a prediction ·
                         bonus credited to your wallet
                       </div>
                     </div>

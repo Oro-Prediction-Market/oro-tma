@@ -140,7 +140,7 @@ export const TONBetPage: FC = () => {
               description={
                 <>
                   <Text>
-                    Connect your TON wallet to place bets with Toncoin
+                    Connect your TON wallet to make predictions with Toncoin
                   </Text>
                   <TonConnectButton style={{ marginTop: "1rem" }} />
                 </>

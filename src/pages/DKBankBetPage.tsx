@@ -643,7 +643,7 @@ export const DKBankBetPage: FC = () => {
                       }}
                     >
                       <span style={{ color: "#3b82f6" }}>↑</span>
-                      Your bet moves {selectedOutcome?.label} from{" "}
+                      Your prediction moves {selectedOutcome?.label} from{" "}
                       <strong style={{ color: "var(--text-main)" }}>
                         {Math.round(priceImpact.from * 100)}%
                       </strong>
