@@ -384,6 +384,7 @@ export interface ActivityEvent {
   userName: string;
   outomeLabel: string; // note: matches backend spelling
   marketTitle: string;
+  marketId: string;
   amount: number;
   placedAt: string;
 }

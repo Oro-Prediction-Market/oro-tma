@@ -39,7 +39,6 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Period = "all" | "week" | "month";
 
 // ── Tier helpers ──────────────────────────────────────────────────────────────
 
@@ -78,11 +77,11 @@ function rankMedal(rank: number) {
 }
 
 function percentileLabel(rank: number, total: number) {
-  if (total === 0) return null;
-  const pct = Math.round((rank / total) * 100);
-  if (pct <= 5) return { text: `Top ${pct}% of predictors`, color: "#f59e0b" };
-  if (pct <= 20) return { text: `Top ${pct}% of predictors`, color: "#22c55e" };
-  if (pct <= 50) return { text: `Top ${pct}% of predictors`, color: "#3b82f6" };
+  if (total === 0 || rank >= total) return null;
+  const pct = Math.round(((total - rank) / total) * 100);
+  if (pct >= 95) return { text: `Top ${pct}% of predictors`, color: "#f59e0b" };
+  if (pct >= 80) return { text: `Top ${pct}% of predictors`, color: "#22c55e" };
+  if (pct >= 50) return { text: `Top ${pct}% of predictors`, color: "#3b82f6" };
   return { text: `Top ${pct}% of predictors`, color: "#94a3b8" };
 }
 
@@ -1114,8 +1113,8 @@ function SeasonsSheet({
                         marginTop: 1,
                       }}
                     >
-                      {new Date(s.startsAt).toLocaleDateString()} –{" "}
-                      {new Date(s.endsAt).toLocaleDateString()}
+                      {new Date(s.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} –{" "}
+                      {new Date(s.endsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                     </div>
                   </div>
                   <Trophy size={16} color="#f59e0b" />
@@ -1231,7 +1230,9 @@ function PinnedSelfRow({
           flexShrink: 0,
         }}
       >
-        {entry.rank <= 3 ? (
+        {entry.totalPredictions < 10 ? (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>—</span>
+        ) : entry.rank <= 3 ? (
           rankMedal(entry.rank)
         ) : (
           <span style={{ fontSize: 12, fontWeight: 900, color }}>
@@ -1326,32 +1327,40 @@ function PinnedSelfRow({
           gap: 8,
         }}
       >
-        <div>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 900,
-              color:
-                entry.winRate >= 65
-                  ? "#22c55e"
-                  : entry.winRate >= 50
-                    ? "var(--text-main)"
-                    : "#f59e0b",
-            }}
-          >
-            {entry.winRate}%
+        {entry.totalPredictions < 10 ? (
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>
+              {10 - entry.totalPredictions} more to rank
+            </div>
           </div>
-          <div
-            style={{
-              fontSize: 9,
-              color: "var(--text-subtle)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            win rate
+        ) : (
+          <div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 900,
+                color:
+                  entry.winRate >= 65
+                    ? "#22c55e"
+                    : entry.winRate >= 50
+                      ? "var(--text-main)"
+                      : "#f59e0b",
+              }}
+            >
+              {entry.winRate}%
+            </div>
+            <div
+              style={{
+                fontSize: 9,
+                color: "var(--text-subtle)",
+                fontWeight: 700,
+                textTransform: "uppercase",
+              }}
+            >
+              win rate
+            </div>
           </div>
-        </div>
+        )}
         <ChevronUp size={16} color={color} />
       </div>
     </div>
@@ -1374,8 +1383,6 @@ export const TmaLeaderboardPage: FC = () => {
   const [seasonHistory, setSeasonHistory] = useState<Season[]>([]);
   const [depositTxs, setDepositTxs] = useState<Transaction[]>([]);
   const [myWeeklyDeposit, setMyWeeklyDeposit] = useState(0);
-  const [period, setPeriod] = useState<Period>("all");
-
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(() => {
@@ -1442,11 +1449,6 @@ export const TmaLeaderboardPage: FC = () => {
     ? `@${authUser.username}`
     : (authUser?.firstName ?? "Predictor");
 
-  const PERIOD_LABELS: Record<Period, string> = {
-    all: "All Time",
-    week: "This Week",
-    month: "This Month",
-  };
 
   if (loading) return <LoadingScreen message="Calculating standings…" />;
 
@@ -1567,7 +1569,7 @@ export const TmaLeaderboardPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                {lb?.totalRanked ?? 0} ranked · {PERIOD_LABELS[period]}
+                {lb?.totalRanked ?? 0} ranked · All Time
               </p>
             </div>
 
@@ -1619,37 +1621,6 @@ export const TmaLeaderboardPage: FC = () => {
             </div>
           )}
 
-          {/* Period filter pills */}
-          <div
-            className="lb-period-pills"
-            style={{ display: "flex", gap: 6, padding: "0 16px 12px" }}
-          >
-            {(["all", "week", "month"] as Period[]).map((p) => (
-              <button
-                key={p}
-                className="lb-period-pill"
-                onClick={() => setPeriod(p)}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 99,
-                  border:
-                    period === p
-                      ? "1.5px solid #3b82f6"
-                      : "1.5px solid var(--glass-border)",
-                  background:
-                    period === p ? "rgba(59,130,246,0.15)" : "transparent",
-                  color: period === p ? "#3b82f6" : "var(--text-muted)",
-                  fontSize: 12,
-                  fontWeight: period === p ? 800 : 600,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {PERIOD_LABELS[p]}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
