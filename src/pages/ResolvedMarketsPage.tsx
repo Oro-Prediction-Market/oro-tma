@@ -216,10 +216,15 @@ function EvidencePanel({ m }: { m: ResolvedMarket }) {
   );
 }
 
+const CATEGORIES = ["All", "Sports", "Gaming", "Weather", "Entertainment", "Economy", "Other"] as const;
+
 export const ResolvedMarketsPage: FC = () => {
   const [markets, setMarkets] = useState<ResolvedMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<string>("All");
+  const [disputeFilter, setDisputeFilter] = useState<"all" | "disputed" | "clean">("all");
 
   useEffect(() => {
     getResolvedMarkets()
@@ -227,6 +232,14 @@ export const ResolvedMarketsPage: FC = () => {
       .catch((e: any) => setError(e.message || "Failed to load"))
       .finally(() => setLoading(false));
   }, []);
+
+  const filtered = markets.filter((m) => {
+    if (query && !m.title.toLowerCase().includes(query.toLowerCase())) return false;
+    if (category !== "All" && (categoryLabel[m.category ?? ""] ?? m.category) !== category) return false;
+    if (disputeFilter === "disputed" && m.objectionCount === 0) return false;
+    if (disputeFilter === "clean" && m.objectionCount > 0) return false;
+    return true;
+  });
 
   if (loading) return <LoadingScreen message="Loading resolution record…" />;
 
@@ -283,11 +296,96 @@ export const ResolvedMarketsPage: FC = () => {
               textTransform: "uppercase",
             }}
           >
-            Resolution Record — {markets.length} market
-            {markets.length !== 1 ? "s" : ""}
+            Resolution Record — {filtered.length} market
+            {filtered.length !== 1 ? "s" : ""}
           </div>
 
-          {markets.length === 0 && (
+          {/* Search */}
+          <div style={{ position: "relative" }}>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="var(--text-muted)" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+            >
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search markets…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px 12px 10px 34px",
+                borderRadius: 10,
+                border: "1px solid var(--glass-border)",
+                background: "var(--bg-card)",
+                color: "var(--text-main)",
+                fontSize: "0.85rem",
+                fontWeight: 500,
+                outline: "none",
+              }}
+            />
+          </div>
+
+          {/* Category pills */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCategory(c)}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 20,
+                  border: `1px solid ${category === c ? "var(--color-primary)" : "var(--glass-border)"}`,
+                  background: category === c ? "rgba(59,130,246,0.12)" : "var(--bg-card)",
+                  color: category === c ? "var(--color-primary)" : "var(--text-muted)",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          {/* Dispute filter */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {(["all", "disputed", "clean"] as const).map((f) => {
+              const label = f === "all" ? "All" : f === "disputed" ? "⚠ Disputed" : "✓ Clean";
+              const active = disputeFilter === f;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setDisputeFilter(f)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 20,
+                    border: `1px solid ${active ? (f === "disputed" ? "rgba(245,158,11,0.5)" : f === "clean" ? "rgba(34,197,94,0.5)" : "var(--color-primary)") : "var(--glass-border)"}`,
+                    background: active ? (f === "disputed" ? "rgba(245,158,11,0.1)" : f === "clean" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)") : "var(--bg-card)",
+                    color: active ? (f === "disputed" ? "#f59e0b" : f === "clean" ? "#22c55e" : "var(--color-primary)") : "var(--text-muted)",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {filtered.length === 0 && markets.length > 0 && (
+            <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 500 }}>
+              No markets match your filters.
+            </div>
+          )}
+
+          {filtered.length === 0 && markets.length === 0 && (
             <div
               style={{
                 padding: "60px 20px",
@@ -313,7 +411,7 @@ export const ResolvedMarketsPage: FC = () => {
             </div>
           )}
 
-          {markets.map((m) => (
+          {filtered.map((m) => (
             <Link
               key={m.id}
               to={`/market/${m.id}`}

@@ -13,9 +13,11 @@ function useCountdown(targetAt: string | null): string {
         setLabel("Closing");
         return;
       }
-      const m = Math.floor(ms / 60_000);
+      const h = Math.floor(ms / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
       const s = Math.floor((ms % 60_000) / 1000);
-      setLabel(m > 0 ? `${m}m ${s}s` : `${s}s`);
+      const p = (n: number) => String(n).padStart(2, "0");
+      setLabel(`${p(h)}:${p(m)}:${p(s)}`);
     };
     tick();
     const id = setInterval(tick, 1000);
