@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@shared/hooks/useAuth";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { TerMarketCard } from "@/components/TerMarketCard";
+import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { Link } from "@/components/Link/Link";
 import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -1299,7 +1300,9 @@ export const TmaFeedPage: FC = () => {
     let filtered = list;
 
     if (selectedCategory === "All") {
-      filtered = filtered.filter((m) => m.externalSource !== "ter");
+      filtered = filtered.filter(
+        (m) => !["ter", "btc"].includes(m.externalSource ?? ""),
+      );
     }
 
     // Category Filter
@@ -1327,9 +1330,15 @@ export const TmaFeedPage: FC = () => {
   ];
 
   const filteredOpen = filterByQuery(openMarkets).sort((a, b) => {
-    // TER markets always appear first
-    if (a.externalSource === "ter" && b.externalSource !== "ter") return -1;
-    if (b.externalSource === "ter" && a.externalSource !== "ter") return 1;
+    // TER then BTC markets appear first in the economy category
+    const autoA = ["ter", "btc"].includes(a.externalSource ?? "");
+    const autoB = ["ter", "btc"].includes(b.externalSource ?? "");
+    if (autoA && !autoB) return -1;
+    if (autoB && !autoA) return 1;
+    if (autoA && autoB) {
+      if (a.externalSource === "ter") return -1;
+      if (b.externalSource === "ter") return 1;
+    }
     return Number(b.totalPool) - Number(a.totalPool);
   });
   const filteredResolving = filterByQuery(resolvingMarkets);
@@ -1904,6 +1913,18 @@ export const TmaFeedPage: FC = () => {
               )}
               {market.externalSource === "ter" ? (
                 <TerMarketCard
+                  market={market}
+                  hasBet={bettedMarketIds.has(market.id)}
+                  userPickedOutcomeId={
+                    myPendingBets.find((b) => b.marketId === market.id)
+                      ?.outcomeId
+                  }
+                  onBet={(outcomeId) =>
+                    setActiveBet({ marketId: market.id, outcomeId })
+                  }
+                />
+              ) : market.externalSource === "btc" ? (
+                <BtcMarketCard
                   market={market}
                   hasBet={bettedMarketIds.has(market.id)}
                   userPickedOutcomeId={

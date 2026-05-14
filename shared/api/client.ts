@@ -753,3 +753,15 @@ export interface TerPrice {
 export function getTerPrice(): Promise<TerPrice> {
   return request<TerPrice>("/ter/price");
 }
+
+// ── BTC Price API ─────────────────────────────────────────────────────────────
+
+export interface BtcPrice {
+  price: number;
+  source: "binance" | "coinbase";
+  fetchedAt: string;
+}
+
+export function getBtcPrice(): Promise<BtcPrice> {
+  return request<BtcPrice>("/btc/price");
+}
