@@ -1571,6 +1571,16 @@ export const TmaLeaderboardPage: FC = () => {
               >
                 {lb?.totalRanked ?? 0} ranked · All Time
               </p>
+              <p
+                style={{
+                  fontSize: 10,
+                  color: "var(--text-subtle)",
+                  margin: "2px 0 0",
+                  fontWeight: 600,
+                }}
+              >
+                10+ predictions needed to appear on the board
+              </p>
             </div>
 
             <button
