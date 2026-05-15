@@ -59,12 +59,12 @@ const STEPS = [
   {
     emoji: <BarChart2 />,
     title: "Watch the odds move",
-    desc: "Oro uses a parimutuel pool — odds shift as more people predict. The more people agree with you, the lower your payout multiplier.",
+    desc: "Your potential payout adjusts in real time based on how many people agree with you. The more people who pick the same outcome, the smaller each person's share of the winnings.",
   },
   {
     emoji: <Trophy />,
     title: "Market resolves — collect winnings",
-    desc: "When the real-world event ends, admins resolve the market. If your outcome wins, your share of the pool lands in your wallet automatically.",
+    desc: "Once the event has a result, Oro verifies it using a published source and confirms the outcome. If you predicted correctly, your winnings go straight to your wallet.",
   },
   {
     emoji: <Sword />,

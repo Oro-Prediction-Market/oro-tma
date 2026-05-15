@@ -677,7 +677,7 @@ const MarketCard = memo(function MarketCard({
                 (idx === 0
                   ? market.imageUrl
                   : idx === 1
-                    ? market.imageUrlAlt || market.imageUrl
+                    ? market.imageUrlAlt || null
                     : null)
               : null;
             const vis = getCategoryVisual(market.category);
@@ -953,7 +953,7 @@ const MarketCard = memo(function MarketCard({
             }}
           />
           <span style={{ color: "var(--text-muted)" }}>
-            {totalPool > 0 ? `Nu ${totalPool.toLocaleString()} Vol.` : "No predictions yet"}
+            {totalPool > 0 ? `Nu ${totalPool.toLocaleString()} Vol.` : "Be the first to predict"}
           </span>
           {market.category && (
             <>

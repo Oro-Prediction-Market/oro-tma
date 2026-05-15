@@ -82,7 +82,7 @@ function percentileLabel(rank: number, total: number) {
   if (pct >= 95) return { text: `Top ${pct}% of predictors`, color: "#f59e0b" };
   if (pct >= 80) return { text: `Top ${pct}% of predictors`, color: "#22c55e" };
   if (pct >= 50) return { text: `Top ${pct}% of predictors`, color: "#3b82f6" };
-  return { text: `Top ${pct}% of predictors`, color: "#94a3b8" };
+  return null;
 }
 
 // ── Table helpers ─────────────────────────────────────────────────────────────

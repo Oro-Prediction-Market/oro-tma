@@ -1240,7 +1240,7 @@ export function TmaPaymentModal({
                               estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                           }}
                         >
-                          {estProfit >= 0 ? `Nu ${estPayout.toFixed(2)}` : "—"}
+                          {estProfit >= 0 ? `Nu ${Math.floor(estPayout).toLocaleString()}` : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
@@ -1263,7 +1263,7 @@ export function TmaPaymentModal({
                               color: "#16a34a",
                             }}
                           >
-                            +Nu {estProfit.toFixed(2)}
+                            +Nu {Math.floor(estProfit).toLocaleString()}
                           </div>
                         ) : (
                           <div
@@ -1625,7 +1625,7 @@ export function TmaPaymentModal({
                               estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                           }}
                         >
-                          {estProfit >= 0 ? `Nu ${estPayout.toFixed(2)}` : "—"}
+                          {estProfit >= 0 ? `Nu ${Math.floor(estPayout).toLocaleString()}` : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
@@ -1648,7 +1648,7 @@ export function TmaPaymentModal({
                               color: "#16a34a",
                             }}
                           >
-                            +Nu {estProfit.toFixed(2)}
+                            +Nu {Math.floor(estProfit).toLocaleString()}
                           </div>
                         ) : (
                           <div
