@@ -951,7 +951,7 @@ export const TmaWalletPage: FC = () => {
           {hasDKBank && hasPhoneVerified ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {[
-                { label: "CID", value: user?.dkCid ? user.dkCid.slice(0, 3) + "•".repeat(user.dkCid.length - 5) + user.dkCid.slice(-2) : "—" },
+                { label: "CID", value: user?.dkCid ? user.dkCid.slice(0, 5) + "•••" + user.dkCid.slice(-3) : "—" },
                 { label: "Account", value: user?.dkAccountName || "—" },
               ].map(({ label, value }) => (
                 <p
@@ -1966,7 +1966,7 @@ export const TmaWalletPage: FC = () => {
                       DK Account
                     </span>
                     <span style={{ fontWeight: 600, fontSize: 13 }}>
-                      {user.dkAccountName || user.dkCid}
+                      {user.dkAccountName || (user.dkCid ? user.dkCid.slice(0, 5) + "•••" + user.dkCid.slice(-3) : "—")}
                     </span>
                   </div>
                 )}

@@ -574,6 +574,8 @@ export interface LeaderboardEntry {
   correctPredictions: number;
   winRate: number;
   totalBetAmount: number;
+  weeklyPredictions?: number;
+  weeklyWins?: number;
   isMe: boolean;
 }
 
@@ -583,8 +585,10 @@ export interface LeaderboardResponse {
   totalRanked: number;
 }
 
-export function getLeaderboard(): Promise<LeaderboardResponse> {
-  return request<LeaderboardResponse>("/users/leaderboard");
+export function getLeaderboard(
+  period: "all" | "week" = "all",
+): Promise<LeaderboardResponse> {
+  return request<LeaderboardResponse>(`/users/leaderboard?period=${period}`);
 }
 
 // ─── Challenges (Prediction Duels) ───────────────────────────────────────────

@@ -1379,6 +1379,7 @@ export const TmaLeaderboardPage: FC = () => {
   const [showMyStats, setShowMyStats] = useState(false);
   const [showSeasons, setShowSeasons] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [selectedPeriod, setSelectedPeriod] = useState<"all" | "week">("all");
   const [currentSeason, setCurrentSeason] = useState<Season | null>(null);
   const [seasonHistory, setSeasonHistory] = useState<Season[]>([]);
   const [depositTxs, setDepositTxs] = useState<Transaction[]>([]);
@@ -1402,32 +1403,39 @@ export const TmaLeaderboardPage: FC = () => {
     return () => observer.disconnect();
   });
 
+  // Period-independent data — load once
   useEffect(() => {
     Promise.all([
-      getLeaderboard().catch(() => null),
       getMyResults().catch(() => []),
       getMe().catch(() => null),
       getCurrentSeason().catch(() => null),
       getSeasonHistory().catch(() => []),
       getMyTransactions("deposit").catch(() => []),
-    ])
-      .then(([lbData, myBets, myProfile, season, history, depTxs]) => {
-        setLb(lbData);
-        setBets(myBets as Bet[]);
-        setMe(myProfile);
-        setCurrentSeason(season);
-        setSeasonHistory(history as Season[]);
-        const txList = depTxs as Transaction[];
-        setDepositTxs(txList);
-        const weekAgo = Date.now() - 7 * 86_400_000;
-        setMyWeeklyDeposit(
-          txList
-            .filter((t) => new Date(t.createdAt).getTime() >= weekAgo)
-            .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
-        );
-      })
-      .finally(() => setLoading(false));
+    ]).then(([myBets, myProfile, season, history, depTxs]) => {
+      setBets(myBets as Bet[]);
+      setMe(myProfile);
+      setCurrentSeason(season);
+      setSeasonHistory(history as Season[]);
+      const txList = depTxs as Transaction[];
+      setDepositTxs(txList);
+      const weekAgo = Date.now() - 7 * 86_400_000;
+      setMyWeeklyDeposit(
+        txList
+          .filter((t) => new Date(t.createdAt).getTime() >= weekAgo)
+          .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
+      );
+    });
   }, []);
+
+  // Leaderboard — refetch whenever period changes
+  useEffect(() => {
+    setLoading(true);
+    setVisibleCount(20);
+    getLeaderboard(selectedPeriod)
+      .then(setLb)
+      .catch(() => setLb(null))
+      .finally(() => setLoading(false));
+  }, [selectedPeriod]);
 
   const won = bets.filter((b) => b.status === "won");
   const lost = bets.filter((b) => b.status === "lost");
@@ -1569,7 +1577,7 @@ export const TmaLeaderboardPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                {lb?.totalRanked ?? 0} ranked · All Time
+                {lb?.totalRanked ?? 0} ranked · {selectedPeriod === "week" ? "This Week" : "All Time"}
               </p>
               <p
                 style={{
@@ -1601,6 +1609,38 @@ export const TmaLeaderboardPage: FC = () => {
             >
               <CalendarDays size={13} /> Seasons
             </button>
+          </div>
+
+          {/* Period pills */}
+          <div
+            className="lb-period-pills"
+            style={{ display: "flex", gap: 8, padding: "0 16px 12px" }}
+          >
+            {(["all", "week"] as const).map((p) => (
+              <button
+                key={p}
+                className="lb-period-pill"
+                onClick={() => setSelectedPeriod(p)}
+                style={{
+                  padding: "5px 16px",
+                  borderRadius: 20,
+                  border: `1px solid ${selectedPeriod === p ? "var(--color-primary)" : "var(--glass-border)"}`,
+                  background:
+                    selectedPeriod === p
+                      ? "rgba(39,117,208,0.12)"
+                      : "var(--bg-card)",
+                  color:
+                    selectedPeriod === p
+                      ? "var(--color-primary)"
+                      : "var(--text-muted)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {p === "all" ? "All Time" : "This Week"}
+              </button>
+            ))}
           </div>
 
           {/* Percentile banner */}
