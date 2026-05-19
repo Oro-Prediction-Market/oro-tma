@@ -117,6 +117,14 @@ export async function request<T>(
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
+export interface TelegramProfile {
+  telegramId: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  photoUrl?: string;
+}
+
 export interface AuthUser {
   id: string;
   telegramId: string;
@@ -158,7 +166,11 @@ export interface AuthUser {
 
 export interface AuthResponse {
   token: string;
-  user: AuthUser;
+  user: AuthUser | null;
+  isNewUser?: boolean;
+  requiresKYC?: boolean;
+  telegramProfile?: TelegramProfile;
+  referralCode?: string;
 }
 
 /** Login / register using Telegram initData (HMAC validated on server) */
@@ -173,6 +185,65 @@ export async function loginWithTelegram(
       ...(referralCode ? { referralCode } : {}),
     }),
   });
+  // Only persist the token when fully authenticated (not pre-KYC)
+  if (!result.requiresKYC && result.user) {
+    setToken(result.token);
+  }
+  return result;
+}
+
+/** Check whether a username is available during onboarding. */
+export async function checkUsernameAvailable(
+  username: string,
+): Promise<{ available: boolean }> {
+  return request<{ available: boolean }>(
+    `/users/check/username/${encodeURIComponent(username)}`,
+  );
+}
+
+/** Send OTP to phone/email via Telegram bot during onboarding. Requires pre-KYC token. */
+export async function sendOnboardOtp(
+  data: { phoneNumber?: string; email?: string },
+  preKycToken: string,
+): Promise<{ sent: boolean }> {
+  const headers = { Authorization: `Bearer ${preKycToken}` };
+  const res = await fetch(`${API_URL}/users/send-onboard-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/** Complete onboarding registration. Requires pre-KYC token. Returns full JWT + user. */
+export async function registerTelegramUser(
+  data: {
+    username: string;
+    fullName: string;
+    otp: string;
+    phoneNumber?: string;
+    email?: string;
+    referralCode?: string;
+  },
+  preKycToken: string,
+): Promise<{ token: string; user: AuthUser }> {
+  const res = await fetch(`${API_URL}/users/telegram/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${preKycToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  const result: { token: string; user: AuthUser } = await res.json();
   setToken(result.token);
   return result;
 }
@@ -275,6 +346,40 @@ export async function verifyDKAccount(
   );
   bustCache("/users/me");
   return result;
+}
+
+// ─── Bank account linking (new flow: CID → OTP to DK phone → verify) ─────────
+
+export interface LinkedBankAccount {
+  id: string;
+  cid: string;
+  accountNumber: string | null;
+  accountName: string | null;
+  maskedPhone: string | null;
+  isDefault: boolean;
+  verifiedAt: string | null;
+}
+
+export async function linkBankAccount(
+  cid: string,
+): Promise<{ accountName: string; maskedPhone: string; requiresOtp: boolean }> {
+  return request("/payments/bank/link", {
+    method: "POST",
+    body: JSON.stringify({ cid }),
+  });
+}
+
+export async function verifyBankLink(
+  otp: string,
+): Promise<LinkedBankAccount> {
+  return request("/payments/bank/verify", {
+    method: "POST",
+    body: JSON.stringify({ otp }),
+  });
+}
+
+export function getLinkedBankAccounts(): Promise<LinkedBankAccount[]> {
+  return request("/payments/bank/accounts");
 }
 
 // ─── Markets ─────────────────────────────────────────────────────────────────

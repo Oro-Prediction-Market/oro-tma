@@ -2,9 +2,10 @@ import { FC, useState, useEffect, useRef } from "react";
 import dkBankLogo from "@shared/assets/dk blue.png";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
-  linkDKBank,
-  verifyPhoneTma,
-  verifyDKAccount,
+  linkBankAccount,
+  verifyBankLink,
+  getLinkedBankAccounts,
+  LinkedBankAccount,
   getMe,
   getMyTransactions,
   AuthUser,
@@ -28,7 +29,6 @@ import {
   Link2,
   AlertCircle,
   Loader2,
-  ShieldCheck,
   ArrowDownLeft,
   ArrowUpRight,
   Target,
@@ -171,7 +171,11 @@ function TxRow({
             marginBottom: tx.note ? 2 : 0,
           }}
         >
-          {tx.note ? tx.note : isWin && !isPositiveNet ? "Payout received" : TX_LABEL[tx.type]}
+          {tx.note
+            ? tx.note
+            : isWin && !isPositiveNet
+              ? "Payout received"
+              : TX_LABEL[tx.type]}
         </div>
         {tx.note && (
           <div
@@ -276,28 +280,31 @@ export const TmaWalletPage: FC = () => {
     }
   }, [payStep]);
 
-  // DK Bank setup state — single flow: link CID then auto-verify phone
-  const [cid, setCid] = useState("");
-  const [setupStep, setSetupStep] = useState<
-    | "idle"
-    | "linking"
-    | "verifying"
-    | "bot-pending"
-    | "success"
-    | "error"
-    | "acct-verify"
-  >("idle");
-  const [setupError, setSetupError] = useState("");
-
-  // Account number fallback verification state
-  const [acctNumber, setAcctNumber] = useState("");
-  const [acctVerifLoading, setAcctVerifLoading] = useState(false);
+  // Bank linking state (luckypem-style: CID → OTP to DK phone → verify)
+  const [linkedAccount, setLinkedAccount] = useState<LinkedBankAccount | null>(
+    null,
+  );
+  const [bankStep, setBankStep] = useState<"cid" | "otp" | "done">("cid");
+  const [bankCid, setBankCid] = useState("");
+  const [bankOtp, setBankOtp] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankMaskedPhone, setBankMaskedPhone] = useState("");
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankError, setBankError] = useState("");
+  const [bankAccountRevealed, setBankAccountRevealed] = useState(false);
 
   useEffect(() => {
     getMe()
       .then(setFreshUser)
       .catch(() => setFreshUser(authUser))
       .finally(() => setFreshLoading(false));
+
+    getLinkedBankAccounts()
+      .then((accounts) => {
+        const def = accounts.find((a) => a.isDefault) ?? accounts[0] ?? null;
+        setLinkedAccount(def);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -351,9 +358,6 @@ export const TmaWalletPage: FC = () => {
 
   const user = freshUser ?? authUser;
   const loading = authLoading && freshLoading;
-
-  const hasDKBank = !!user?.dkCid;
-  const hasPhoneVerified = !!user?.isPhoneVerified;
 
   const totalWon = txs
     .filter((t) => t.type === "bet_payout")
@@ -413,12 +417,12 @@ export const TmaWalletPage: FC = () => {
     try {
       let res;
       if (paymentModal === "deposit") {
-        if (!user?.dkCid) {
+        if (!linkedAccount?.cid) {
           setPayError("Please link your DK Bank account first.");
           setPayProcessing(false);
           return;
         }
-        res = await initiateDKBankDeposit({ amount, cid: user.dkCid });
+        res = await initiateDKBankDeposit({ amount, cid: linkedAccount.cid });
       } else {
         res = await initiateDKBankWithdrawal({ amount });
       }
@@ -465,118 +469,6 @@ export const TmaWalletPage: FC = () => {
       }
     } finally {
       setPayProcessing(false);
-    }
-  };
-
-  const handleSetup = async () => {
-    if (cid.length !== 11) {
-      setSetupError("CID must be exactly 11 digits.");
-      setSetupStep("error");
-      return;
-    }
-
-    // ── Step 1: link DK Bank CID ─────────────────────────────────────────────
-    setSetupStep("linking");
-    setSetupError("");
-    try {
-      await linkDKBank(cid);
-    } catch (err: any) {
-      const raw = (err.message || "").toLowerCase();
-      // Map any server-side failure to a clear, actionable message.
-      const msg =
-        raw.includes("no dk bank account") ||
-        raw.includes("not found") ||
-        raw.includes("missing record")
-          ? "No DK Bank account found for this CID. Please check your 11-digit CID and try again."
-          : raw.includes("internal server error") ||
-              raw.includes("unavailable") ||
-              raw.includes("timed out") ||
-              raw.includes("503") ||
-              raw.includes("500")
-            ? "No DK Bank account found for this CID. Please check your 11-digit CID and try again."
-            : err.message || "Failed to link CID. Please try again.";
-      setSetupError(msg);
-      setSetupStep("error");
-      return;
-    }
-
-    // ── Step 2: phone verification via Telegram.WebApp.requestContact ────────
-    const tg = (window as any).Telegram?.WebApp;
-    if (!tg?.requestContact) {
-      // Older Telegram client — refresh and show a simple open-bot nudge
-      const updated = await getMe().catch(() => null);
-      if (updated) setFreshUser(updated);
-      setSetupStep("success");
-      return;
-    }
-
-    setSetupStep("verifying");
-
-    tg.onEvent("contactRequested", async (result: any) => {
-      tg.offEvent("contactRequested");
-      if (result?.status !== "sent" || !result?.contact?.phone_number) {
-        // User dismissed the popup — CID is still linked, phone pending
-        const updated = await getMe().catch(() => null);
-        if (updated) setFreshUser(updated);
-        setSetupStep("success");
-        return;
-      }
-      try {
-        // user_id is optional in the Telegram contact payload — fall back to
-        // the authenticated user's own telegramId so the backend check passes.
-        const contactUserId: number =
-          result.contact.user_id ?? Number(user?.telegramId);
-        const phoneResult = await verifyPhoneTma({
-          phoneNumber: result.contact.phone_number,
-          userId: contactUserId,
-          authDate: result.auth_date,
-          hash: result.hash,
-        });
-        if (phoneResult.requiresAccountVerification) {
-          setSetupStep("acct-verify");
-          const updated = await getMe().catch(() => null);
-          if (updated) setFreshUser(updated);
-        } else {
-          setSetupStep("success");
-          getMe()
-            .then((u) => setFreshUser(u))
-            .catch(() => {});
-        }
-      } catch (err: any) {
-        setSetupError(
-          err.message || "Phone verification failed. Please try again.",
-        );
-        setSetupStep("error");
-        // Refresh so hasDKBank becomes true — UI moves to "one more step" panel
-        // and the user can retry without re-entering their CID.
-        const updated = await getMe().catch(() => null);
-        if (updated) setFreshUser(updated);
-      }
-    });
-
-    tg.requestContact();
-  };
-
-  const handleAcctVerify = async () => {
-    const cleaned = acctNumber.trim().replace(/\s/g, "");
-    if (cleaned.length !== 12 || !/^\d+$/.test(cleaned)) {
-      setSetupError("Please enter your DK Bank account number.");
-      return;
-    }
-    setAcctVerifLoading(true);
-    setSetupError("");
-    try {
-      await verifyDKAccount(cleaned);
-      setSetupStep("success");
-      getMe()
-        .then((u) => setFreshUser(u))
-        .catch(() => {});
-    } catch (err: any) {
-      setSetupError(
-        err.message || "Account number does not match. Please try again.",
-      );
-    } finally {
-      setAcctVerifLoading(false);
     }
   };
 
@@ -906,576 +798,504 @@ export const TmaWalletPage: FC = () => {
 
         {/* ── DK Bank Setup ────────────────────────────────────── */}
         <Card style={{ gap: 12, margin: "0 var(--space-md)" }}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 16,
-              fontWeight: 700,
-              color: "var(--text-main)",
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {hasDKBank && hasPhoneVerified ? (
-                <CheckCircle2 size={16} color="#059669" />
-              ) : hasDKBank ? (
-                <ShieldCheck size={16} color="#f59e0b" />
-              ) : (
-                <Link2 size={16} color="#2775d0" />
-              )}
-              <span
-                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-              >
-                {hasDKBank && hasPhoneVerified
-                  ? "Payments Active"
-                  : "Set Up Payments"}
-                <span
-                  style={{
-                    background: "#fff",
-                    borderRadius: 4,
-                    padding: "1px 5px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <img
-                    src={dkBankLogo}
-                    alt="DK Bank"
-                    style={{ height: 14, width: "auto" }}
-                  />
-                </span>
-              </span>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: "var(--text-main)",
+              }}
+            >
+              {linkedAccount ? "Linked Bank Account" : "Link Bank Account"}
             </span>
-          </h3>
+            <span
+              style={{
+                background: "#fff",
+                borderRadius: 4,
+                padding: "1px 5px",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              <img
+                src={dkBankLogo}
+                alt="DK Bank"
+                style={{ height: 13, width: "auto" }}
+              />
+            </span>
+            {linkedAccount && (
+              <span style={{ fontSize: 12, color: "#059669", marginLeft: 2 }}>
+                · Connected
+              </span>
+            )}
+          </div>
 
-          {/* ── Already fully set up ── */}
-          {hasDKBank && hasPhoneVerified ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[
-                { label: "CID", value: user?.dkCid ? user.dkCid.slice(0, 5) + "•••" + user.dkCid.slice(-3) : "—" },
-                { label: "Account", value: user?.dkAccountName || "—" },
-              ].map(({ label, value }) => (
-                <p
-                  key={label}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    margin: 0,
-                    fontSize: 14,
-                  }}
-                >
-                  <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>
-                    {label}
-                  </span>
-                  <span
-                    style={{
-                      color: "var(--text-main)",
-                      fontWeight: 600,
-                      fontFamily: "monospace",
-                      fontSize: 13,
-                    }}
-                  >
-                    {value}
-                  </span>
-                </p>
-              ))}
-              <p
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  margin: 0,
-                  fontSize: 14,
-                }}
-              >
-                <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>
-                  Phone
-                </span>
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    color: "#059669",
-                    fontWeight: 600,
-                    fontSize: 13,
-                  }}
-                >
-                  <ShieldCheck size={13} color="#059669" /> Verified
-                </span>
-              </p>
-            </div>
-          ) : hasDKBank && !hasPhoneVerified ? (
-            /* ── CID linked but phone not yet verified ── */
+          {/* ── Already linked: show account details ── */}
+          {linkedAccount ? (
             <>
-              {/* Warning banner — always visible */}
               <div
                 style={{
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: "var(--bg-main)",
+                  border: "1px solid var(--glass-border)",
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: "column",
                   gap: 10,
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "rgba(245,158,11,0.08)",
-                  border: "1px solid rgba(245,158,11,0.25)",
                 }}
               >
-                <AlertCircle
-                  size={16}
-                  color="#f59e0b"
-                  style={{ flexShrink: 0 }}
-                />
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong style={{ color: "var(--text-main)" }}>
-                    One more step:
-                  </strong>{" "}
-                  confirm your phone number matches your DK Bank account to
-                  unlock deposits and withdrawals.
-                </div>
-              </div>
-
-              {/* Error state */}
-              {setupStep === "error" && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    background: "rgba(220,38,38,0.08)",
-                    border: "1px solid rgba(220,38,38,0.2)",
-                    fontSize: 13,
-                    color: "#dc2626",
-                  }}
-                >
-                  <XCircle
-                    size={14}
-                    color="#dc2626"
-                    style={{ flexShrink: 0 }}
-                  />
-                  {setupError}
-                </div>
-              )}
-
-              {/* Bot-pending state — user tapped "Share Phone Number" in the bot */}
-              {setupStep === "bot-pending" && (
-                <div
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: 10,
-                    background: "rgba(39,117,208,0.08)",
-                    border: "1px solid rgba(39,117,208,0.25)",
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  <strong style={{ color: "var(--text-main)" }}>
-                    Tap "Share Phone Number" in the Oro Bot
-                  </strong>
-                  , then come back here and tap <em>Check Status</em> below.
-                </div>
-              )}
-
-              {/* Account number fallback verification */}
-              {setupStep === "acct-verify" && (
-                <>
-                  <p
+                <div>
+                  <div
                     style={{
-                      margin: 0,
-                      fontSize: 13,
+                      fontSize: 11,
                       color: "var(--text-muted)",
-                      lineHeight: 1.6,
+                      marginBottom: 2,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
                     }}
                   >
-                    Your Telegram phone doesn't match your DK Bank registered
-                    phone. Enter your full DK Bank account number to verify
-                    ownership — you can find it in your DK Bank app or passbook.
-                    It's different from your CID.
-                  </p>
-                  <input
+                    Account Name
+                  </div>
+                  <div
                     style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      fontSize: 16,
-                      borderRadius: 10,
-                      border: "1.5px solid var(--glass-border)",
-                      background: "var(--bg-main)",
+                      fontSize: 14,
+                      fontWeight: 600,
                       color: "var(--text-main)",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      letterSpacing: 2,
                     }}
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="DK Bank account number"
-                    value={acctNumber}
-                    onChange={(e) => {
-                      setAcctNumber(e.target.value);
-                      setSetupError("");
-                    }}
-                  />
-                  {setupError && (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 13,
-                        color: "#dc2626",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 5,
-                      }}
-                    >
-                      <XCircle size={14} color="#dc2626" />
-                      {setupError}
-                    </p>
-                  )}
-                  <button
+                  >
+                    {linkedAccount.accountName || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div
                     style={{
-                      width: "100%",
-                      padding: "14px",
-                      fontSize: 15,
-                      fontWeight: 700,
-                      background: "linear-gradient(135deg, #00499c, #1a5bb5)",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 12,
-                      cursor:
-                        acctVerifLoading || !acctNumber.trim()
-                          ? "not-allowed"
-                          : "pointer",
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      marginBottom: 2,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    Account Number
+                  </div>
+                  <div
+                    style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      opacity: acctVerifLoading || !acctNumber.trim() ? 0.7 : 1,
+                      justifyContent: "space-between",
                     }}
-                    disabled={acctVerifLoading || !acctNumber.trim()}
-                    onClick={handleAcctVerify}
                   >
-                    {acctVerifLoading ? (
-                      <>
-                        <Loader2
-                          size={15}
-                          style={{ animation: "spin 0.8s linear infinite" }}
-                        />{" "}
-                        Verifying…
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck size={15} /> Verify Account Number
-                      </>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        fontFamily: "monospace",
+                        color: "var(--text-main)",
+                        letterSpacing: 1,
+                      }}
+                    >
+                      {linkedAccount.accountNumber
+                        ? bankAccountRevealed
+                          ? linkedAccount.accountNumber
+                          : linkedAccount.accountNumber
+                              .slice(0, -4)
+                              .replace(/./g, "•") +
+                            linkedAccount.accountNumber.slice(-4)
+                        : "—"}
+                    </div>
+                    {linkedAccount.accountNumber && (
+                      <button
+                        onClick={() => setBankAccountRevealed((v) => !v)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--text-muted)",
+                          padding: 4,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {bankAccountRevealed ? (
+                          <EyeOff size={15} />
+                        ) : (
+                          <Eye size={15} />
+                        )}
+                      </button>
                     )}
-                  </button>
-                  <button
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      fontSize: 13,
-                      background: "transparent",
-                      border: "1px solid var(--glass-border)",
-                      borderRadius: 10,
-                      color: "var(--text-muted)",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => {
-                      setSetupStep("idle");
-                      setAcctNumber("");
-                      setSetupError("");
-                    }}
-                  >
-                    ← Try a different method
-                  </button>
-                </>
-              )}
-
-              {/* Primary action button */}
-              {setupStep !== "bot-pending" && setupStep !== "acct-verify" && (
-                <button
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div
                   style={{
-                    width: "100%",
-                    padding: "14px",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    background: "linear-gradient(135deg, #00499c, #1a5bb5)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 12,
-                    cursor:
-                      setupStep === "verifying" ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    opacity: setupStep === "verifying" ? 0.7 : 1,
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: "#059669",
+                    flexShrink: 0,
                   }}
-                  disabled={setupStep === "verifying"}
-                  onClick={() => {
-                    const tg = (window as any).Telegram?.WebApp;
-                    if (typeof tg?.requestContact === "function") {
-                      // Native Telegram phone-share popup — no bot chat / message input.
-                      setSetupStep("verifying");
-                      setSetupError("");
-                      tg.onEvent("contactRequested", async (result: any) => {
-                        tg.offEvent("contactRequested");
-                        if (
-                          result?.status !== "sent" ||
-                          !result?.contact?.phone_number
-                        ) {
-                          setSetupStep("idle");
-                          return;
-                        }
-                        try {
-                          const contactUserId: number =
-                            result.contact.user_id ?? Number(user?.telegramId);
-                          const phoneResult = await verifyPhoneTma({
-                            phoneNumber: result.contact.phone_number,
-                            userId: contactUserId,
-                            authDate: result.auth_date,
-                            hash: result.hash,
-                          });
-                          if (phoneResult.requiresAccountVerification) {
-                            setSetupStep("acct-verify");
-                          } else {
-                            setSetupStep("success");
-                            getMe()
-                              .then((u) => setFreshUser(u))
-                              .catch(() => {});
-                          }
-                        } catch (err: any) {
-                          setSetupError(
-                            err.message ||
-                              "Verification failed. Please try again.",
-                          );
-                          setSetupStep("error");
-                        }
-                      });
-                      tg.requestContact();
-                    } else {
-                      // requestContact not available — open bot chat which shows
-                      // a "Share Phone Number" keyboard button.
-                      const url = `https://t.me/${BOT_USERNAME}?start=verify`;
-                      const tg2 = (window as any).Telegram?.WebApp;
-                      if (typeof tg2?.openTelegramLink === "function") {
-                        tg2.openTelegramLink(url);
-                      } else {
-                        window.open(url, "_blank");
-                      }
-                      setSetupStep("bot-pending");
-                      setSetupError("");
-                    }
-                  }}
-                >
-                  {setupStep === "verifying" ? (
-                    <>
-                      <Loader2
-                        size={15}
-                        style={{ animation: "spin 0.8s linear infinite" }}
-                      />{" "}
-                      Waiting for Telegram…
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck size={15} /> Verify Phone Number
-                    </>
-                  )}
-                </button>
-              )}
-
-              {/* Cancel escape hatch while waiting for Telegram popup */}
-              {setupStep === "verifying" && (
-                <button
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    fontSize: 13,
-                    background: "transparent",
-                    border: "1px solid var(--glass-border)",
-                    borderRadius: 10,
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setSetupStep("idle")}
-                >
-                  Cancel
-                </button>
-              )}
-
-              {/* Check Status — prominent when bot-pending, secondary otherwise */}
-              {(setupStep === "bot-pending" ||
-                setupStep === "idle" ||
-                setupStep === "error" ||
-                setupStep === "acct-verify") && (
-                <button
-                  style={{
-                    width: "100%",
-                    padding: setupStep === "bot-pending" ? "14px" : "10px",
-                    fontSize: setupStep === "bot-pending" ? 15 : 13,
-                    fontWeight: setupStep === "bot-pending" ? 700 : 500,
-                    background:
-                      setupStep === "bot-pending"
-                        ? "rgba(5,150,105,0.12)"
-                        : "transparent",
-                    border:
-                      setupStep === "bot-pending"
-                        ? "1px solid rgba(5,150,105,0.35)"
-                        : "1px solid var(--glass-border)",
-                    borderRadius: 10,
-                    color:
-                      setupStep === "bot-pending"
-                        ? "#059669"
-                        : "var(--text-muted)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 6,
-                  }}
-                  onClick={async () => {
-                    const updated = await getMe().catch(() => null);
-                    if (updated) {
-                      setFreshUser(updated);
-                      if (updated.isPhoneVerified) {
-                        setSetupStep("success");
-                      } else if (setupStep === "bot-pending") {
-                        setSetupError(
-                          'Phone not verified yet. Please tap "Share Phone Number" in the Oro Bot first.',
-                        );
-                        setSetupStep("error");
-                      }
-                    }
-                  }}
-                >
-                  <RotateCcw size={13} />{" "}
-                  {setupStep === "bot-pending"
-                    ? "Check Status"
-                    : "Already verified? Refresh"}
-                </button>
-              )}
+                />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  DK Bank · Linked
+                </span>
+              </div>
             </>
-          ) : (
-            /* ── Not set up at all — show single "Link & Verify" form ── */
+          ) : bankStep === "done" ? (
+            /* ── Success state ── */
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                padding: "12px 0 4px",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "rgba(5,150,105,0.1)",
+                  border: "1px solid rgba(5,150,105,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CheckCircle2 size={28} color="#059669" />
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 15,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Bank Linked!
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--text-muted)",
+                    marginTop: 3,
+                  }}
+                >
+                  Your DK Bank account is connected.
+                </div>
+              </div>
+            </div>
+          ) : bankStep === "otp" ? (
+            /* ── OTP step ── */
             <>
               <p
                 style={{
                   margin: 0,
-                  fontSize: 14,
+                  fontSize: 13,
                   color: "var(--text-muted)",
                   lineHeight: 1.6,
                 }}
               >
-                Enter your 11-digit Bhutanese National ID (CID). We'll link your
-                DK Bank account and verify your phone in one step.
+                OTP sent to your DK-registered phone
+                {bankMaskedPhone ? ` (${bankMaskedPhone})` : ""}. Account:{" "}
+                <strong style={{ color: "var(--text-main)" }}>
+                  {bankAccountName}
+                </strong>
+                .
               </p>
-              <input
+
+              {/* OTP digit boxes */}
+              <div
                 style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  fontSize: 16,
-                  borderRadius: 10,
-                  border: "1.5px solid var(--glass-border)",
-                  background: "var(--bg-main)",
-                  color: "var(--text-main)",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  letterSpacing: 2,
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "center",
+                  cursor: "text",
                 }}
-                type="tel"
+                onClick={() =>
+                  document.getElementById("bank-otp-input")?.focus()
+                }
+              >
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const digit = bankOtp[i];
+                  const isFilled = !!digit;
+                  const isActive = bankOtp.length === i;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        width: 44,
+                        height: 52,
+                        borderRadius: 10,
+                        border: isFilled
+                          ? "2px solid #2775d0"
+                          : isActive
+                            ? "2px solid rgba(39,117,208,0.5)"
+                            : "2px solid var(--glass-border)",
+                        background: isFilled
+                          ? "rgba(39,117,208,0.08)"
+                          : "var(--bg-main)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 20,
+                        fontWeight: 800,
+                        color: "#2775d0",
+                        transition: "all 0.12s",
+                        boxShadow: isActive
+                          ? "0 0 0 3px rgba(39,117,208,0.12)"
+                          : "none",
+                      }}
+                    >
+                      {digit ??
+                        (isActive ? (
+                          <span
+                            style={{
+                              width: 2,
+                              height: 20,
+                              background: "#2775d0",
+                              borderRadius: 2,
+                              animation: "nudgePulse 0.8s ease-in-out infinite",
+                            }}
+                          />
+                        ) : (
+                          ""
+                        ))}
+                    </div>
+                  );
+                })}
+              </div>
+              <input
+                id="bank-otp-input"
+                style={{
+                  position: "absolute",
+                  opacity: 0,
+                  pointerEvents: "none",
+                  width: 1,
+                  height: 1,
+                }}
+                type="text"
                 inputMode="numeric"
-                placeholder="11-digit CID"
-                maxLength={11}
-                value={cid}
+                maxLength={6}
+                value={bankOtp}
+                autoFocus
                 onChange={(e) => {
-                  setCid(e.target.value.replace(/\D/g, ""));
-                  if (setupStep === "error") setSetupStep("idle");
-                  setSetupError("");
+                  setBankOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setBankError("");
                 }}
               />
-              {setupStep === "error" && (
-                <p
+
+              {bankError && (
+                <div
                   style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "#dc2626",
                     display: "flex",
                     alignItems: "center",
-                    gap: 5,
+                    gap: 6,
+                    fontSize: 13,
+                    color: "#dc2626",
                   }}
                 >
-                  <XCircle size={14} color="#dc2626" />
-                  {setupError}
-                </p>
+                  <XCircle size={13} color="#dc2626" />
+                  {bankError}
+                </div>
               )}
+
               <button
                 style={{
                   width: "100%",
                   padding: "14px",
                   fontSize: 15,
                   fontWeight: 700,
-                  background: "var(--grad-primary)",
+                  background: "linear-gradient(135deg, #2775d0, #1a5bb5)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 12,
-                  cursor: "pointer",
+                  cursor:
+                    bankLoading || bankOtp.length !== 6
+                      ? "not-allowed"
+                      : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 6,
-                  opacity:
-                    setupStep === "linking" ||
-                    setupStep === "verifying" ||
-                    cid.length !== 11
-                      ? 0.6
-                      : 1,
+                  gap: 8,
+                  opacity: bankLoading || bankOtp.length !== 6 ? 0.6 : 1,
                 }}
-                disabled={
-                  setupStep === "linking" ||
-                  setupStep === "verifying" ||
-                  cid.length !== 11
-                }
-                onClick={handleSetup}
+                disabled={bankLoading || bankOtp.length !== 6}
+                onClick={async () => {
+                  setBankLoading(true);
+                  setBankError("");
+                  try {
+                    const account = await verifyBankLink(bankOtp);
+                    setLinkedAccount(account);
+                    setBankStep("done");
+                    setTimeout(() => {}, 1800);
+                  } catch (err: any) {
+                    setBankError(err.message || "Invalid OTP. Try again.");
+                  } finally {
+                    setBankLoading(false);
+                  }
+                }}
               >
-                {setupStep === "linking" ? (
+                {bankLoading ? (
                   <>
                     <Loader2
                       size={15}
                       style={{ animation: "spin 0.8s linear infinite" }}
                     />{" "}
-                    Linking account…
-                  </>
-                ) : setupStep === "verifying" ? (
-                  <>
-                    <Loader2
-                      size={15}
-                      style={{ animation: "spin 0.8s linear infinite" }}
-                    />{" "}
-                    Waiting for Telegram…
+                    Verifying…
                   </>
                 ) : (
                   <>
-                    <Link2 size={15} /> Link & Verify
+                    <CheckCircle2 size={15} /> Verify & Link
                   </>
                 )}
               </button>
+
+              <button
+                onClick={() => {
+                  setBankStep("cid");
+                  setBankError("");
+                  setBankOtp("");
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: "8px 0",
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  width: "100%",
+                  textAlign: "center",
+                }}
+              >
+                ← Change CID
+              </button>
+            </>
+          ) : (
+            /* ── CID entry step ── */
+            <>
               <p
                 style={{
                   margin: 0,
-                  fontSize: 12,
+                  fontSize: 13,
                   color: "var(--text-muted)",
-                  textAlign: "center",
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
                 }}
               >
-                Telegram will ask you to share your phone number — this confirms
-                it matches your DK Bank account.
+                Enter your 11-digit Bhutanese National ID (CID). An OTP will be
+                sent to your DK Bank registered phone.
               </p>
+              <div>
+                <label
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Citizenship ID (CID)
+                </label>
+                <input
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    fontSize: 16,
+                    borderRadius: 10,
+                    border: "1.5px solid var(--glass-border)",
+                    background: "var(--bg-main)",
+                    color: "var(--text-main)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    letterSpacing: 2,
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="11-digit CID"
+                  maxLength={11}
+                  value={bankCid}
+                  onChange={(e) => {
+                    setBankCid(e.target.value.replace(/\D/g, "").slice(0, 11));
+                    setBankError("");
+                  }}
+                />
+              </div>
+
+              {bankError && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 13,
+                    color: "#dc2626",
+                  }}
+                >
+                  <XCircle size={13} color="#dc2626" />
+                  {bankError}
+                </div>
+              )}
+
+              <button
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  background: "linear-gradient(135deg, #2775d0, #1a5bb5)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor:
+                    bankLoading || bankCid.length !== 11
+                      ? "not-allowed"
+                      : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: bankLoading || bankCid.length !== 11 ? 0.6 : 1,
+                }}
+                disabled={bankLoading || bankCid.length !== 11}
+                onClick={async () => {
+                  setBankLoading(true);
+                  setBankError("");
+                  try {
+                    const res = await linkBankAccount(bankCid);
+                    setBankAccountName(res.accountName);
+                    setBankMaskedPhone(res.maskedPhone);
+                    setBankStep("otp");
+                  } catch (err: any) {
+                    setBankError(
+                      err.message || "Failed to send OTP. Try again.",
+                    );
+                  } finally {
+                    setBankLoading(false);
+                  }
+                }}
+              >
+                {bankLoading ? (
+                  <>
+                    <Loader2
+                      size={15}
+                      style={{ animation: "spin 0.8s linear infinite" }}
+                    />{" "}
+                    Sending OTP…
+                  </>
+                ) : (
+                  <>
+                    <Link2 size={15} /> Send OTP
+                  </>
+                )}
+              </button>
             </>
           )}
         </Card>
@@ -1602,8 +1422,8 @@ export const TmaWalletPage: FC = () => {
                         }}
                       >
                         {referralTxs.length} friend
-                        {referralTxs.length !== 1 ? "s" : ""} made a prediction ·
-                        bonus credited to your wallet
+                        {referralTxs.length !== 1 ? "s" : ""} made a prediction
+                        · bonus credited to your wallet
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -1788,7 +1608,7 @@ export const TmaWalletPage: FC = () => {
                   padding: "20px",
                 }}
               >
-                {paymentModal === "deposit" && !user?.dkCid && (
+                {paymentModal === "deposit" && !linkedAccount && (
                   <div
                     style={{
                       display: "flex",
@@ -1806,7 +1626,7 @@ export const TmaWalletPage: FC = () => {
                     <span>Link your DK Bank account before topping up.</span>
                   </div>
                 )}
-                {paymentModal === "withdraw" && !user?.dkCid && (
+                {paymentModal === "withdraw" && !linkedAccount && (
                   <div
                     style={{
                       display: "flex",
@@ -1952,7 +1772,7 @@ export const TmaWalletPage: FC = () => {
                     </button>
                   ))}
                 </div>
-                {paymentModal === "deposit" && user?.dkCid && (
+                {paymentModal === "deposit" && linkedAccount && (
                   <div
                     style={{
                       display: "flex",
@@ -1966,7 +1786,12 @@ export const TmaWalletPage: FC = () => {
                       DK Account
                     </span>
                     <span style={{ fontWeight: 600, fontSize: 13 }}>
-                      {user.dkAccountName || (user.dkCid ? user.dkCid.slice(0, 5) + "•••" + user.dkCid.slice(-3) : "—")}
+                      {linkedAccount.accountName ||
+                        (linkedAccount.cid
+                          ? linkedAccount.cid.slice(0, 5) +
+                            "•••" +
+                            linkedAccount.cid.slice(-3)
+                          : "—")}
                     </span>
                   </div>
                 )}
@@ -2046,7 +1871,9 @@ export const TmaWalletPage: FC = () => {
                     gap: 8,
                     opacity:
                       payProcessing ||
-                      (paymentModal === "deposit" ? !user?.dkCid : !user?.dkCid)
+                      (paymentModal === "deposit"
+                        ? !linkedAccount
+                        : !linkedAccount)
                         ? 0.6
                         : 1,
                   }}
