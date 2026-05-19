@@ -276,7 +276,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
 
   if (step === "intro") {
     const features: { icon: React.ReactNode; title: string; desc: string }[] = [
-      { icon: <TrendingUp size={20} color="#2775d0" />, title: "Prediction Markets", desc: "Predict on real-world outcomes. Odds shift live with every bet." },
+      { icon: <TrendingUp size={20} color="#2775d0" />, title: "Prediction Markets", desc: "Predict on real-world outcomes. Odds shift live with every prediction." },
       { icon: <Trophy size={20} color="#2775d0" />, title: "Weekly Seasons", desc: "Compete on the leaderboard. Top predictors win prizes every week." },
       { icon: <Star size={20} color="#2775d0" />, title: "Prediction Rating", desc: "Build your reputation. Rise from Rookie to Legend." },
       { icon: <Swords size={20} color="#2775d0" />, title: "Duels", desc: "Challenge friends head-to-head on any open market." },

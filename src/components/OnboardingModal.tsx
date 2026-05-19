@@ -351,7 +351,7 @@ const STEPS = [
   {
     visual: <MarketsVisual />,
     title: "Predict markets",
-    body: "Pick outcomes on live prediction markets. Odds shift with every bet — get in early for the best returns.",
+    body: "Pick outcomes on live prediction markets. Odds shift with every prediction — get in early for the best returns.",
   },
   {
     visual: <OracleVisual />,
