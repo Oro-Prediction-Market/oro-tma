@@ -4,8 +4,6 @@ import {
   ArrowRight,
   AtSign,
   User,
-  Phone,
-  Mail,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -25,6 +23,7 @@ import {
 } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { TermsPage } from "@/pages/TermsPage";
 
 type Step =
   | "intro"
@@ -33,7 +32,6 @@ type Step =
   | "submitting"
   | "bank"
   | "success";
-type ContactMethod = "phone" | "email";
 
 const BTN = {
   primary: {
@@ -135,9 +133,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
       .filter(Boolean)
       .join(" "),
   );
-  const [contactMethod, setContactMethod] = useState<ContactMethod>("phone");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [fullNameError, setFullNameError] = useState("");
   const [contactError, setContactError] = useState("");
   const [cidError, setCidError] = useState("");
@@ -152,6 +148,10 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [displayName, setDisplayName] = useState("");
+
+  // Terms & Privacy consent
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // bank linking
   const [bankStep, setBankStep] = useState<"cid" | "otp" | "done">("cid");
@@ -229,13 +229,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
     let cErr = "";
     let cidErr = "";
     if (!fullName.trim()) fErr = "Full name is required";
-    if (contactMethod === "phone") {
-      if (!phone.trim()) cErr = "Phone number is required";
-    } else {
-      if (!email.trim()) cErr = "Email is required";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-        cErr = "Enter a valid email";
-    }
+    if (!phone.trim()) cErr = "Phone number is required";
     const cleanCid = cid.trim().replace(/\D/g, "");
     if (!cleanCid) cidErr = "CID is required";
     else if (cleanCid.length !== 11) cidErr = "CID must be 11 digits";
@@ -254,9 +248,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
     setApiError("");
     try {
       await sendOnboardOtp(
-        contactMethod === "phone"
-          ? { phoneNumber: phone, cid: cid.trim() }
-          : { email: email.trim(), cid: cid.trim() },
+        { phoneNumber: phone, cid: cid.trim() },
         preKycToken!,
       );
       setOtpDigits("");
@@ -282,17 +274,11 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
     setStep("submitting");
     setApiError("");
     try {
-      await register(
-        username,
-        fullName.trim(),
-        otpDigits,
-        contactMethod === "phone" ? phone : undefined,
-        contactMethod === "email" ? email.trim() : undefined,
-      );
+      await register(username, fullName.trim(), otpDigits, phone, undefined);
       setDisplayName(telegramProfile?.firstName ?? "");
       // Auto-trigger bank linking with CID collected during contact step (skip OTP since identity already verified)
       try {
-        const userPhone = contactMethod === "phone" ? phone : undefined;
+        const userPhone = phone || undefined;
         const res = await linkBankAccount(cid.trim(), userPhone, true);
         setBankAccountName(res.accountName);
         setBankMaskedPhone(res.maskedPhone);
@@ -350,6 +336,26 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
       fontWeight: 500,
     } as React.CSSProperties,
   };
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // TERMS & PRIVACY (inline, no auth required)
+  // ────────────────────────────────────────────────────────────────────────────
+
+  if (showTerms) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 100,
+          background: "var(--bg-main, #0f0f23)",
+          overflowY: "auto",
+        }}
+      >
+        <TermsPage onBack={() => setShowTerms(false)} />
+      </div>
+    );
+  }
 
   // ────────────────────────────────────────────────────────────────────────────
   // INTRO
@@ -597,7 +603,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
       setBankLoading(true);
       setBankError("");
       try {
-        const userPhone = contactMethod === "phone" ? phone : undefined;
+        const userPhone = phone || undefined;
         const res = await linkBankAccount(cid.trim(), userPhone);
         setBankAccountName(res.accountName);
         setBankMaskedPhone(res.maskedPhone);
@@ -1224,7 +1230,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
 
             {/* Phone number (must match DK Bank) */}
             <div>
-              <label style={S.label}>Contact</label>
+              <label style={S.label}>Phone Number</label>
               <p
                 style={{
                   fontSize: 11,
@@ -1233,91 +1239,17 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                   lineHeight: 1.4,
                 }}
               >
-                Enter the phone number or email registered with your DK Bank
-                account
+                Enter the phone number registered with your DK Bank account
               </p>
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                {(["phone", "email"] as ContactMethod[]).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => {
-                      setContactMethod(m);
-                      setContactError("");
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "10px",
-                      borderRadius: 12,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      background:
-                        contactMethod === m
-                          ? "rgba(39,117,208,0.15)"
-                          : "var(--bg-card, #1a1f2e)",
-                      border:
-                        contactMethod === m
-                          ? "1px solid rgba(39,117,208,0.5)"
-                          : "1px solid var(--glass-border, rgba(255,255,255,0.08))",
-                      color:
-                        contactMethod === m
-                          ? "#2775d0"
-                          : "var(--text-muted, #94a3b8)",
-                    }}
-                  >
-                    {m === "phone" ? <Phone size={14} /> : <Mail size={14} />}
-                    {m === "phone" ? "Phone" : "Email"}
-                  </button>
-                ))}
-              </div>
 
-              {contactMethod === "phone" ? (
-                <PhoneInput
-                  value={phone}
-                  onChange={(e164) => {
-                    setPhone(e164);
-                    if (contactError) setContactError("");
-                  }}
-                  error={contactError || undefined}
-                />
-              ) : (
-                <>
-                  <div style={{ position: "relative" }}>
-                    <Mail
-                      size={16}
-                      color="var(--text-subtle, #64748b)"
-                      style={{
-                        position: "absolute",
-                        left: 14,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                      }}
-                    />
-                    <input
-                      type="email"
-                      inputMode="email"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (contactError) setContactError("");
-                      }}
-                      onFocus={scrollIntoView}
-                      placeholder="you@example.com"
-                      style={S.input(!!contactError)}
-                    />
-                  </div>
-                  {contactError && (
-                    <div style={S.errorRow}>
-                      <AlertCircle size={13} /> {contactError}
-                    </div>
-                  )}
-                </>
-              )}
+              <PhoneInput
+                value={phone}
+                onChange={(e164) => {
+                  setPhone(e164);
+                  if (contactError) setContactError("");
+                }}
+                error={contactError || undefined}
+              />
             </div>
           </div>
         )}
@@ -1340,38 +1272,88 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
             Continue <ArrowRight size={18} />
           </button>
         ) : (
-          <button
-            disabled={
-              sendingOtp ||
-              !fullName.trim() ||
-              !cid.trim() ||
-              cid.trim().length !== 11 ||
-              (contactMethod === "phone" ? !phone.trim() : !email.trim())
-            }
-            style={{
-              ...BTN.primary,
-              opacity:
+          <>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                marginBottom: 14,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                style={{
+                  marginTop: 2,
+                  accentColor: "#2775d0",
+                  width: 16,
+                  height: 16,
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted, #94a3b8)",
+                  lineHeight: 1.5,
+                }}
+              >
+                I agree to the{" "}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowTerms(true);
+                  }}
+                  style={{
+                    color: "#2775d0",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  Terms of Service and Privacy Policy
+                </a>
+              </span>
+            </label>
+            <button
+              disabled={
                 sendingOtp ||
                 !fullName.trim() ||
                 !cid.trim() ||
                 cid.trim().length !== 11 ||
-                (contactMethod === "phone" ? !phone.trim() : !email.trim())
-                  ? 0.4
-                  : 1,
-            }}
-            onClick={sendOtp}
-          >
-            {sendingOtp ? (
-              <Loader2
-                size={18}
-                style={{ animation: "spin 1s linear infinite" }}
-              />
-            ) : (
-              <>
-                Send Code <ArrowRight size={18} />
-              </>
-            )}
-          </button>
+                !termsAccepted ||
+                !phone.trim()
+              }
+              style={{
+                ...BTN.primary,
+                opacity:
+                  sendingOtp ||
+                  !fullName.trim() ||
+                  !cid.trim() ||
+                  cid.trim().length !== 11 ||
+                  !termsAccepted ||
+                  !phone.trim()
+                    ? 0.4
+                    : 1,
+              }}
+              onClick={sendOtp}
+            >
+              {sendingOtp ? (
+                <Loader2
+                  size={18}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
+              ) : (
+                <>
+                  Send Code <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </>
         )}
       </div>
 
@@ -1432,9 +1414,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                 color: "var(--text-muted, #94a3b8)",
               }}
             >
-              {contactMethod === "phone"
-                ? `Code sent to ${phone}`
-                : `Code sent to ${email}`}
+              Code sent to {phone}
             </p>
 
             {/* 6-box OTP input */}

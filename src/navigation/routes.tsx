@@ -48,6 +48,9 @@ const TmaChallengesPage = lazy(() =>
 const TmaWalletPage = lazy(() =>
   import("@/pages/TmaWalletPage").then((m) => ({ default: m.TmaWalletPage })),
 );
+const TermsPage = lazy(() =>
+  import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })),
+);
 
 interface Route {
   path: string;
@@ -113,4 +116,5 @@ export const routes: Route[] = [
   { path: "/settings", Component: TmaSettingsPage, title: "Settings" },
   { path: "/challenges", Component: TmaChallengesPage, title: "Duels" },
   { path: "/wallet", Component: TmaWalletPage, title: "Wallet" },
+  { path: "/terms", Component: TermsPage, title: "Terms & Privacy" },
 ];
