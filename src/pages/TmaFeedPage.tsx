@@ -188,7 +188,11 @@ function OpenPicksStrip({
   markets: Market[];
 }) {
   const navigate = useNavigate();
-  if (!pendingBets.length) return null;
+  const openBets = pendingBets.filter((bet) => {
+    const m = markets.find((mk) => mk.id === bet.marketId);
+    return m && m.status === "open";
+  });
+  if (!openBets.length) return null;
 
   return (
     <div style={{ marginBottom: 18 }}>
@@ -223,7 +227,7 @@ function OpenPicksStrip({
               borderRadius: 6,
             }}
           >
-            {pendingBets.length}
+            {openBets.length}
           </span>
         </div>
         <button
@@ -252,7 +256,7 @@ function OpenPicksStrip({
         }}
       >
         <style>{`.picks-scroll::-webkit-scrollbar { display: none; }`}</style>
-        {pendingBets.map((bet) => {
+        {openBets.map((bet) => {
           const feedMarket = markets.find((m) => m.id === bet.marketId);
           const betMarket = feedMarket ?? bet.market;
           const liveOutcome = feedMarket?.outcomes.find(
@@ -847,24 +851,7 @@ const MarketCard = memo(function MarketCard({
                       >
                         {s.label}
                       </span>
-                      {s.id === userPickedOutcomeId && (
-                        <span
-                          style={{
-                            fontSize: "0.6rem",
-                            fontWeight: 800,
-                            color: s.color,
-                            background: `${s.color}18`,
-                            border: `1px solid ${s.color}40`,
-                            padding: "1px 5px",
-                            borderRadius: 4,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.04em",
-                            display: "inline-block",
-                          }}
-                        >
-                          Your pick
-                        </span>
-                      )}
+
                       {s.reputationSignal != null && hasBet && (
                         <span
                           style={{
