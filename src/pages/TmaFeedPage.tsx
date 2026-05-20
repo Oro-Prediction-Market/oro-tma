@@ -114,7 +114,9 @@ function LiveTicker() {
       {/* Text — tappable → navigate to market */}
       <div
         role="button"
-        onClick={() => current.marketId && navigate(`/market/${current.marketId}`)}
+        onClick={() =>
+          current.marketId && navigate(`/market/${current.marketId}`)
+        }
         style={{
           flex: 1,
           minWidth: 0,
@@ -472,13 +474,15 @@ const MarketCard = memo(function MarketCard({
       const pct =
         o.lmsrProbability != null && o.lmsrProbability > 0
           ? o.lmsrProbability * 100
-          : ((Number(o.totalBetAmount) + prior / n) / (totalPool + prior)) * 100;
+          : ((Number(o.totalBetAmount) + prior / n) / (totalPool + prior)) *
+            100;
       return { ...o, pct: isNaN(pct) ? 100 / n : pct };
     });
     const sorted = [...raw].sort((a, b) => b.pct - a.pct);
     return raw.map((o) => {
       const rank = sorted.findIndex((s) => s.id === o.id);
-      const resolved = market.status === "resolved" || market.status === "settled";
+      const resolved =
+        market.status === "resolved" || market.status === "settled";
       return { ...o, color: outcomeColor(rank, raw.length, resolved) };
     });
   })();
@@ -592,27 +596,38 @@ const MarketCard = memo(function MarketCard({
 
       {/* Settlement source */}
       {(market.externalSource === "ter" || market.settlementSource) && (
-        <div style={{ fontSize: "0.68rem", color: "var(--text-subtle)", fontWeight: 600, marginBottom: 4 }}>
+        <div
+          style={{
+            fontSize: "0.68rem",
+            color: "var(--text-subtle)",
+            fontWeight: 600,
+            marginBottom: 4,
+          }}
+        >
           Resolves via{" "}
-          {market.externalSource === "ter" ? (
-            "api.ter.bt"
-          ) : (() => {
-            try {
-              const url = new URL(market.settlementSource!);
-              return (
-                <a
-                  href={market.settlementSource!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "inherit", textDecoration: "underline", wordBreak: "break-all" }}
-                >
-                  {url.hostname.replace(/^www\./, "")}
-                </a>
-              );
-            } catch {
-              return market.settlementSource;
-            }
-          })()}
+          {market.externalSource === "ter"
+            ? "api.ter.bt"
+            : (() => {
+                try {
+                  const url = new URL(market.settlementSource!);
+                  return (
+                    <a
+                      href={market.settlementSource!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "inherit",
+                        textDecoration: "underline",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {url.hostname.replace(/^www\./, "")}
+                    </a>
+                  );
+                } catch {
+                  return market.settlementSource;
+                }
+              })()}
         </div>
       )}
 
@@ -953,7 +968,9 @@ const MarketCard = memo(function MarketCard({
             }}
           />
           <span style={{ color: "var(--text-muted)" }}>
-            {totalPool > 0 ? `Nu ${totalPool.toLocaleString()} Vol.` : "Be the first to predict"}
+            {totalPool > 0
+              ? `Nu ${totalPool.toLocaleString()} Vol.`
+              : "Be the first to predict"}
           </span>
           {market.category && (
             <>
@@ -1164,9 +1181,9 @@ export const TmaFeedPage: FC = () => {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    // Fetch the user's pending bets for the picks strip + card highlights
+    // Fetch all user bets for the picks strip + card highlights (always show "Your pick")
     if (user) {
-      getMyBets("pending")
+      getMyBets()
         .then(setMyPendingBets)
         .catch(() => {});
     }
@@ -1208,7 +1225,7 @@ export const TmaFeedPage: FC = () => {
       },
     ]);
     // Then refresh with real server data
-    getMyBets("pending")
+    getMyBets()
       .then(setMyPendingBets)
       .catch(() => {});
 
@@ -1270,7 +1287,12 @@ export const TmaFeedPage: FC = () => {
                 border: "1px solid rgba(124, 58, 237, 0.2)",
               }}
             />
-            <TrendingUp size={26} strokeWidth={1.5} color="var(--color-primary, #7c3aed)" style={{ zIndex: 1 }} />
+            <TrendingUp
+              size={26}
+              strokeWidth={1.5}
+              color="var(--color-primary, #7c3aed)"
+              style={{ zIndex: 1 }}
+            />
           </div>
           <div
             style={{
