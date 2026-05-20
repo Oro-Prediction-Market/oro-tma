@@ -52,14 +52,22 @@ export function PhoneInput({
 }: PhoneInputProps) {
   const [country, setCountry] = useState<CountryCode>(() => {
     if (value) {
-      try { return parsePhoneNumber(value).country ?? defaultCountry; } catch { /**/ }
+      try {
+        return parsePhoneNumber(value).country ?? defaultCountry;
+      } catch {
+        /**/
+      }
     }
     return defaultCountry;
   });
 
   const [inputValue, setInputValue] = useState(() => {
     if (value) {
-      try { return parsePhoneNumber(value).formatNational(); } catch { /**/ }
+      try {
+        return parsePhoneNumber(value).formatNational();
+      } catch {
+        /**/
+      }
     }
     return "";
   });
@@ -72,7 +80,9 @@ export function PhoneInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedCountry = useMemo(
-    () => ALL_COUNTRIES.find((c) => c.code === country) ?? ALL_COUNTRIES.find((c) => c.code === "BT")!,
+    () =>
+      ALL_COUNTRIES.find((c) => c.code === country) ??
+      ALL_COUNTRIES.find((c) => c.code === "BT")!,
     [country],
   );
 
@@ -86,7 +96,10 @@ export function PhoneInput({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setShowDropdown(false);
         setSearch("");
       }
@@ -100,8 +113,11 @@ export function PhoneInput({
   }, [showDropdown]);
 
   const handleInput = (raw: string) => {
+    // Limit digits based on country (Bhutan = 8 digits, most others = 10-12)
+    const maxDigits = country === "BT" ? 8 : 15;
+    const digits = raw.replace(/\D/g, "").slice(0, maxDigits);
     const formatter = new AsYouType(country);
-    const formatted = formatter.input(raw.replace(/\D/g, ""));
+    const formatted = formatter.input(digits);
     setInputValue(formatted);
     const phoneNumber = formatter.getNumber();
     if (phoneNumber) {
@@ -126,20 +142,24 @@ export function PhoneInput({
     handleInput(e.clipboardData.getData("text").replace(/\D/g, ""));
   };
 
-  const borderColor = error ? "#ef4444" : "var(--glass-border, rgba(255,255,255,0.08))";
+  const borderColor = error
+    ? "#ef4444"
+    : "var(--glass-border, rgba(255,255,255,0.08))";
 
   return (
     <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       {/* Input row */}
-      <div style={{
-        display: "flex",
-        borderRadius: 14,
-        border: `1px solid ${borderColor}`,
-        background: "var(--bg-card, #1a1f2e)",
-        overflow: "visible",
-        opacity: disabled ? 0.5 : 1,
-        pointerEvents: disabled ? "none" : "auto",
-      }}>
+      <div
+        style={{
+          display: "flex",
+          borderRadius: 14,
+          border: `1px solid ${borderColor}`,
+          background: "var(--bg-card, #1a1f2e)",
+          overflow: "visible",
+          opacity: disabled ? 0.5 : 1,
+          pointerEvents: disabled ? "none" : "auto",
+        }}
+      >
         {/* Country selector button */}
         <button
           type="button"
@@ -157,14 +177,25 @@ export function PhoneInput({
             borderRadius: "14px 0 0 14px",
           }}
         >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{selectedCountry.flag}</span>
-          <span style={{ fontSize: 14, color: "var(--text-muted, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>
+            {selectedCountry.flag}
+          </span>
+          <span
+            style={{
+              fontSize: 14,
+              color: "var(--text-muted, #94a3b8)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {selectedCountry.dialCode}
           </span>
           <ChevronDown
             size={14}
             color="var(--text-subtle, #64748b)"
-            style={{ transition: "transform 0.2s", transform: showDropdown ? "rotate(180deg)" : "rotate(0deg)" }}
+            style={{
+              transition: "transform 0.2s",
+              transform: showDropdown ? "rotate(180deg)" : "rotate(0deg)",
+            }}
           />
         </button>
 
@@ -192,28 +223,40 @@ export function PhoneInput({
 
       {/* Dropdown */}
       {showDropdown && (
-        <div style={{
-          position: "absolute",
-          top: "calc(100% + 4px)",
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          borderRadius: 14,
-          background: "var(--bg-card, #1a1f2e)",
-          border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
-          boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
-          overflow: "hidden",
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            borderRadius: 14,
+            background: "var(--bg-card, #1a1f2e)",
+            border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+            overflow: "hidden",
+          }}
+        >
           {/* Search */}
-          <div style={{ padding: 8, borderBottom: "1px solid var(--glass-border, rgba(255,255,255,0.08))" }}>
+          <div
+            style={{
+              padding: 8,
+              borderBottom:
+                "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+            }}
+          >
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Escape") { setShowDropdown(false); setSearch(""); }
-                if (e.key === "Enter" && filteredCountries.length > 0) handleCountrySelect(filteredCountries[0].code);
+                if (e.key === "Escape") {
+                  setShowDropdown(false);
+                  setSearch("");
+                }
+                if (e.key === "Enter" && filteredCountries.length > 0)
+                  handleCountrySelect(filteredCountries[0].code);
               }}
               placeholder="Search country..."
               style={{
@@ -232,7 +275,15 @@ export function PhoneInput({
           {/* List */}
           <div style={{ maxHeight: 200, overflowY: "auto" }}>
             {filteredCountries.length === 0 ? (
-              <p style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-muted, #94a3b8)", textAlign: "center", margin: 0 }}>
+              <p
+                style={{
+                  padding: "12px 16px",
+                  fontSize: 13,
+                  color: "var(--text-muted, #94a3b8)",
+                  textAlign: "center",
+                  margin: 0,
+                }}
+              >
                 No results
               </p>
             ) : (
@@ -247,17 +298,39 @@ export function PhoneInput({
                     alignItems: "center",
                     gap: 10,
                     padding: "10px 16px",
-                    background: c.code === country ? "rgba(39,117,208,0.12)" : "transparent",
+                    background:
+                      c.code === country
+                        ? "rgba(39,117,208,0.12)"
+                        : "transparent",
                     border: "none",
                     cursor: "pointer",
                     textAlign: "left",
                   }}
                 >
                   <span style={{ fontSize: 18, flexShrink: 0 }}>{c.flag}</span>
-                  <span style={{ flex: 1, fontSize: 13, color: c.code === country ? "#2775d0" : "var(--text-main, #f8fafc)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      color:
+                        c.code === country
+                          ? "#2775d0"
+                          : "var(--text-main, #f8fafc)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {c.name}
                   </span>
-                  <span style={{ fontSize: 12, color: "var(--text-muted, #94a3b8)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted, #94a3b8)",
+                      fontVariantNumeric: "tabular-nums",
+                      flexShrink: 0,
+                    }}
+                  >
                     {c.dialCode}
                   </span>
                 </button>
@@ -269,7 +342,16 @@ export function PhoneInput({
 
       {/* Error */}
       {error && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, color: "#ef4444" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginTop: 6,
+            fontSize: 12,
+            color: "#ef4444",
+          }}
+        >
           <AlertCircle size={13} />
           {error}
         </div>

@@ -203,7 +203,7 @@ export async function checkUsernameAvailable(
 
 /** Send OTP to phone/email via Telegram bot during onboarding. Requires pre-KYC token. */
 export async function sendOnboardOtp(
-  data: { phoneNumber?: string; email?: string },
+  data: { phoneNumber?: string; email?: string; cid?: string },
   preKycToken: string,
 ): Promise<{ sent: boolean }> {
   const headers = { Authorization: `Bearer ${preKycToken}` };
@@ -228,6 +228,7 @@ export async function registerTelegramUser(
     phoneNumber?: string;
     email?: string;
     referralCode?: string;
+    photoUrl?: string;
   },
   preKycToken: string,
 ): Promise<{ token: string; user: AuthUser }> {
@@ -362,16 +363,20 @@ export interface LinkedBankAccount {
 
 export async function linkBankAccount(
   cid: string,
+  phone?: string,
+  skipOtp?: boolean,
 ): Promise<{ accountName: string; maskedPhone: string; requiresOtp: boolean }> {
   return request("/payments/bank/link", {
     method: "POST",
-    body: JSON.stringify({ cid }),
+    body: JSON.stringify({
+      cid,
+      ...(phone ? { phone } : {}),
+      ...(skipOtp ? { skipOtp } : {}),
+    }),
   });
 }
 
-export async function verifyBankLink(
-  otp: string,
-): Promise<LinkedBankAccount> {
+export async function verifyBankLink(otp: string): Promise<LinkedBankAccount> {
   return request("/payments/bank/verify", {
     method: "POST",
     body: JSON.stringify({ otp }),

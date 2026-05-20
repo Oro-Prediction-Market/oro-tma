@@ -58,7 +58,9 @@ export function useAuth(): UseAuth {
       const telegramInitData = (window as any).Telegram?.WebApp?.initData;
       const startParam: string | undefined = (window as any).Telegram?.WebApp
         ?.initDataUnsafe?.start_param;
-      const referralCode = startParam?.startsWith("ref_") ? startParam : undefined;
+      const referralCode = startParam?.startsWith("ref_")
+        ? startParam
+        : undefined;
 
       if (getToken() && !referralCode) {
         try {
@@ -180,7 +182,15 @@ export function useAuth(): UseAuth {
       if (!preKycToken) throw new Error("No pre-KYC token. Please restart.");
 
       const result = await registerTelegramUser(
-        { username, fullName, otp, phoneNumber, email, referralCode: state.referralCode ?? undefined },
+        {
+          username,
+          fullName,
+          otp,
+          phoneNumber,
+          email,
+          referralCode: state.referralCode ?? undefined,
+          photoUrl: state.telegramProfile?.photoUrl ?? undefined,
+        },
         preKycToken,
       );
       // Delay UI transition so success screen can be shown first

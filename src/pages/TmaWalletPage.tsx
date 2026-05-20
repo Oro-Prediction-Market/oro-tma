@@ -2,8 +2,6 @@ import { FC, useState, useEffect, useRef } from "react";
 import dkBankLogo from "@shared/assets/dk blue.png";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
-  linkBankAccount,
-  verifyBankLink,
   getLinkedBankAccounts,
   LinkedBankAccount,
   getMe,
@@ -26,7 +24,6 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   CheckCircle2,
   XCircle,
-  Link2,
   AlertCircle,
   Loader2,
   ArrowDownLeft,
@@ -280,17 +277,11 @@ export const TmaWalletPage: FC = () => {
     }
   }, [payStep]);
 
-  // Bank linking state (luckypem-style: CID → OTP to DK phone → verify)
+  // Bank linking state
   const [linkedAccount, setLinkedAccount] = useState<LinkedBankAccount | null>(
     null,
   );
-  const [bankStep, setBankStep] = useState<"cid" | "otp" | "done">("cid");
-  const [bankCid, setBankCid] = useState("");
-  const [bankOtp, setBankOtp] = useState("");
-  const [bankAccountName, setBankAccountName] = useState("");
-  const [bankMaskedPhone, setBankMaskedPhone] = useState("");
-  const [bankLoading, setBankLoading] = useState(false);
-  const [bankError, setBankError] = useState("");
+  const [bankLinkLoading, setBankLinkLoading] = useState(true);
   const [bankAccountRevealed, setBankAccountRevealed] = useState(false);
 
   useEffect(() => {
@@ -304,8 +295,28 @@ export const TmaWalletPage: FC = () => {
         const def = accounts.find((a) => a.isDefault) ?? accounts[0] ?? null;
         setLinkedAccount(def);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setBankLinkLoading(false));
   }, []);
+
+  // Fallback: if no LinkedBankAccount record but user has dkCid from onboarding, synthesize one
+  useEffect(() => {
+    if (!linkedAccount && freshUser && (freshUser as any).dkCid) {
+      setLinkedAccount({
+        id: "onboarding",
+        cid: (freshUser as any).dkCid,
+        accountNumber: null,
+        accountName: (freshUser as any).dkAccountName || null,
+        maskedPhone: null,
+        isDefault: true,
+        verifiedAt: (freshUser as any).createdAt || null,
+      });
+    }
+    // Once freshUser is loaded and no dkCid either, we can stop loading
+    if (!linkedAccount && freshUser && !(freshUser as any).dkCid) {
+      setBankLinkLoading(false);
+    }
+  }, [linkedAccount, freshUser]);
 
   useEffect(() => {
     const handler = () => refreshWallet();
@@ -807,7 +818,7 @@ export const TmaWalletPage: FC = () => {
                 color: "var(--text-main)",
               }}
             >
-              {linkedAccount ? "Linked Bank Account" : "Link Bank Account"}
+              {linkedAccount ? "Linked Bank Account" : "Bank Account"}
             </span>
             <span
               style={{
@@ -831,8 +842,29 @@ export const TmaWalletPage: FC = () => {
             )}
           </div>
 
-          {/* ── Already linked: show account details ── */}
-          {linkedAccount ? (
+          {/* Show linked info only — bank linking is done during onboarding */}
+          {bankLinkLoading ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "16px 0",
+                gap: 8,
+              }}
+            >
+              <Loader2
+                size={16}
+                style={{
+                  animation: "spin 0.8s linear infinite",
+                  color: "var(--text-muted)",
+                }}
+              />
+              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                Loading…
+              </span>
+            </div>
+          ) : linkedAccount ? (
             <>
               <div
                 style={{
@@ -868,45 +900,43 @@ export const TmaWalletPage: FC = () => {
                     {linkedAccount.accountName || "—"}
                   </div>
                 </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      marginBottom: 2,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    Account Number
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
+                {linkedAccount.accountNumber && (
+                  <div>
                     <div
                       style={{
-                        fontSize: 14,
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        marginBottom: 2,
                         fontWeight: 600,
-                        fontFamily: "monospace",
-                        color: "var(--text-main)",
-                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
                       }}
                     >
-                      {linkedAccount.accountNumber
-                        ? bankAccountRevealed
+                      Account Number
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          fontFamily: "monospace",
+                          color: "var(--text-main)",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        {bankAccountRevealed
                           ? linkedAccount.accountNumber
                           : linkedAccount.accountNumber
                               .slice(0, -4)
                               .replace(/./g, "•") +
-                            linkedAccount.accountNumber.slice(-4)
-                        : "—"}
-                    </div>
-                    {linkedAccount.accountNumber && (
+                            linkedAccount.accountNumber.slice(-4)}
+                      </div>
                       <button
                         onClick={() => setBankAccountRevealed((v) => !v)}
                         style={{
@@ -925,378 +955,23 @@ export const TmaWalletPage: FC = () => {
                           <Eye size={15} />
                         )}
                       </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: "#059669",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  DK Bank · Linked
-                </span>
-              </div>
-            </>
-          ) : bankStep === "done" ? (
-            /* ── Success state ── */
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "12px 0 4px",
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: "50%",
-                  background: "rgba(5,150,105,0.1)",
-                  border: "1px solid rgba(5,150,105,0.3)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CheckCircle2 size={28} color="#059669" />
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 15,
-                    color: "var(--text-main)",
-                  }}
-                >
-                  Bank Linked!
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--text-muted)",
-                    marginTop: 3,
-                  }}
-                >
-                  Your DK Bank account is connected.
-                </div>
-              </div>
-            </div>
-          ) : bankStep === "otp" ? (
-            /* ── OTP step ── */
-            <>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  lineHeight: 1.6,
-                }}
-              >
-                OTP sent to your DK-registered phone
-                {bankMaskedPhone ? ` (${bankMaskedPhone})` : ""}. Account:{" "}
-                <strong style={{ color: "var(--text-main)" }}>
-                  {bankAccountName}
-                </strong>
-                .
-              </p>
-
-              {/* OTP digit boxes */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  justifyContent: "center",
-                  cursor: "text",
-                }}
-                onClick={() =>
-                  document.getElementById("bank-otp-input")?.focus()
-                }
-              >
-                {Array.from({ length: 6 }).map((_, i) => {
-                  const digit = bankOtp[i];
-                  const isFilled = !!digit;
-                  const isActive = bankOtp.length === i;
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        width: 44,
-                        height: 52,
-                        borderRadius: 10,
-                        border: isFilled
-                          ? "2px solid #2775d0"
-                          : isActive
-                            ? "2px solid rgba(39,117,208,0.5)"
-                            : "2px solid var(--glass-border)",
-                        background: isFilled
-                          ? "rgba(39,117,208,0.08)"
-                          : "var(--bg-main)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 20,
-                        fontWeight: 800,
-                        color: "#2775d0",
-                        transition: "all 0.12s",
-                        boxShadow: isActive
-                          ? "0 0 0 3px rgba(39,117,208,0.12)"
-                          : "none",
-                      }}
-                    >
-                      {digit ??
-                        (isActive ? (
-                          <span
-                            style={{
-                              width: 2,
-                              height: 20,
-                              background: "#2775d0",
-                              borderRadius: 2,
-                              animation: "nudgePulse 0.8s ease-in-out infinite",
-                            }}
-                          />
-                        ) : (
-                          ""
-                        ))}
                     </div>
-                  );
-                })}
-              </div>
-              <input
-                id="bank-otp-input"
-                style={{
-                  position: "absolute",
-                  opacity: 0,
-                  pointerEvents: "none",
-                  width: 1,
-                  height: 1,
-                }}
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={bankOtp}
-                autoFocus
-                onChange={(e) => {
-                  setBankOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  setBankError("");
-                }}
-              />
-
-              {bankError && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 13,
-                    color: "#dc2626",
-                  }}
-                >
-                  <XCircle size={13} color="#dc2626" />
-                  {bankError}
-                </div>
-              )}
-
-              <button
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  background: "linear-gradient(135deg, #2775d0, #1a5bb5)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  cursor:
-                    bankLoading || bankOtp.length !== 6
-                      ? "not-allowed"
-                      : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  opacity: bankLoading || bankOtp.length !== 6 ? 0.6 : 1,
-                }}
-                disabled={bankLoading || bankOtp.length !== 6}
-                onClick={async () => {
-                  setBankLoading(true);
-                  setBankError("");
-                  try {
-                    const account = await verifyBankLink(bankOtp);
-                    setLinkedAccount(account);
-                    setBankStep("done");
-                    setTimeout(() => {}, 1800);
-                  } catch (err: any) {
-                    setBankError(err.message || "Invalid OTP. Try again.");
-                  } finally {
-                    setBankLoading(false);
-                  }
-                }}
-              >
-                {bankLoading ? (
-                  <>
-                    <Loader2
-                      size={15}
-                      style={{ animation: "spin 0.8s linear infinite" }}
-                    />{" "}
-                    Verifying…
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={15} /> Verify & Link
-                  </>
+                  </div>
                 )}
-              </button>
-
-              <button
-                onClick={() => {
-                  setBankStep("cid");
-                  setBankError("");
-                  setBankOtp("");
-                }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: "8px 0",
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  width: "100%",
-                  textAlign: "center",
-                }}
-              >
-                ← Change CID
-              </button>
+              </div>
             </>
           ) : (
-            /* ── CID entry step ── */
-            <>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  color: "var(--text-muted)",
-                  lineHeight: 1.6,
-                }}
-              >
-                Enter your 11-digit Bhutanese National ID (CID). An OTP will be
-                sent to your DK Bank registered phone.
-              </p>
-              <div>
-                <label
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                    display: "block",
-                    marginBottom: 6,
-                  }}
-                >
-                  Citizenship ID (CID)
-                </label>
-                <input
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    fontSize: 16,
-                    borderRadius: 10,
-                    border: "1.5px solid var(--glass-border)",
-                    background: "var(--bg-main)",
-                    color: "var(--text-main)",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    letterSpacing: 2,
-                  }}
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="11-digit CID"
-                  maxLength={11}
-                  value={bankCid}
-                  onChange={(e) => {
-                    setBankCid(e.target.value.replace(/\D/g, "").slice(0, 11));
-                    setBankError("");
-                  }}
-                />
-              </div>
-
-              {bankError && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 13,
-                    color: "#dc2626",
-                  }}
-                >
-                  <XCircle size={13} color="#dc2626" />
-                  {bankError}
-                </div>
-              )}
-
-              <button
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  background: "linear-gradient(135deg, #2775d0, #1a5bb5)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  cursor:
-                    bankLoading || bankCid.length !== 11
-                      ? "not-allowed"
-                      : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  opacity: bankLoading || bankCid.length !== 11 ? 0.6 : 1,
-                }}
-                disabled={bankLoading || bankCid.length !== 11}
-                onClick={async () => {
-                  setBankLoading(true);
-                  setBankError("");
-                  try {
-                    const res = await linkBankAccount(bankCid);
-                    setBankAccountName(res.accountName);
-                    setBankMaskedPhone(res.maskedPhone);
-                    setBankStep("otp");
-                  } catch (err: any) {
-                    setBankError(
-                      err.message || "Failed to send OTP. Try again.",
-                    );
-                  } finally {
-                    setBankLoading(false);
-                  }
-                }}
-              >
-                {bankLoading ? (
-                  <>
-                    <Loader2
-                      size={15}
-                      style={{ animation: "spin 0.8s linear infinite" }}
-                    />{" "}
-                    Sending OTP…
-                  </>
-                ) : (
-                  <>
-                    <Link2 size={15} /> Send OTP
-                  </>
-                )}
-              </button>
-            </>
+            <div
+              style={{
+                padding: "12px 0",
+                fontSize: 13,
+                color: "var(--text-muted)",
+                textAlign: "center",
+              }}
+            >
+              No bank account linked. Complete onboarding to link your DK Bank
+              account.
+            </div>
           )}
         </Card>
 
