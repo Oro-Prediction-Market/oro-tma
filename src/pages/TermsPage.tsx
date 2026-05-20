@@ -9,7 +9,7 @@ const TERMS_SECTIONS = [
   },
   {
     heading: "2. Eligibility and Regulatory Compliance",
-    body: "You represent and warrant that you have the Dk Bank account, have legal capacity to enter binding agreements, your use of the Platform is lawful in your jurisdiction, and all information provided to 21Tech is accurate, current, and complete. 21Tech may require identity, age, and account verification at any time. Access may be refused, restricted, suspended, or terminated where legal, compliance, fraud, AML, sanctions, or risk concerns arise.",
+    body: "You represent and warrant that you have the Dk Bank account, have legal capacity to enter binding agreements, your use of the Platform is lawful in your jurisdiction, and all information provided to 21Tech is accurate, current, and complete. 21Tech may require identity and account verification at any time. Access may be refused, restricted, suspended, or terminated where legal, compliance, fraud, AML, sanctions, or risk concerns arise.",
   },
   {
     heading: "3. Jurisdiction and Applicable Law",
@@ -92,7 +92,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "2. Data We Collect",
-    body: "We collect Account and Identity Data (name, username, profile information, CID, platform identifiers, verification information), Contact Data (email address, phone number, support communications), Authentication and Security Data (login timestamps, access logs, session metadata, device metadata, fraud risk signals), Transaction and Wallet Data (top up and cash out records, bet payments, winnings, refunds, balance events, payment references), and Participation Data (market entries, outcomes, prediction history).",
+    body: "We collect Account and Identity Data (name, username, profile information, CID, platform identifiers, verification information), Contact Data (email address, phone number, support communications), Authentication and Security Data (login timestamps, access logs, session metadata, device metadata, fraud risk signals), Transaction and Wallet Data (top up and cash out records, prediction payments, winnings, refunds, balance events, payment references), and Participation Data (market entries, outcomes, prediction history).",
   },
   {
     heading: "3. Sources of Data",
@@ -123,8 +123,8 @@ const PRIVACY_SECTIONS = [
     body: "Subject to applicable law, you may request access to personal data, correction of inaccurate data, deletion where retention is no longer required, restriction or objection to certain processing, and withdrawal of consent where consent is legal basis. Requests can be sent to oro@romtech.bt",
   },
   {
-    heading: "10. Children Restrictions",
-    body: "Oro is not intended for persons which has no DK Bank Account. If underage use is detected, 21Tech may suspend account access and take required compliance actions.",
+    heading: "10. Restrictions",
+    body: "Oro is not intended for persons which has no DK Bank Account. If person without DK Bank Account use is detected, 21Tech may suspend account access and take required compliance actions.",
   },
   {
     heading: "11. Policy Updates",
