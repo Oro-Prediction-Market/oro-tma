@@ -1180,14 +1180,16 @@ export const TmaFeedPage: FC = () => {
       .then((d) => setMarkets(filterActive(d)))
       .catch(console.error)
       .finally(() => setLoading(false));
+  }, []);
 
-    // Fetch all user bets for the picks strip + card highlights (always show "Your pick")
+  // Fetch all user bets for the picks strip + card highlights (always show "Your pick")
+  useEffect(() => {
     if (user) {
       getMyBets()
         .then(setMyPendingBets)
         .catch(() => {});
     }
-  }, []);
+  }, [user]);
 
   // Auto-refresh market data every 10s + SSE push for fast TER transitions
   useEffect(() => {
