@@ -434,7 +434,6 @@ function useCountdown(targetAt: string | null): string {
 const MarketCard = memo(function MarketCard({
   market,
   onBet,
-  hasBet,
   telegramId,
   userName,
   userPhotoUrl,
@@ -442,7 +441,7 @@ const MarketCard = memo(function MarketCard({
 }: {
   market: Market;
   onBet: (outcomeId: string) => void;
-  hasBet: boolean;
+  hasBet?: boolean;
   telegramId?: string | number | null;
   userName?: string | null;
   userPhotoUrl?: string | null;
@@ -851,30 +850,6 @@ const MarketCard = memo(function MarketCard({
                       >
                         {s.label}
                       </span>
-
-                      {s.reputationSignal != null && hasBet && (
-                        <span
-                          style={{
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
-                            color: "#f59e0b",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 3,
-                          }}
-                        >
-                          <svg
-                            width="8"
-                            height="8"
-                            viewBox="0 0 24 24"
-                            fill="#f59e0b"
-                            stroke="none"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                          Experts {Math.round(s.reputationSignal * 100)}%
-                        </span>
-                      )}
                     </div>
                   </div>
                   {/* % badge */}
