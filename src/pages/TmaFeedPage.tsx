@@ -46,7 +46,7 @@ function parseActivityEvent(e: ActivityEvent): FormattedEvent {
   return {
     userName: initials,
     initials,
-    action: e.type === "win" ? "won" : "just bet",
+    action: e.type === "win" ? "won" : "predicted",
     outcome: e.outomeLabel,
     amount,
     marketTitle: e.marketTitle,
