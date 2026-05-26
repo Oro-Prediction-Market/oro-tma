@@ -19,6 +19,7 @@ export function useTrack() {
   const trackRef = useRef(
     (eventType: string, meta?: Record<string, any>) => {
       trackEvent({ eventType, sessionId: SESSION_ID, platform: PLATFORM, meta });
+      window.umami?.track(eventType, meta);
     },
   );
   return useCallback(

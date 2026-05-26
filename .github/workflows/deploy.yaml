@@ -14,6 +14,8 @@ env:
   NS: prod
   DEPLOY: oro-tma
   VITE_API_URL: https://api.oro.fun/api
+  VITE_UMAMI_SCRIPT_URL: https://analytics.oro.fun/script.js
+  VITE_UMAMI_WEBSITE_ID: 0e7cd152-c047-45bb-a871-0b9390790ff5
 
 jobs:
   ship:
@@ -42,6 +44,8 @@ jobs:
           docker build \
             --build-arg VITE_API_URL=$VITE_API_URL \
             --build-arg VITE_BOT_USERNAME=${{ secrets.VITE_BOT_USERNAME }} \
+            --build-arg VITE_UMAMI_SCRIPT_URL=$VITE_UMAMI_SCRIPT_URL \
+            --build-arg VITE_UMAMI_WEBSITE_ID=$VITE_UMAMI_WEBSITE_ID \
             -t $IMAGE:$TAG -t $IMAGE:latest .
           docker push $IMAGE:$TAG
           docker push $IMAGE:latest
