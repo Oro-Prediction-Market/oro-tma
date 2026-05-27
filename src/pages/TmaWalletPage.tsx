@@ -1582,7 +1582,7 @@ export const TmaWalletPage: FC = () => {
                 >
                   {paymentModal === "deposit"
                     ? "An OTP will be sent via SMS to your DK Bank registered phone."
-                    : "An OTP will be sent to your Telegram bot to confirm this transaction."}
+                    : "An OTP will be sent to your DK Bank registered phone via the Bhutan App."}
                 </p>
               </div>
             )}
@@ -1640,12 +1640,12 @@ export const TmaWalletPage: FC = () => {
                     : [
                         {
                           icon: <Send size={14} color="#2775d0" />,
-                          text: "Open Oro Bot in Telegram",
+                          text: "Open the Bhutan National Bank app",
                           delay: "0ms",
                         },
                         {
                           icon: <Hash size={14} color="#2775d0" />,
-                          text: "Copy the 6-digit code sent to you",
+                          text: "Copy the 6-digit OTP sent to your registered phone",
                           delay: "120ms",
                         },
                         {
@@ -1690,26 +1690,7 @@ export const TmaWalletPage: FC = () => {
                           lineHeight: 1.4,
                         }}
                       >
-                        {paymentModal === "withdraw" && i === 0 ? (
-                          <>
-                            Open{" "}
-                            <a
-                              href={`https://t.me/${BOT_USERNAME}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                color: "#2775d0",
-                                fontWeight: 700,
-                                textDecoration: "none",
-                              }}
-                            >
-                              @{BOT_USERNAME}
-                            </a>{" "}
-                            in Telegram
-                          </>
-                        ) : (
-                          step.text
-                        )}
+                        {step.text}
                       </span>
                     </div>
                   ))}
