@@ -598,7 +598,8 @@ export interface Transaction {
     | "referral_bonus"
     | "duel_wager"
     | "duel_payout"
-    | "free_credit";
+    | "free_credit"
+    | "season_prize";
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
