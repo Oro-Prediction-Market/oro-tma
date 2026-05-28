@@ -1107,9 +1107,9 @@ export const TmaSettingsPage: FC = () => {
             <SettingsRow
               icon={<MessageCircle size={17} />}
               label="Support"
-              value="oro@romtech.bt"
+              value="oro@21.tech.bt"
               onClick={() => {
-                window.open("https://mail.google.com/mail/?view=cm&to=oro@romtech.bt", "_blank");
+                window.open("https://mail.google.com/mail/?view=cm&to=oro@21.tech.bt", "_blank");
               }}
             >
               <ExternalLink size={15} color="var(--text-subtle)" />

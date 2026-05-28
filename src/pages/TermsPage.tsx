@@ -73,7 +73,7 @@ const TERMS_SECTIONS = [
   },
   {
     heading: "18. Dispute Resolution",
-    body: "When a market is resolved, a dispute window (default 60 minutes) opens during which any participant with an active position may raise an objection. Raising an objection requires a fixed Nu 10 bond. If the admin agrees with the objection and overturns the resolution, the bond is returned plus a reward share. If the admin upholds their original decision, the bond is forfeited. After the dispute window closes with no successful objections, the resolution is finalized and payouts are distributed. For general platform complaints, contact oro@romtech.bt with full facts and supporting records.",
+    body: "When a market is resolved, a dispute window (default 60 minutes) opens during which any participant with an active position may raise an objection. Raising an objection requires a fixed Nu 10 bond. If the admin agrees with the objection and overturns the resolution, the bond is returned plus a reward share. If the admin upholds their original decision, the bond is forfeited. After the dispute window closes with no successful objections, the resolution is finalized and payouts are distributed. For general platform complaints, contact oro@21.tech.bt with full facts and supporting records.",
   },
   {
     heading: "19. Amendments",
@@ -120,7 +120,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "9. User Rights",
-    body: "Subject to applicable law, you may request access to personal data, correction of inaccurate data, deletion where retention is no longer required, restriction or objection to certain processing, and withdrawal of consent where consent is legal basis. Requests can be sent to oro@romtech.bt",
+    body: "Subject to applicable law, you may request access to personal data, correction of inaccurate data, deletion where retention is no longer required, restriction or objection to certain processing, and withdrawal of consent where consent is legal basis. Requests can be sent to oro@21.tech.bt",
   },
   {
     heading: "10. Restrictions",
@@ -132,7 +132,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "12. Contact",
-    body: "For privacy requests, compliance inquiries, or complaints: Email oro@romtech.bt | Operator: 21Tech",
+    body: "For privacy requests, compliance inquiries, or complaints: Email oro@21.tech.bt | Operator: 21Tech",
   },
 ];
 
