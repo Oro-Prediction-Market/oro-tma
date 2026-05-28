@@ -253,7 +253,6 @@ function WagerPicker({
           <strong style={{ color: "#f59e0b" }}>
             Nu {(value * 2 * 0.9).toFixed(0)}
           </strong>{" "}
-          — 10% platform fee
         </div>
       )}
     </div>
