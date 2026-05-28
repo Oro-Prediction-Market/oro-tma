@@ -1102,6 +1102,7 @@ export const TmaFeedPage: FC = () => {
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("All");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Full pending bet objects — used for the picks strip + "YOUR PICK" badge
   const [myPendingBets, setMyPendingBets] = useState<Bet[]>([]);
@@ -1132,6 +1133,11 @@ export const TmaFeedPage: FC = () => {
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [searchQuery, selectedCategory]);
+
+  // Reset subcategory when category changes
+  useEffect(() => {
+    setSelectedSubcategory("All");
+  }, [selectedCategory]);
 
   const ACTIVE_STATUSES = ["open", "resolving", "upcoming"] as const;
   const filterActive = (d: Market[]) =>
@@ -1300,6 +1306,15 @@ export const TmaFeedPage: FC = () => {
       );
     }
 
+    // Subcategory Filter
+    if (selectedSubcategory !== "All") {
+      filtered = filtered.filter(
+        (m) =>
+          (m.subcategory ?? "").toLowerCase() ===
+          selectedSubcategory.toLowerCase(),
+      );
+    }
+
     // Search Filter
     if (!searchQuery.trim()) return filtered;
     const q = searchQuery.toLowerCase();
@@ -1314,6 +1329,25 @@ export const TmaFeedPage: FC = () => {
     "All",
     ...Array.from(new Set(markets.map((m) => m.category || "other"))).sort(),
   ];
+
+  // Subcategory pills: only show when a specific category is selected and markets have subcategories
+  const availableSubcategories =
+    selectedCategory === "All"
+      ? []
+      : [
+          "All",
+          ...Array.from(
+            new Set(
+              markets
+                .filter(
+                  (m) =>
+                    (m.category ?? "other").toLowerCase() ===
+                      selectedCategory.toLowerCase() && m.subcategory,
+                )
+                .map((m) => m.subcategory!),
+            ),
+          ).sort(),
+        ];
 
   const filteredOpen = filterByQuery(openMarkets).sort((a, b) => {
     // TER then BTC markets appear first in the economy category
@@ -1579,7 +1613,10 @@ export const TmaFeedPage: FC = () => {
             return (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  setSelectedSubcategory("All");
+                }}
                 style={{
                   flexShrink: 0,
                   padding: "8px 16px",
@@ -1607,6 +1644,53 @@ export const TmaFeedPage: FC = () => {
             );
           })}
         </div>
+
+        {/* ── Subcategory Pills (only when a category is selected and has subcats) ── */}
+        {availableSubcategories.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              overflowX: "auto",
+              marginBottom: 16,
+              paddingBottom: 4,
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+            className="hide-scrollbar"
+          >
+            {availableSubcategories.map((sub) => {
+              const isActive = selectedSubcategory === sub;
+              return (
+                <button
+                  key={sub}
+                  onClick={() => setSelectedSubcategory(sub)}
+                  style={{
+                    flexShrink: 0,
+                    padding: "5px 12px",
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    border: isActive
+                      ? "1.5px solid var(--color-primary)"
+                      : "1px solid var(--glass-border)",
+                    background: isActive
+                      ? "rgba(59,130,246,0.12)"
+                      : "var(--bg-card)",
+                    color: isActive
+                      ? "var(--color-primary)"
+                      : "var(--text-muted)",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {sub}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── Trending strip ── */}
         {trendingMarkets.length > 0 && !searchQuery.trim() && (
