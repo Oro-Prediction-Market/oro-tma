@@ -370,8 +370,8 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
       },
       {
         icon: <Trophy size={20} color="#2775d0" />,
-        title: "Weekly Seasons",
-        desc: "Compete on the leaderboard. Top predictors win prizes every week.",
+        title: "Monthly Seasons",
+        desc: "Compete on the leaderboard. Top predictors win prizes every month.",
       },
       {
         icon: <Star size={20} color="#2775d0" />,

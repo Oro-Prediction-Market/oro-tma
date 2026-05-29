@@ -39,7 +39,6 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-
 // ── Tier helpers ──────────────────────────────────────────────────────────────
 
 function tierLabel(tier: string) {
@@ -637,7 +636,7 @@ function MyStatsSheet({
           >
             {[
               {
-                label: "This Week",
+                label: "This Month",
                 value: `Nu ${myWeeklyDeposit.toLocaleString()}`,
                 color: myWeeklyDeposit > 0 ? "#10b981" : "var(--text-subtle)",
                 icon: <ArrowDownLeft size={13} />,
@@ -1034,7 +1033,11 @@ function SeasonsSheet({
                   color: "var(--text-main)",
                 }}
               >
-                Week {currentSeason.weekNumber}, {currentSeason.year}
+                {new Date(
+                  currentSeason.year,
+                  currentSeason.weekNumber - 1,
+                ).toLocaleString(undefined, { month: "long" })}{" "}
+                {currentSeason.year}
               </div>
               <div
                 style={{
@@ -1104,7 +1107,11 @@ function SeasonsSheet({
                         color: "var(--text-main)",
                       }}
                     >
-                      Week {s.weekNumber}, {s.year}
+                      {new Date(s.year, s.weekNumber - 1).toLocaleString(
+                        undefined,
+                        { month: "long" },
+                      )}{" "}
+                      {s.year}
                     </div>
                     <div
                       style={{
@@ -1113,8 +1120,16 @@ function SeasonsSheet({
                         marginTop: 1,
                       }}
                     >
-                      {new Date(s.startsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })} –{" "}
-                      {new Date(s.endsAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                      {new Date(s.startsAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      –{" "}
+                      {new Date(s.endsAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </div>
                   </div>
                   <Trophy size={16} color="#f59e0b" />
@@ -1231,7 +1246,15 @@ function PinnedSelfRow({
         }}
       >
         {entry.totalPredictions < 10 ? (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>—</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-muted)",
+            }}
+          >
+            —
+          </span>
         ) : entry.rank <= 3 ? (
           rankMedal(entry.rank)
         ) : (
@@ -1329,7 +1352,13 @@ function PinnedSelfRow({
       >
         {entry.totalPredictions < 10 ? (
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+              }}
+            >
               {10 - entry.totalPredictions} more to rank
             </div>
           </div>
@@ -1418,10 +1447,12 @@ export const TmaLeaderboardPage: FC = () => {
       setSeasonHistory(history as Season[]);
       const txList = depTxs as Transaction[];
       setDepositTxs(txList);
-      const weekAgo = Date.now() - 7 * 86_400_000;
+      const monthAgo = new Date();
+      monthAgo.setDate(1);
+      monthAgo.setHours(0, 0, 0, 0);
       setMyWeeklyDeposit(
         txList
-          .filter((t) => new Date(t.createdAt).getTime() >= weekAgo)
+          .filter((t) => new Date(t.createdAt).getTime() >= monthAgo.getTime())
           .reduce((s, t) => s + Math.abs(Number(t.amount)), 0),
       );
     });
@@ -1456,7 +1487,6 @@ export const TmaLeaderboardPage: FC = () => {
   const userName = authUser?.username
     ? `@${authUser.username}`
     : (authUser?.firstName ?? "Predictor");
-
 
   if (loading) return <LoadingScreen message="Calculating standings…" />;
 
@@ -1577,7 +1607,8 @@ export const TmaLeaderboardPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                {lb?.totalRanked ?? 0} ranked · {selectedPeriod === "week" ? "This Week" : "All Time"}
+                {lb?.totalRanked ?? 0} ranked ·{" "}
+                {selectedPeriod === "week" ? "This Month" : "All Time"}
               </p>
               <p
                 style={{
@@ -1638,7 +1669,7 @@ export const TmaLeaderboardPage: FC = () => {
                   cursor: "pointer",
                 }}
               >
-                {p === "all" ? "All Time" : "This Week"}
+                {p === "all" ? "All Time" : "This Month"}
               </button>
             ))}
           </div>
@@ -1670,7 +1701,6 @@ export const TmaLeaderboardPage: FC = () => {
               </span>
             </div>
           )}
-
         </div>
       </div>
 

@@ -379,10 +379,11 @@ export const TmaWalletPage: FC = () => {
   const totalDeposited = txs
     .filter((t) => t.type === "deposit")
     .reduce((s, t) => s + Number(t.amount), 0);
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
   const weeklyProfit = txs
-    .filter((tx) => new Date(tx.createdAt) >= oneWeekAgo)
+    .filter((tx) => new Date(tx.createdAt) >= monthStart)
     .reduce((acc, tx) => {
       if (tx.type === "bet_payout") return acc + Math.abs(Number(tx.amount));
       if (tx.type === "bet_placed") return acc - Math.abs(Number(tx.amount));
@@ -680,7 +681,7 @@ export const TmaWalletPage: FC = () => {
                 color: "var(--text-primary)",
               },
               {
-                label: "7-Day P&L",
+                label: "Monthly P&L",
                 value: `${weeklyProfit >= 0 ? "+" : ""}${weeklyProfit.toLocaleString()}`,
                 color:
                   weeklyProfit >= 0

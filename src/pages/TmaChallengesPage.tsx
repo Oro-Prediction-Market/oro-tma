@@ -1118,7 +1118,7 @@ function ChallengeCard({
     challenge.status === "settled" && challenge.winnerId === currentUserId;
   useEffect(() => {
     if (isWinner) haptic.confirm();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWinner]);
   const isGhost = challenge.wagerAmount === null; // Ghost card: wager hidden from non-owner
   const wager = isGhost ? 0 : Number(challenge.wagerAmount ?? 0);
@@ -1705,7 +1705,7 @@ function LeaderboardTab({
             color: "var(--text-main)",
           }}
         >
-          No wins yet this week
+          No wins yet this month
         </div>
         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
           Settle a duel to appear on the board.
@@ -1736,7 +1736,7 @@ function LeaderboardTab({
           letterSpacing: "0.06em",
         }}
       >
-        This week's top predictors
+        This month's top predictors
       </div>
       {entries.map((e, i) => {
         const isMe = e.userId === currentUserId;
@@ -1843,29 +1843,156 @@ const visualCard = (accentColor: string): React.CSSProperties => ({
 function WhatIsDuelsVisual() {
   return (
     <div style={visualCard("#2563eb")}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
         {/* Challenger */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg-main)", border: "1.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>P</div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-main)" }}>@Pema</span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", padding: "1px 6px", borderRadius: 99 }}>Thimphu</span>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "var(--bg-main)",
+              border: "1.5px solid var(--glass-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 800,
+              color: "var(--text-muted)",
+            }}
+          >
+            P
+          </div>
+          <span
+            style={{ fontSize: 10, fontWeight: 700, color: "var(--text-main)" }}
+          >
+            @Pema
+          </span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: "#22c55e",
+              background: "rgba(34,197,94,0.1)",
+              border: "1px solid rgba(34,197,94,0.25)",
+              padding: "1px 6px",
+              borderRadius: 99,
+            }}
+          >
+            Thimphu
+          </span>
         </div>
         {/* VS */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(37,99,235,0.12)", border: "1px solid rgba(37,99,235,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "rgba(37,99,235,0.12)",
+              border: "1px solid rgba(37,99,235,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <Swords size={14} color="#2563eb" />
           </div>
-          <span style={{ fontSize: 10, fontWeight: 800, color: "#2563eb", background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.25)", padding: "1px 8px", borderRadius: 99 }}>Nu 100</span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: "#2563eb",
+              background: "rgba(37,99,235,0.1)",
+              border: "1px solid rgba(37,99,235,0.25)",
+              padding: "1px 8px",
+              borderRadius: 99,
+            }}
+          >
+            Nu 100
+          </span>
         </div>
         {/* Opponent */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg-main)", border: "1.5px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>K</div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-main)" }}>@Kinley</span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", padding: "1px 6px", borderRadius: 99 }}>Paro</span>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "var(--bg-main)",
+              border: "1.5px solid var(--glass-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 800,
+              color: "var(--text-muted)",
+            }}
+          >
+            K
+          </div>
+          <span
+            style={{ fontSize: 10, fontWeight: 700, color: "var(--text-main)" }}
+          >
+            @Kinley
+          </span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: "#ef4444",
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              padding: "1px 6px",
+              borderRadius: 99,
+            }}
+          >
+            Paro
+          </span>
         </div>
       </div>
-      <div style={{ fontSize: 10, color: "var(--text-subtle)", fontWeight: 600, textAlign: "center", borderTop: "1px solid var(--glass-border)", paddingTop: 8 }}>
-        NCA Finals 2024 · winner takes <span style={{ color: "#2563eb", fontWeight: 800 }}>Nu 180</span>
+      <div
+        style={{
+          fontSize: 10,
+          color: "var(--text-subtle)",
+          fontWeight: 600,
+          textAlign: "center",
+          borderTop: "1px solid var(--glass-border)",
+          paddingTop: 8,
+        }}
+      >
+        NCA Finals 2024 · winner takes{" "}
+        <span style={{ color: "#2563eb", fontWeight: 800 }}>Nu 180</span>
       </div>
     </div>
   );
@@ -1873,24 +2000,111 @@ function WhatIsDuelsVisual() {
 
 function OpenFeedVisual() {
   const items = [
-    { name: "@Pema_D", outcome: "Thimphu Club", stake: "Nu 100", time: "12h left", ghost: false },
-    { name: "@Sonam", outcome: "Paro Warriors", stake: "Free", time: "8h left", ghost: false },
-    { name: "???", outcome: "???", stake: "Hidden", time: "5h left", ghost: true },
+    {
+      name: "@Pema_D",
+      outcome: "Thimphu Club",
+      stake: "Nu 100",
+      time: "12h left",
+      ghost: false,
+    },
+    {
+      name: "@Sonam",
+      outcome: "Paro Warriors",
+      stake: "Free",
+      time: "8h left",
+      ghost: false,
+    },
+    {
+      name: "???",
+      outcome: "???",
+      stake: "Hidden",
+      time: "5h left",
+      ghost: true,
+    },
   ];
   return (
     <div style={visualCard("#6366f1")}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          marginBottom: 10,
+        }}
+      >
         <Users size={10} color="#818cf8" />
-        <span style={{ fontSize: 10, fontWeight: 800, color: "#818cf8", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>Open Challenges</span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            color: "#818cf8",
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.05em",
+          }}
+        >
+          Open Challenges
+        </span>
       </div>
       {items.map((item, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: i < items.length - 1 ? 8 : 0, marginBottom: i < items.length - 1 ? 8 : 0, borderBottom: i < items.length - 1 ? "1px solid var(--glass-border)" : "none" }}>
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            paddingBottom: i < items.length - 1 ? 8 : 0,
+            marginBottom: i < items.length - 1 ? 8 : 0,
+            borderBottom:
+              i < items.length - 1 ? "1px solid var(--glass-border)" : "none",
+          }}
+        >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: item.ghost ? "#a78bfa" : "var(--text-main)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{item.name} · {item.outcome}</div>
-            <div style={{ fontSize: 10, color: "var(--text-subtle)", fontWeight: 600, marginTop: 1 }}>{item.stake} · {item.time}</div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: item.ghost ? "#a78bfa" : "var(--text-main)",
+                whiteSpace: "nowrap" as const,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {item.name} · {item.outcome}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: "var(--text-subtle)",
+                fontWeight: 600,
+                marginTop: 1,
+              }}
+            >
+              {item.stake} · {item.time}
+            </div>
           </div>
-          <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, color: "#fff", background: item.ghost ? "linear-gradient(135deg,#a78bfa,#7c3aed)" : "linear-gradient(135deg,#2563eb,#1d4ed8)", padding: "4px 10px", borderRadius: 8 }}>
-            {item.ghost ? <>👻 Accept</> : <><Swords size={10} /> Accept</>}
+          <div
+            style={{
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 10,
+              fontWeight: 800,
+              color: "#fff",
+              background: item.ghost
+                ? "linear-gradient(135deg,#a78bfa,#7c3aed)"
+                : "linear-gradient(135deg,#2563eb,#1d4ed8)",
+              padding: "4px 10px",
+              borderRadius: 8,
+            }}
+          >
+            {item.ghost ? (
+              <>👻 Accept</>
+            ) : (
+              <>
+                <Swords size={10} /> Accept
+              </>
+            )}
           </div>
         </div>
       ))}
@@ -1900,43 +2114,165 @@ function OpenFeedVisual() {
 
 function DuelLeaderboardVisual() {
   const rows = [
-    { icon: <Trophy size={13} color="#f59e0b" />, name: "@Pema_D", wins: 7, earned: "Nu 1,260", isMe: false },
-    { icon: <Medal size={13} color="#94a3b8" />,  name: "@Kinley", wins: 5, earned: "Nu 840",   isMe: false },
-    { icon: <Award size={13} color="#b45309" />,  name: "You",     wins: 2, earned: "Nu 360",   isMe: true  },
+    {
+      icon: <Trophy size={13} color="#f59e0b" />,
+      name: "@Pema_D",
+      wins: 7,
+      earned: "Nu 1,260",
+      isMe: false,
+    },
+    {
+      icon: <Medal size={13} color="#94a3b8" />,
+      name: "@Kinley",
+      wins: 5,
+      earned: "Nu 840",
+      isMe: false,
+    },
+    {
+      icon: <Award size={13} color="#b45309" />,
+      name: "You",
+      wins: 2,
+      earned: "Nu 360",
+      isMe: true,
+    },
   ];
   return (
     <div style={visualCard("#22c55e")}>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          marginBottom: 10,
+        }}
+      >
         <Trophy size={10} color="#22c55e" />
-        <span style={{ fontSize: 10, fontWeight: 800, color: "#22c55e", textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>This Week's Top Duelers</span>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            color: "#22c55e",
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.05em",
+          }}
+        >
+          This Month's Top Duelers
+        </span>
       </div>
       {rows.map((r) => (
-        <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 6px", borderRadius: 8, background: r.isMe ? "rgba(34,197,94,0.08)" : "transparent", border: r.isMe ? "1px solid rgba(34,197,94,0.2)" : "1px solid transparent", marginBottom: 4 }}>
+        <div
+          key={r.name}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "5px 6px",
+            borderRadius: 8,
+            background: r.isMe ? "rgba(34,197,94,0.08)" : "transparent",
+            border: r.isMe
+              ? "1px solid rgba(34,197,94,0.2)"
+              : "1px solid transparent",
+            marginBottom: 4,
+          }}
+        >
           {r.icon}
-          <span style={{ flex: 1, fontSize: 11, fontWeight: r.isMe ? 800 : 600, color: r.isMe ? "#22c55e" : "var(--text-main)" }}>{r.name}</span>
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#22c55e" }}>{r.wins}W</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-subtle)" }}>{r.earned}</span>
+          <span
+            style={{
+              flex: 1,
+              fontSize: 11,
+              fontWeight: r.isMe ? 800 : 600,
+              color: r.isMe ? "#22c55e" : "var(--text-main)",
+            }}
+          >
+            {r.name}
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#22c55e" }}>
+            {r.wins}W
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--text-subtle)",
+            }}
+          >
+            {r.earned}
+          </span>
         </div>
       ))}
-      <div style={{ fontSize: 9, color: "var(--text-subtle)", marginTop: 8, fontWeight: 600, textAlign: "center" as const }}>Resets every Monday</div>
+      <div
+        style={{
+          fontSize: 9,
+          color: "var(--text-subtle)",
+          marginTop: 8,
+          fontWeight: 600,
+          textAlign: "center" as const,
+        }}
+      >
+        Resets every Monday
+      </div>
     </div>
   );
 }
 
 function HowToChallengeVisual() {
   const steps = [
-    { n: "1", icon: <Target size={13} color="#3b82f6" />,  label: "Make a prediction on any open market" },
-    { n: "2", icon: <Swords size={13} color="#2563eb" />,  label: "Create a duel — set stake & pick a card" },
-    { n: "3", icon: <Send size={13} color="#6366f1" />,    label: "Share the link — opponent has 24h to accept" },
+    {
+      n: "1",
+      icon: <Target size={13} color="#3b82f6" />,
+      label: "Make a prediction on any open market",
+    },
+    {
+      n: "2",
+      icon: <Swords size={13} color="#2563eb" />,
+      label: "Create a duel — set stake & pick a card",
+    },
+    {
+      n: "3",
+      icon: <Send size={13} color="#6366f1" />,
+      label: "Share the link — opponent has 24h to accept",
+    },
   ];
   return (
     <div style={visualCard("#3b82f6")}>
       {steps.map((s, i) => (
-        <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: i < steps.length - 1 ? 10 : 0, marginBottom: i < steps.length - 1 ? 10 : 0, borderBottom: i < steps.length - 1 ? "1px solid var(--glass-border)" : "none" }}>
-          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "var(--bg-main)", border: "1px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div
+          key={s.n}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            paddingBottom: i < steps.length - 1 ? 10 : 0,
+            marginBottom: i < steps.length - 1 ? 10 : 0,
+            borderBottom:
+              i < steps.length - 1 ? "1px solid var(--glass-border)" : "none",
+          }}
+        >
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              background: "var(--bg-main)",
+              border: "1px solid var(--glass-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
             {s.icon}
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-main)", flex: 1 }}>{s.label}</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--text-main)",
+              flex: 1,
+            }}
+          >
+            {s.label}
+          </span>
         </div>
       ))}
     </div>
@@ -1956,8 +2292,8 @@ const DUELS_STEPS = [
   },
   {
     visual: <DuelLeaderboardVisual />,
-    title: "Weekly Leaderboard",
-    body: "Duel wins stack up on the weekly board. Top predictor at reset earns bragging rights — and the board refreshes every Monday.",
+    title: "Monthly Leaderboard",
+    body: "Duel wins stack up on the monthly board. Top predictor at reset earns bragging rights — and the board refreshes every month.",
   },
   {
     visual: <HowToChallengeVisual />,
@@ -1985,46 +2321,72 @@ function DuelsOnboardingModal({
   const isLast = step === DUELS_STEPS.length - 1;
 
   return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 9999,
-      background: "rgba(0,0,0,0.85)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px 20px",
-    }}>
-      <div style={{
-        width: "100%",
-        maxWidth: 380,
-        background: "var(--bg-card, #1a1f2e)",
-        borderRadius: 24,
-        border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
-        padding: "28px 22px 22px",
-        position: "relative",
-        textAlign: "center",
-      }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "rgba(0,0,0,0.85)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px 20px",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 380,
+          background: "var(--bg-card, #1a1f2e)",
+          borderRadius: 24,
+          border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+          padding: "28px 22px 22px",
+          position: "relative",
+          textAlign: "center",
+        }}
+      >
         {/* Skip */}
         <button
           onClick={() => finish()}
-          style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: "var(--text-subtle, #64748b)", padding: 4 }}
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--text-subtle, #64748b)",
+            padding: 4,
+          }}
         >
           <X size={18} />
         </button>
 
         {/* Step dots */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 6,
+            marginBottom: 20,
+          }}
+        >
           {DUELS_STEPS.map((_, i) => (
-            <div key={i} style={{
-              width: i === step ? 20 : 6,
-              height: 6,
-              borderRadius: 99,
-              background: i === step ? "#2563eb" : "var(--glass-border, rgba(255,255,255,0.12))",
-              transition: "width 0.25s ease",
-            }} />
+            <div
+              key={i}
+              style={{
+                width: i === step ? 20 : 6,
+                height: 6,
+                borderRadius: 99,
+                background:
+                  i === step
+                    ? "#2563eb"
+                    : "var(--glass-border, rgba(255,255,255,0.12))",
+                transition: "width 0.25s ease",
+              }}
+            />
           ))}
         </div>
 
@@ -2032,10 +2394,26 @@ function DuelsOnboardingModal({
         {s.visual}
 
         {/* Text */}
-        <h2 style={{ fontSize: 20, fontWeight: 900, color: "var(--text-main, #f8fafc)", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 900,
+            color: "var(--text-main, #f8fafc)",
+            margin: "0 0 8px",
+            letterSpacing: "-0.02em",
+          }}
+        >
           {s.title}
         </h2>
-        <p style={{ fontSize: 13, color: "var(--text-muted, #94a3b8)", lineHeight: 1.6, margin: "0 0 20px", fontWeight: 500 }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--text-muted, #94a3b8)",
+            lineHeight: 1.6,
+            margin: "0 0 20px",
+            fontWeight: 500,
+          }}
+        >
           {s.body}
         </p>
 
@@ -2045,11 +2423,19 @@ function DuelsOnboardingModal({
             <button
               onClick={() => finish()}
               style={{
-                width: "100%", padding: "14px",
+                width: "100%",
+                padding: "14px",
                 background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                border: "none", borderRadius: 14, color: "#fff",
-                fontSize: 15, fontWeight: 800, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                border: "none",
+                borderRadius: 14,
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
               }}
             >
               <Swords size={16} /> Create my first duel
@@ -2057,11 +2443,15 @@ function DuelsOnboardingModal({
             <button
               onClick={() => finish(true)}
               style={{
-                width: "100%", padding: "11px",
+                width: "100%",
+                padding: "11px",
                 background: "transparent",
                 border: "1px solid var(--glass-border, rgba(255,255,255,0.1))",
-                borderRadius: 14, color: "var(--text-muted, #94a3b8)",
-                fontSize: 13, fontWeight: 700, cursor: "pointer",
+                borderRadius: 14,
+                color: "var(--text-muted, #94a3b8)",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
               }}
             >
               Browse Open Feed first
@@ -2071,11 +2461,19 @@ function DuelsOnboardingModal({
           <button
             onClick={() => setStep((n) => n + 1)}
             style={{
-              width: "100%", padding: "14px",
+              width: "100%",
+              padding: "14px",
               background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-              border: "none", borderRadius: 14, color: "#fff",
-              fontSize: 15, fontWeight: 800, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              border: "none",
+              borderRadius: 14,
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
             }}
           >
             Next <ChevronRight size={18} />
@@ -2109,7 +2507,9 @@ export const TmaChallengesPage: FC = () => {
 
   const isEligible = totalBetCount >= MIN_PREDICTIONS_REQUIRED;
   const [showDuelsOnboarding, setShowDuelsOnboarding] = useState(
-    () => typeof window !== "undefined" && !localStorage.getItem(DUELS_ONBOARDING_KEY),
+    () =>
+      typeof window !== "undefined" &&
+      !localStorage.getItem(DUELS_ONBOARDING_KEY),
   );
   const currentUserId = user?.id;
   const userName = user?.username
@@ -2278,17 +2678,17 @@ export const TmaChallengesPage: FC = () => {
       `}</style>
 
       <div className="duels-outer-wrap">
-      {/* Header */}
-      <div
-        className="duels-header"
-        style={{
-          padding: "9px 16px 0",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        {/* <div
+        {/* Header */}
+        <div
+          className="duels-header"
+          style={{
+            padding: "9px 16px 0",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          {/* <div
           className="duels-header-icon"
           style={{
             width: 40,
@@ -2306,119 +2706,120 @@ export const TmaChallengesPage: FC = () => {
         >
           <Swords size={20} color="#f59e0b" />
         </div> */}
-        <div style={{ marginTop: -5 }}>
-          <h1
-            className="duels-header-title"
-            style={{
-              fontSize: "22px",
-              fontWeight: 900,
-              color: "var(--text-main)",
-              letterSpacing: "-0.02em",
-              lineHeight: 1,
-              fontFamily: "var(--font-display)",
-              marginBottom: 0,
-            }}
-          >
-            Prediction Duels
-          </h1>
+          <div style={{ marginTop: -5 }}>
+            <h1
+              className="duels-header-title"
+              style={{
+                fontSize: "22px",
+                fontWeight: 900,
+                color: "var(--text-main)",
+                letterSpacing: "-0.02em",
+                lineHeight: 1,
+                fontFamily: "var(--font-display)",
+                marginBottom: 0,
+              }}
+            >
+              Prediction Duels
+            </h1>
+            <div
+              className="duels-header-sub"
+              style={{
+                fontSize: "0.7rem",
+                color: "var(--text-muted)",
+                fontWeight: 600,
+                marginTop: 3,
+              }}
+            >
+              Stake Oro · Beat a friend · Win the pot
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
           <div
-            className="duels-header-sub"
             style={{
-              fontSize: "0.7rem",
+              padding: "40px 0",
+              textAlign: "center",
               color: "var(--text-muted)",
-              fontWeight: 600,
-              marginTop: 3,
+              fontSize: "0.8rem",
             }}
           >
-            Stake Oro · Beat a friend · Win the pot
+            Loading…
           </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div
-          style={{
-            padding: "40px 0",
-            textAlign: "center",
-            color: "var(--text-muted)",
-            fontSize: "0.8rem",
-          }}
-        >
-          Loading…
-        </div>
-      ) : !isEligible ? (
-        <div className="eligibility-gate-wrap">
-          <EligibilityGate totalPredictions={totalBetCount} />
-        </div>
-      ) : (
-        <>
-          {/* Tabs */}
-          <div
-            className="duels-tabs-bar"
-            style={{
-              display: "flex",
-              gap: 4,
-              margin: "14px 16px 14px",
-              background: "var(--bg-main)",
-              borderRadius: 10,
-              padding: 4,
-            }}
-          >
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                className="duels-tab-btn"
-                onClick={() => setTab(t.key)}
-                style={{
-                  flex: 1,
-                  padding: "7px 0",
-                  borderRadius: 8,
-                  background: tab === t.key ? "var(--bg-card)" : "transparent",
-                  border: "none",
-                  color:
-                    tab === t.key ? "var(--text-main)" : "var(--text-muted)",
-                  fontWeight: 700,
-                  fontSize: "0.75rem",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
+        ) : !isEligible ? (
+          <div className="eligibility-gate-wrap">
+            <EligibilityGate totalPredictions={totalBetCount} />
           </div>
+        ) : (
+          <>
+            {/* Tabs */}
+            <div
+              className="duels-tabs-bar"
+              style={{
+                display: "flex",
+                gap: 4,
+                margin: "14px 16px 14px",
+                background: "var(--bg-main)",
+                borderRadius: 10,
+                padding: 4,
+              }}
+            >
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  className="duels-tab-btn"
+                  onClick={() => setTab(t.key)}
+                  style={{
+                    flex: 1,
+                    padding: "7px 0",
+                    borderRadius: 8,
+                    background:
+                      tab === t.key ? "var(--bg-card)" : "transparent",
+                    border: "none",
+                    color:
+                      tab === t.key ? "var(--text-main)" : "var(--text-muted)",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-          {tab === "mine" && (
-            <MyDuelsTab
-              markets={markets}
-              userName={userName}
-              myBetMarketIds={myBetMarketIds}
-              cardInventory={cardInventory}
-              challenges={myChallenges}
-              currentUserId={currentUserId}
-              onChallengeCreated={handleChallengeCreated}
-              onChallengeJoined={handleChallengeJoined}
-            />
-          )}
-          {tab === "open" && (
-            <OpenFeedTab
-              challenges={openChallenges}
-              currentUserId={currentUserId}
-              loading={openLoading}
-              onJoin={handleChallengeJoined}
-            />
-          )}
-          {tab === "leaderboard" && (
-            <LeaderboardTab
-              entries={leaderboard}
-              currentUserId={currentUserId}
-              loading={leaderboardLoading}
-            />
-          )}
+            {tab === "mine" && (
+              <MyDuelsTab
+                markets={markets}
+                userName={userName}
+                myBetMarketIds={myBetMarketIds}
+                cardInventory={cardInventory}
+                challenges={myChallenges}
+                currentUserId={currentUserId}
+                onChallengeCreated={handleChallengeCreated}
+                onChallengeJoined={handleChallengeJoined}
+              />
+            )}
+            {tab === "open" && (
+              <OpenFeedTab
+                challenges={openChallenges}
+                currentUserId={currentUserId}
+                loading={openLoading}
+                onJoin={handleChallengeJoined}
+              />
+            )}
+            {tab === "leaderboard" && (
+              <LeaderboardTab
+                entries={leaderboard}
+                currentUserId={currentUserId}
+                loading={leaderboardLoading}
+              />
+            )}
 
-          <div style={{ height: 100 }} />
-        </>
-      )}
+            <div style={{ height: 100 }} />
+          </>
+        )}
       </div>
 
       {/* Duels first-time onboarding modal */}

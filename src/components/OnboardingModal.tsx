@@ -18,7 +18,14 @@ function WalletVisual() {
         textAlign: "left",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
         <div
           style={{
             width: 28,
@@ -33,7 +40,11 @@ function WalletVisual() {
         >
           🏦
         </div>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)" }}>DK Bank</span>
+        <span
+          style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)" }}
+        >
+          DK Bank
+        </span>
         <span
           style={{
             marginLeft: "auto",
@@ -49,8 +60,16 @@ function WalletVisual() {
         </span>
       </div>
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 10, color: "var(--text-subtle)", marginBottom: 2 }}>Your balance</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "var(--text-main)" }}>Nu 0.00</div>
+        <div
+          style={{ fontSize: 10, color: "var(--text-subtle)", marginBottom: 2 }}
+        >
+          Your balance
+        </div>
+        <div
+          style={{ fontSize: 22, fontWeight: 900, color: "var(--text-main)" }}
+        >
+          Nu 0.00
+        </div>
       </div>
       <div
         style={{
@@ -66,7 +85,14 @@ function WalletVisual() {
       >
         + Top Up
       </div>
-      <div style={{ fontSize: 10, color: "#a78bfa", fontWeight: 700, textAlign: "center" }}>
+      <div
+        style={{
+          fontSize: 10,
+          color: "#a78bfa",
+          fontWeight: 700,
+          textAlign: "center",
+        }}
+      >
         ✨ +10% bonus on your first top up
       </div>
     </div>
@@ -86,7 +112,14 @@ function MarketsVisual() {
       }}
     >
       {/* Trending badge + title */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: 8,
+        }}
+      >
         <span
           style={{
             fontSize: 9,
@@ -102,11 +135,20 @@ function MarketsVisual() {
         >
           🔥 Trending
         </span>
-        <span style={{ fontSize: 9, color: "var(--text-subtle)", fontWeight: 600 }}>
+        <span
+          style={{ fontSize: 9, color: "var(--text-subtle)", fontWeight: 600 }}
+        >
           Highest volume
         </span>
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-main)", marginBottom: 10 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--text-main)",
+          marginBottom: 10,
+        }}
+      >
         Who wins NCA Finals 2024?
       </div>
       {/* Outcome A — leading */}
@@ -137,10 +179,14 @@ function MarketsVisual() {
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-main)" }}>
+          <span
+            style={{ fontSize: 11, fontWeight: 800, color: "var(--text-main)" }}
+          >
             Team Thimphu
           </span>
-          <span style={{ fontSize: 12, fontWeight: 900, color: "#22c55e" }}>71%</span>
+          <span style={{ fontSize: 12, fontWeight: 900, color: "#22c55e" }}>
+            71%
+          </span>
         </div>
       </div>
       {/* Outcome B */}
@@ -170,10 +216,14 @@ function MarketsVisual() {
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text-main)" }}>
+          <span
+            style={{ fontSize: 11, fontWeight: 800, color: "var(--text-main)" }}
+          >
             Paro Warriors
           </span>
-          <span style={{ fontSize: 12, fontWeight: 900, color: "#ef4444" }}>29%</span>
+          <span style={{ fontSize: 12, fontWeight: 900, color: "#ef4444" }}>
+            29%
+          </span>
         </div>
       </div>
       <div
@@ -206,7 +256,14 @@ function OracleVisual() {
         textAlign: "left",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
         <div
           style={{
             width: 52,
@@ -231,11 +288,15 @@ function OracleVisual() {
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 900, color: "#22c55e" }}>32</span>
+            <span style={{ fontSize: 13, fontWeight: 900, color: "#22c55e" }}>
+              32
+            </span>
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}>
+          <div
+            style={{ fontSize: 13, fontWeight: 900, color: "var(--text-main)" }}
+          >
             Prediction Rating
           </div>
           <div style={{ fontSize: 10, color: "#22c55e", fontWeight: 700 }}>
@@ -252,7 +313,8 @@ function OracleVisual() {
               textAlign: "center",
               padding: "5px 0",
               borderRadius: 6,
-              background: i === 0 ? "rgba(34,197,94,0.22)" : "rgba(255,255,255,0.04)",
+              background:
+                i === 0 ? "rgba(34,197,94,0.22)" : "rgba(255,255,255,0.04)",
               border:
                 i === 0
                   ? "1px solid rgba(34,197,94,0.4)"
@@ -302,7 +364,7 @@ function CompeteVisual() {
           marginBottom: 10,
         }}
       >
-        🏆 Weekly Season · 4 days left
+        🏆 Monthly Season
       </div>
       {entries.map((e) => (
         <div
@@ -331,7 +393,13 @@ function CompeteVisual() {
           >
             {e.name}
           </span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-muted)",
+            }}
+          >
             Nu {e.score}
           </span>
         </div>
@@ -360,8 +428,8 @@ const STEPS = [
   },
   {
     visual: <CompeteVisual />,
-    title: "Compete weekly",
-    body: "Seasons reset every week. Earn referral bonuses, keep your daily streak, and climb the board.",
+    title: "Compete monthly",
+    body: "Seasons reset every month. Earn referral bonuses, keep your daily streak, and climb the board.",
   },
 ];
 
@@ -429,7 +497,14 @@ export function OnboardingModal({ onDone }: { onDone: () => void }) {
         </button>
 
         {/* Step dots */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 6,
+            marginBottom: 20,
+          }}
+        >
           {STEPS.map((_, i) => (
             <div
               key={i}
