@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef } from "react";
-import dkBankLogo from "@shared/assets/dk blue.png";
+import dkBankLogo from "@shared/assets/dk-blue.png";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
   getLinkedBankAccounts,

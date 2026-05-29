@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from "react";
-import dkBankLogo from "@shared/assets/dk blue.png";
+import dkBankLogo from "@shared/assets/dk-blue.png";
 import { useParams } from "react-router-dom";
 import { Placeholder } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";

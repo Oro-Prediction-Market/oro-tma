@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import dkBankLogo from "@shared/assets/dk blue.png";
+import dkBankLogo from "@shared/assets/dk-blue.png";
 import {
   initiateDKBankPayment,
   confirmDKBankPayment,
