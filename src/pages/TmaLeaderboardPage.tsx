@@ -1033,10 +1033,10 @@ function SeasonsSheet({
                   color: "var(--text-main)",
                 }}
               >
-                {new Date(
-                  currentSeason.year,
-                  currentSeason.weekNumber - 1,
-                ).toLocaleString(undefined, { month: "long" })}{" "}
+                {new Date(currentSeason.startsAt).toLocaleString(undefined, {
+                  month: "long",
+                  timeZone: "UTC",
+                })}{" "}
                 {currentSeason.year}
               </div>
               <div
@@ -1051,6 +1051,7 @@ function SeasonsSheet({
                   weekday: "short",
                   month: "short",
                   day: "numeric",
+                  timeZone: "UTC",
                 })}
               </div>
             </div>
@@ -1107,10 +1108,10 @@ function SeasonsSheet({
                         color: "var(--text-main)",
                       }}
                     >
-                      {new Date(s.year, s.weekNumber - 1).toLocaleString(
-                        undefined,
-                        { month: "long" },
-                      )}{" "}
+                      {new Date(s.startsAt).toLocaleString(undefined, {
+                        month: "long",
+                        timeZone: "UTC",
+                      })}{" "}
                       {s.year}
                     </div>
                     <div
@@ -1123,12 +1124,14 @@ function SeasonsSheet({
                       {new Date(s.startsAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
+                        timeZone: "UTC",
                       })}{" "}
                       –{" "}
                       {new Date(s.endsAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
+                        timeZone: "UTC",
                       })}
                     </div>
                   </div>
