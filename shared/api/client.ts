@@ -4,12 +4,12 @@
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// Store the JWT in localStorage — persists across browser/app restarts (PWA-friendly)
-let _token: string | null = localStorage.getItem("oro_token");
+// JWT lives only in memory — Telegram re-authenticates via initData on every open.
+// Never persisted to localStorage or sessionStorage to prevent XSS token theft.
+let _token: string | null = null;
 
 export function setToken(token: string) {
   _token = token;
-  localStorage.setItem("oro_token", token);
 }
 
 export function getToken(): string | null {
@@ -18,7 +18,6 @@ export function getToken(): string | null {
 
 export function clearToken() {
   _token = null;
-  localStorage.removeItem("oro_token");
 }
 
 // Decode a JWT payload without a library — returns null if malformed
