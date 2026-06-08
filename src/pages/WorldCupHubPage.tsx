@@ -63,7 +63,7 @@ export function parseGroupInfo(title: string): { team: string; group: string } {
 }
 
 export function parseMatchTeams(title: string): { team1: string; team2: string } {
-  const m = title.match(/^(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-]|\s*\(|$)/i);
+  const m = title.match(/^(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:]|\s*\(|$)/i);
   if (m) return { team1: m[1].trim(), team2: m[2].trim() };
   return { team1: "Team A", team2: "Team B" };
 }
