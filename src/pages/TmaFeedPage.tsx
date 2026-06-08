@@ -1301,7 +1301,7 @@ export const TmaFeedPage: FC = () => {
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
         (m) =>
-          (m.category ?? "other").toLowerCase() ===
+          (m.category || "other").toLowerCase() ===
           selectedCategory.toLowerCase(),
       );
     }
@@ -1341,7 +1341,7 @@ export const TmaFeedPage: FC = () => {
               markets
                 .filter(
                   (m) =>
-                    (m.category ?? "other").toLowerCase() ===
+                    (m.category || "other").toLowerCase() ===
                       selectedCategory.toLowerCase() && m.subcategory,
                 )
                 .map((m) => m.subcategory!),
