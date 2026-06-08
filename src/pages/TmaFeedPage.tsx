@@ -1370,7 +1370,7 @@ export const TmaFeedPage: FC = () => {
   const hasMore = visibleCount < allCards.length;
 
   const HOT_THRESHOLD = 1000;
-  const trendingMarkets = openMarkets
+  const trendingMarkets = filteredOpen
     .filter((m) => Number(m.totalPool) >= HOT_THRESHOLD)
     .sort((a, b) => Number(b.totalPool) - Number(a.totalPool))
     .slice(0, 5);
