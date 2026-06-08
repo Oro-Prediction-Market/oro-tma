@@ -1101,39 +1101,31 @@ function SeasonsSheet({
                   }}
                 >
                   <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 800,
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      {new Date(s.startsAt).toLocaleString(undefined, {
-                        month: "long",
-                        timeZone: "UTC",
-                      })}{" "}
-                      {s.year}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "var(--text-muted)",
-                        marginTop: 1,
-                      }}
-                    >
-                      {new Date(s.startsAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        timeZone: "UTC",
-                      })}{" "}
-                      –{" "}
-                      {new Date(s.endsAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                        timeZone: "UTC",
-                      })}
-                    </div>
+                    {(() => {
+                      const spanDays = (new Date(s.endsAt).getTime() - new Date(s.startsAt).getTime()) / 86_400_000;
+                      const isMonthly = spanDays >= 25;
+                      return isMonthly ? (
+                        <>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)" }}>
+                            {new Date(s.startsAt).toLocaleString("en-US", { month: "long", timeZone: "UTC" })} {s.year}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+                            Monthly season
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)" }}>
+                            {new Date(s.startsAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                            {" – "}
+                            {new Date(s.endsAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+                            Weekly season
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   <Trophy size={16} color="#f59e0b" />
                 </div>
