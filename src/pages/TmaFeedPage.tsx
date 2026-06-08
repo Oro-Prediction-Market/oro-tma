@@ -1293,7 +1293,9 @@ export const TmaFeedPage: FC = () => {
 
     if (selectedCategory === "All") {
       filtered = filtered.filter(
-        (m) => !["ter", "btc"].includes(m.externalSource ?? ""),
+        (m) =>
+          !["ter", "btc"].includes(m.externalSource ?? "") ||
+          (m.category || "other") !== "economy",
       );
     }
 
