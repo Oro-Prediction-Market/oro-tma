@@ -102,6 +102,7 @@ export const TerMarketCard: FC<Props> = memo(
         ? Math.round((Number(upOutcome.totalBetAmount) / totalPool) * 100)
         : 50;
     const downPct = 100 - upPct;
+    const barUpPct = totalPool > 0 ? Math.max(5, Math.min(95, upPct)) : 50;
 
     const userPicked =
       userPickedOutcomeId === upOutcome?.id
@@ -368,7 +369,7 @@ export const TerMarketCard: FC<Props> = memo(
           >
             <div
               style={{
-                width: `${upPct}%`,
+                width: `${barUpPct}%`,
                 background: upColor,
                 transition: "width 0.4s ease",
               }}
