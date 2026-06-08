@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Ch-Switzerland--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    CH Switzerland Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#e31d1c" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#f1f9ff" fill-rule="evenodd" d="M18 10h-4v4h-4v4h4v4h4v-4h4v-4h-4v-4Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Jo-Jordan--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    JO Jordan Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#f7fcff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#272727" fill-rule="evenodd" d="M0 4v8h32V4H0Z" clip-rule="evenodd"></path>
+    <path fill="#009933" fill-rule="evenodd" d="M0 20v8h32v-8H0Z" clip-rule="evenodd"></path>
+  </g>
+  <path fill="#e31d1c" fill-rule="evenodd" d="M0 4v24l20-12L0 4Z" clip-rule="evenodd"></path>
+  <mask id="b" width="20" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24l20-12L0 4Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#b)">
+    <path fill="#f7fcff" fill-rule="evenodd" d="M9.002 17.87 7.132 19l.426-2.204L6 15.146l2.11-.088L9.001 13l.892 2.058H12l-1.554 1.738.468 2.204-1.912-1.13Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

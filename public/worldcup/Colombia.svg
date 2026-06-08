@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Co-Colombia--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    CO Colombia Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#2e42a5" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#feca00" fill-rule="evenodd" d="M0 4v12h32V4H0Z" clip-rule="evenodd"></path>
+    <path fill="#e31d1c" fill-rule="evenodd" d="M0 22v6h32v-6H0Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

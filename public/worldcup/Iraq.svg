@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Iq-Iraq--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    IQ Iraq Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#f7fcff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#bf2714" fill-rule="evenodd" d="M0 4v8h32V4H0Z" clip-rule="evenodd"></path>
+    <path fill="#272727" fill-rule="evenodd" d="M0 20v8h32v-8H0Z" clip-rule="evenodd"></path>
+    <path fill="#009c4e" fill-rule="evenodd" d="M5.337 16.811C6.247 18.117 5 19 5 19s1.09 0 1.507-.874h8.917V16.2s-.186-.925-.98-.925c-.795 0-.973.925-.973.925h-3.137l3.035-2.68-.59-.52-3.371 2.976v.63h4.785v-.37s.027-.216.25-.216c.224 0 .17.215.17.215v.793h-6.03v-1.084l-.653.291v.793s-.8-.217-1.305-.217c-.506 0-.536-.576-.536-.576l-.752.576Zm12.11.074.489 1.218H15.99v-4.889l.82.263v3.408h.637Zm9.064 0L27 18.103h-1.946v-4.889l.82.263v3.408h.637Zm-2.41-3.62-.506.343v3.274h-.517v-2.626l-.85.49v2.136h-.572v-1.483l-.647.417v.402s-1.244.086-1.244 1.845h4.331l.006-4.798Zm-16.61 5.7c.157 0 .284-.111.284-.25 0-.137-.127-.25-.283-.25-.157 0-.283.113-.283.25 0 .139.126.25.283.25Zm14.424-5.323c-.22.29-.888 0-.888 0l1.893-.22c-.196.382-1.006.22-1.006.22Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

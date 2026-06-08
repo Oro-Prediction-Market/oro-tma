@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Cw-CuraçAo--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    CW Curaçao Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#2e42a5" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#f7fcff" fill-rule="evenodd" d="m4.254 10.15-1.988 1.049.96-1.868L2 7.963l1.523-.056L4.254 6l.558 1.907 1.783.056-1.284 1.368.815 1.868-1.872-1.05Zm7.098 4.927-2.454 1.028.963-2.577L7.727 11.8h2.557l1.068-2.787.816 2.787h2.561l-1.82 1.73.904 2.576-2.46-1.028Z" clip-rule="evenodd"></path>
+    <path fill="#f9e813" fill-rule="evenodd" d="M0 18v4h32v-4H0Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Gb-Sct-Scotland--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    GB SCT Scotland Streamline Icon: https://streamlinehq.com
+  </desc>
+  <g clip-path="url(#a)">
+    <path fill="#2e42a5" fill-rule="evenodd" d="M0 3v18h24V3H0Z" clip-rule="evenodd" stroke-width="0.75"></path>
+    <path fill="#ffffff" fill-rule="evenodd" d="M12 13.875 0.8999999999999999 22.200000000000003l-1.7999999999999998 -2.4000000000000004L9.50025 12 -0.8999999999999999 4.199999999999999l1.7999999999999998 -2.4000000000000004L12 10.125 23.1 1.7999999999999998l1.7999999999999998 2.4000000000000004L14.499749999999999 12 24.900000000000002 19.799999999999997l-1.7999999999999998 2.4000000000000004L12 13.875Z" clip-rule="evenodd" stroke-width="0.75"></path>
+  </g>
+  <defs>
+    <clipPath id="a">
+      <path fill="#ffffff" d="M0 0h24v24H0z" stroke-width="0.75"></path>
+    </clipPath>
+  </defs>
+</svg>

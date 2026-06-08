@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Cd-Democratic-Republic-Of-The-Congo--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    CD Democratic Republic Of The Congo Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#3195f9" fill-rule="evenodd" d="M4.5434 8.2535v16.933h22.5774V8.2535H4.5434Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M4.5434 8.2535v16.933h22.5774V8.2535H4.5434Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#e31d1c" stroke="#feca00" stroke-width="2.5" d="m3.2579 26.2025.4896.7331.7338-.4897 25.583-17.0777.7338-.4889-.489-.7338-1.567-2.3473-.4896-.7338-.7338.4897-25.583 17.077-.7338.4896.4897.7338 1.5663 2.3466Z"></path>
+    <path fill="#feca00" fill-rule="evenodd" d="m8.0217 14.3254-2.4588 1.706.786-2.9217-1.8055-1.8661 2.4447-.1009 1.0336-2.8892 1.0343 2.8892h2.4398l-1.8012 1.967.9023 2.7495-2.5752-1.5338Z" clip-rule="evenodd"></path>
+  </g>
+</svg>

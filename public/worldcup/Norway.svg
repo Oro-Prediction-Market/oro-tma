@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="No-Norway--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    NO Norway Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#e31d1c" fill-rule="evenodd" d="M2.0622 5.5467v20.9066h27.8756V5.5467H2.0622Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M2.0622 5.5467v20.9066h27.8756V5.5467H2.0622Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#2e42a5" stroke="#f7fcff" stroke-width="2" d="M10.7733 4.6756h-.8711v8.7111H1.1911v5.2266h8.7111v8.7111h5.2267v-8.7111h15.68v-5.2266h-15.68V4.6756h-4.3556Z"></path>
+  </g>
+</svg>

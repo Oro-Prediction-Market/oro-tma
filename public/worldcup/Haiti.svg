@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Ht-Haiti--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    HT Haiti Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#2e42a5" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#e31d1c" fill-rule="evenodd" d="M0 16v12h32V16H0Z" clip-rule="evenodd"></path>
+    <path fill="#ffffff" d="M10 12h12v8H10z"></path>
+    <mask id="b" width="12" height="8" x="10" y="12" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+      <path fill="#ffffff" d="M10 12h12v8H10z"></path>
+    </mask>
+    <g mask="url(#b)">
+      <path fill="#279e19" fill-rule="evenodd" d="M10 18.578s2.88-.758 6-.712c3.12.047 6 .89 6 .89V20H10v-1.422Z" clip-rule="evenodd"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M16.074 12.901s-.931-.42-1.581-.42c-.65 0-1.011.641-1.011.641"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M16.28 13.322s-.856-.307-1.454-.307-.93.468-.93.468"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M16.28 13.677s-.633-.306-1.076-.306c-.442 0-.688.467-.688.467"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M16.02 14.033s-.392-.306-.665-.306-.425.467-.425.467"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M15.986 14.275s-.156-.193-.266-.193c-.109 0-.17.295-.17.295m.377-1.476s.93-.42 1.58-.42 1.012.641 1.012.641"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M15.72 13.322s.856-.307 1.454-.307c.599 0 .93.468.93.468"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M15.72 13.677s.633-.306 1.076-.306c.442 0 .688.467.688.467"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M15.98 14.033s.392-.306.665-.306c.274 0 .425.467.425.467"></path>
+      <path stroke="#026a16" stroke-width=".5" d="M16.014 14.275s.156-.193.266-.193c.109 0 .17.295.17.295"></path>
+      <path fill="#feca00" fill-rule="evenodd" d="M15.888 14.398s-.115 1.338-.115 1.882c0 .544.115 1.719.115 1.719h.293V16.28c0-.454-.172-1.882-.172-1.882h-.121Z" clip-rule="evenodd"></path>
+      <path fill="#c51918" fill-rule="evenodd" d="M14.732 15.918s-.724.388-.724 1.536l.724 1.385h1.307v-2.282l-1.307-.638Z" clip-rule="evenodd"></path>
+      <path fill="#0a328c" fill-rule="evenodd" d="M13.659 14.826s-1.691.501-1.691 2.349l2.19.187s-.119-1.074.555-1.57l-1.054-.966Z" clip-rule="evenodd"></path>
+      <path stroke="#ffd018" stroke-width=".5" d="m12.96 14.121 2.901 2.658m-3.908-2.056L16 17.35m-4.743-1.61 4.56 2.085"></path>
+      <path fill="#feca00" fill-rule="evenodd" d="m11.98 17.16 3.025.338-.17.423h-.48l.327.238.737.173v-.411h.645v.873h-1.382l-.53-.635s-.445.44-.88.44c-.434 0-.862-.143-.862-.622v-.333l-.43-.146v-.338Z" clip-rule="evenodd"></path>
+      <path fill="#c51918" fill-rule="evenodd" d="M16.854 15.918s.724.388.724 1.536l-.724 1.385h-1.307v-2.282l1.307-.638Z" clip-rule="evenodd"></path>
+      <path fill="#0a328c" fill-rule="evenodd" d="M17.927 14.826s1.691.501 1.691 2.349l-2.19.187s.12-1.074-.555-1.57l1.054-.966Z" clip-rule="evenodd"></path>
+      <path stroke="#ffd018" stroke-width=".5" d="m18.625 14.121-2.9 2.658m3.908-2.056-4.046 2.627m4.743-1.61-4.56 2.085"></path>
+      <path fill="#feca00" fill-rule="evenodd" d="m19.606 17.16-3.025.338.17.423h.48l-.327.238-.737.173v-.411h-.645v.873h1.382l.53-.635s.445.44.88.44c.434 0 .863-.143.863-.622v-.333l.43-.146v-.338Z" clip-rule="evenodd"></path>
+    </g>
+  </g>
+</svg>

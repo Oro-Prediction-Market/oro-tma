@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Py-Paraguay--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    PY Paraguay Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#f7fcff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M0 4v24h32V4H0Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path stroke="#272727" stroke-width=".35" d="M19.825 16a3.825 3.825 0 1 1-7.65 0 3.825 3.825 0 0 1 7.65 0Z"></path>
+    <path fill="#272727" fill-rule="evenodd" d="M13 16a3 3 0 1 0 6 0 3 3 0 0 0-6 0Zm5.65 0a2.65 2.65 0 1 1-5.3 0 2.65 2.65 0 0 1 5.3 0Z" clip-rule="evenodd"></path>
+    <path fill="#f05234" fill-rule="evenodd" d="M0 4v8h32V4H0Z" clip-rule="evenodd"></path>
+    <path fill="#3d58db" fill-rule="evenodd" d="M0 20v8h32v-8H0Z" clip-rule="evenodd"></path>
+    <path fill="#73be4a" d="m14.617 14.002.284.412c-.66.456-.958.993-.714 1.903.241.901.808 1.349 1.75 1.381l-.017.5c-1.162-.04-1.947-.517-2.245-1.631-.296-1.106.1-1.982.942-2.565Z"></path>
+    <path fill="#fbcd17" fill-rule="evenodd" d="m16 16.315-.882.599.297-1.024-.842-.653 1.066-.034L16 14.2l.361 1.003 1.066.034-.842.653.297 1.024-.882-.599Z" clip-rule="evenodd"></path>
+    <path stroke="#73be4a" stroke-width=".5" d="M17.168 14.176s1.126.78.72 2.292c-.404 1.511-1.983 1.566-1.983 1.566"></path>
+    <path fill="#f7fcff" d="m14.564 13.044.467.718Z"></path>
+  </g>
+</svg>

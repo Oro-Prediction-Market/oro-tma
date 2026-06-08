@@ -18,6 +18,7 @@ import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { isWCMarket, getWCFlag, parseWinnerCountry, calcProb } from "./WorldCupHubPage";
 
 // Live Activity Ticker
 
@@ -1103,6 +1104,7 @@ export const TmaFeedPage: FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState("All");
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Full pending bet objects — used for the picks strip + "YOUR PICK" badge
   const [myPendingBets, setMyPendingBets] = useState<Bet[]>([]);
@@ -1317,6 +1319,13 @@ export const TmaFeedPage: FC = () => {
       );
     }
 
+    // Country multi-select filter
+    if (selectedCountries.length > 0) {
+      filtered = filtered.filter(
+        (m) => !isWCMarket(m) || selectedCountries.includes(parseWinnerCountry(m.title)),
+      );
+    }
+
     // Search Filter
     if (!searchQuery.trim()) return filtered;
     const q = searchQuery.toLowerCase();
@@ -1372,6 +1381,44 @@ export const TmaFeedPage: FC = () => {
   const hasMore = visibleCount < allCards.length;
 
   const trendingMarkets = filteredOpen.slice(0, 5);
+
+  const wcEntryMarkets = markets.filter(isWCMarket);
+
+  const WC_DEFAULT_NATIONS = [
+    { flag: "/worldcup/Brazil.svg", country: "Brazil" },
+    { flag: "/worldcup/Argentina.svg", country: "Argentina" },
+    { flag: "/worldcup/France.svg", country: "France" },
+    { flag: "/worldcup/England.svg", country: "England" },
+    { flag: "/worldcup/Germany.svg", country: "Germany" },
+    { flag: "/worldcup/Spain.svg", country: "Spain" },
+    { flag: "/worldcup/Portugal.svg", country: "Portugal" },
+    { flag: "/worldcup/Netherlands.svg", country: "Netherlands" },
+    { flag: "/worldcup/USA.svg", country: "USA" },
+    { flag: "/worldcup/Mexico.svg", country: "Mexico" },
+    { flag: "/worldcup/Canada.svg", country: "Canada" },
+    { flag: "/worldcup/Japan.svg", country: "Japan" },
+    { flag: "/worldcup/SouthKorea.svg", country: "Korea" },
+    { flag: "/worldcup/Morocco.svg", country: "Morocco" },
+    { flag: "/worldcup/Uruguay.svg", country: "Uruguay" },
+    { flag: "/worldcup/Croatia.svg", country: "Croatia" },
+  ];
+
+  const wcMarketItems = wcEntryMarkets
+    .filter((m) => m.subcategory === "wc-winner")
+    .flatMap((m) =>
+      (m.outcomes ?? []).map((outcome) => ({
+        flag: getWCFlag(outcome.label),
+        country: outcome.label,
+        prob: calcProb(m, outcome.id),
+        hasData: Number(m.totalPool) > 0,
+      }))
+    );
+
+  const wcWinnerItems =
+    wcMarketItems.length > 0
+      ? wcMarketItems
+      : WC_DEFAULT_NATIONS.map((n) => ({ ...n, prob: 0, hasData: false }));
+
   const hasResults =
     filteredOpen.length + filteredResolving.length + filteredUpcoming.length >
     0;
@@ -1386,6 +1433,22 @@ export const TmaFeedPage: FC = () => {
           42%  { transform: scale(1.12); opacity: 1; }
           70%  { transform: scale(1);    opacity: 0.8; }
           100% { transform: scale(1);    opacity: 1; }
+        }
+        @keyframes wcShimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        @keyframes wcPulse {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.7; }
+        }
+        @keyframes wcMarquee {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes wcSpin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
       <div
@@ -1692,6 +1755,7 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── Trending strip ── */}
         {trendingMarkets.length > 0 && !searchQuery.trim() && (
+
           <div style={{ marginBottom: 20 }}>
             <div
               style={{
@@ -1903,6 +1967,178 @@ export const TmaFeedPage: FC = () => {
               LIVE
             </div>
             <LiveTicker />
+          </div>
+        )}
+
+        {/* ── World Cup Banner Card ── */}
+        {!searchQuery.trim() && (
+          <div style={{
+            marginBottom: 16,
+            borderRadius: 18,
+            padding: 2,
+            background: "radial-gradient(circle at top left, #22c55e 0%, transparent 55%), radial-gradient(circle at bottom left, #7f1d1d 0%, transparent 55%), radial-gradient(circle at top right, #ef4444 0%, transparent 55%), radial-gradient(circle at bottom right, #7c3aed 0%, transparent 55%)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/world-cup")}
+            onKeyDown={(e) => e.key === "Enter" && navigate("/world-cup")}
+            style={{
+              marginBottom: 0,
+              borderRadius: 16,
+              overflow: "hidden",
+              cursor: "pointer",
+              position: "relative",
+              backgroundImage: "url('/background.svg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              outline: "none",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Spinning football — bottom-left corner decoration */}
+            <img
+              src="/football.svg"
+              alt=""
+              aria-hidden="true"
+              style={{
+                position: "absolute", top: "50%", left: -56,
+                marginTop: -70,
+                width: 112, height: 112,
+                opacity: 0.7,
+                animation: "wcSpin 6s linear infinite",
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            />
+
+            {/* ── Main row: title left + trophy right ── */}
+            <div style={{ display: "flex", alignItems: "stretch", minHeight: 136, position: "relative", zIndex: 1 }}>
+              {/* Left: text */}
+              <div style={{ flex: 1, padding: "20px 0 12px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                  FIFA
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                  World Cup
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#84cc16", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                  Prediction
+                </div>
+              </div>
+              {/* Right: trophy */}
+              <div style={{ width: 148, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <img
+                  src="/worldcup.svg"
+                  alt="FIFA World Cup 2026"
+                  style={{ width: 148, height: 136, objectFit: "contain", display: "block" }}
+                />
+              </div>
+            </div>
+
+            {/* ── Bottom: animated flags strip + "View more" ── */}
+            <div style={{
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              padding: "6px 12px 6px 4px",
+              position: "relative",
+              zIndex: 1,
+              gap: 8,
+            }}>
+              {/* Scrolling flags */}
+              <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+                <div style={{
+                  position: "absolute", left: 0, top: 0, bottom: 0, width: 20,
+                  background: "linear-gradient(to right, rgba(0,0,0,0.5), transparent)", zIndex: 1, pointerEvents: "none",
+                }} />
+                <div style={{
+                  display: "flex",
+                  animation: `wcMarquee ${Math.max(12, wcWinnerItems.length * 2)}s linear infinite`,
+                  width: "max-content",
+                }}>
+                  {[...wcWinnerItems, ...wcWinnerItems].map((item, i) => (
+                    <div key={i} style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      padding: "2px 10px", gap: 1,
+                      borderRight: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                      {item.flag
+                        ? <img src={item.flag} alt="" style={{ width: 26, height: 26, borderRadius: 3, objectFit: "cover" }} />
+                        : null
+                      }
+                      <span style={{
+                        fontSize: 10, fontWeight: 800,
+                        color: item.hasData ? "#ffffff" : "rgba(255,255,255,0.4)",
+                      }}>
+                        {item.hasData ? `${Math.round(item.prob * 100)}%` : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* View more */}
+              <span style={{
+                fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
+                whiteSpace: "nowrap", flexShrink: 0,
+              }}>
+                Enter Hub »
+              </span>
+            </div>
+          </div>
+          </div>
+        )}
+
+        {/* ── Country multi-select pills ── */}
+        {wcWinnerItems.length > 0 && !searchQuery.trim() && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+              {wcWinnerItems.filter((item) => item.flag !== "").map((item) => {
+                const active = selectedCountries.includes(item.country);
+                return (
+                  <button
+                    key={item.country}
+                    onClick={() =>
+                      setSelectedCountries((prev) =>
+                        active ? prev.filter((c) => c !== item.country) : [...prev, item.country]
+                      )
+                    }
+                    style={{
+                      flexShrink: 0,
+                      display: "flex", alignItems: "center", gap: 5,
+                      padding: "5px 10px",
+                      borderRadius: 20,
+                      fontSize: "0.7rem", fontWeight: 700,
+                      border: `1px solid ${active ? "#A78BFA" : "rgba(255,255,255,0.1)"}`,
+                      background: active ? "rgba(167,139,250,0.12)" : "var(--bg-card)",
+                      color: active ? "#A78BFA" : "var(--text-muted)",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {item.flag && <img src={item.flag} alt="" style={{ width: 16, height: 16, borderRadius: 2, objectFit: "cover" }} />}
+                    {item.country}
+                  </button>
+                );
+              })}
+              {selectedCountries.length > 0 && (
+                <button
+                  onClick={() => setSelectedCountries([])}
+                  style={{
+                    flexShrink: 0, padding: "5px 10px", borderRadius: 20,
+                    fontSize: "0.7rem", fontWeight: 700,
+                    border: "1px solid rgba(255,100,100,0.3)",
+                    background: "rgba(255,100,100,0.08)",
+                    color: "rgba(255,100,100,0.7)",
+                    cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
           </div>
         )}
 

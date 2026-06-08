@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 32 32" id="Cv-Cabo-Verde--Streamline-Flagpack" height="24" width="24">
+  <desc>
+    CV Cabo Verde Streamline Icon: https://streamlinehq.com
+  </desc>
+  <path fill="#4141db" fill-rule="evenodd" d="M2.0622 5.5467v20.9066h27.8756V5.5467H2.0622Z" clip-rule="evenodd"></path>
+  <mask id="a" width="32" height="24" x="0" y="4" maskUnits="userSpaceOnUse" style="mask-type:luminance">
+    <path fill="#ffffff" fill-rule="evenodd" d="M2.0622 5.5467v20.9066h27.8756V5.5467H2.0622Z" clip-rule="evenodd"></path>
+  </mask>
+  <g mask="url(#a)">
+    <path fill="#f90000" stroke="#f7fcff" stroke-width="2" d="M2.0622 16.8711h-.8711v3.4845h29.6178v-3.4845H2.0622Z"></path>
+    <g filter="url(#b)">
+      <path fill="#ffde00" fill-rule="evenodd" d="m10.5956 14.4843.6325-.4443.6115.4443-.1899-.7893.4913-.5h-.6255l-.2883-.6446-.2465.6446h-.7335l.5619.5-.2135.7884Zm2.6134 1.3937.6324-.4442.6115.4442-.1899-.7892.4913-.5h-.6254l-.2884-.6446-.2465.6446h-.7335l.5619.5-.2134.7884Zm2.723 1.6464-.6324.4443.2134-.7892-.5618-.5h.7334l.2466-.6447.2874.6447h.6264l-.4913.5.1899.7883-.6116-.4434Zm-.6324 3.9288.6324-.4443.6116.4443-.1899-.7893.4913-.5h-.6255l-.2883-.6446-.2465.6446h-.7335l.5618.5-.2134.7884Zm-1.4582 1.6464-.6325.4442.2135-.7892-.5619-.5h.7335l.2465-.6446.2875.6446h.6263l-.4913.5.1899.7884-.6115-.4426Zm-3.2458 1.838.6324-.4443.6116.4443-.1899-.7892.4913-.5001h-.6255l-.2883-.6446-.2465.6446h-.7335l.5618.5001-.2134.7883Zm-1.9809-1.838-.6324.4442.2134-.7892-.5619-.5h.7335l.2465-.6446.2875.6446h.6263l-.4913.5.1899.7884-.6115-.4426Zm-2.7231-1.6464.6324-.4443.6116.4443-.1899-.7893.4913-.5h-.6255l-.2883-.6446-.2465.6446h-.7335l.5618.5-.2134.7884Zm.6324-3.9288-.6324.4443.2134-.7892-.5618-.5h.7334l.2466-.6447.2874.6447h.6264l-.4913.5.1899.7883-.6116-.4434Zm1.4583-1.6464.6324-.4442.6115.4442-.1899-.7892.4913-.5h-.6254l-.2884-.6446-.2465.6446h-.7335l.5619.5-.2134.7884Z" clip-rule="evenodd"></path>
+    </g>
+  </g>
+  <defs>
+    <filter id="b" width="20.974" height="22.218" x="-.004" y="8.041" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood>
+      <feColorMatrix in="SourceAlpha" result="hardAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix>
+      <feOffset></feOffset>
+      <feGaussianBlur stdDeviation="2"></feGaussianBlur>
+      <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.24 0"></feColorMatrix>
+      <feBlend in2="BackgroundImageFix" result="effect1_dropShadow_1660_11262"></feBlend>
+      <feBlend in="SourceGraphic" in2="effect1_dropShadow_1660_11262" result="shape"></feBlend>
+    </filter>
+  </defs>
+</svg>
