@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, LayoutGrid, Swords } from "lucide-react";
+import { Trophy, LayoutGrid, Swords, Clock } from "lucide-react";
 import { getMarkets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
@@ -68,6 +68,93 @@ export function parseMatchTeams(title: string): { team1: string; team2: string }
   return { team1: "Team A", team2: "Team B" };
 }
 
+function useClosesAt(closesAt: string | null | undefined): string {
+  const [label, setLabel] = React.useState("");
+  React.useEffect(() => {
+    if (!closesAt) return;
+    const tick = () => {
+      const ms = new Date(closesAt).getTime() - Date.now();
+      if (ms <= 0) { setLabel("Closed"); return; }
+      const d = Math.floor(ms / 86_400_000);
+      const h = Math.floor((ms % 86_400_000) / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
+      if (d > 0) setLabel(`${d}d ${h}h`);
+      else if (h > 0) setLabel(`${h}h ${m}m`);
+      else setLabel(`${m}m`);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [closesAt]);
+  return label;
+}
+
+function WinnerMarketGroup({
+  market,
+  onBet,
+}: {
+  market: Market;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {market.title}
+        </div>
+        {closes && (
+          <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+            <Clock size={10} />
+            <span>{closes}</span>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {(market.outcomes ?? []).map((outcome) => {
+          const flag = getWCFlag(outcome.label);
+          const prob = calcProb(market, outcome.id);
+          return (
+            <div
+              key={outcome.id}
+              style={{
+                background: "linear-gradient(135deg, rgba(167,139,250,0.04) 0%, var(--bg-card) 60%)",
+                border: "1px solid rgba(167,139,250,0.12)",
+                borderRadius: 14,
+                padding: "11px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              {flag
+                ? <img src={flag} alt={outcome.label} style={{ width: 38, height: 38, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+                : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>🏳️</span>
+              }
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", marginBottom: 2 }}>{outcome.label}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
+                  Nu {Number(outcome.totalBetAmount).toLocaleString()} pool
+                </div>
+              </div>
+              <div style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 9, padding: "5px 9px", textAlign: "center", flexShrink: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
+                <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>win</div>
+              </div>
+              <button
+                onClick={() => onBet(market.id, outcome.id)}
+                style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+              >
+                Predict
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function isWCMarket(m: Market): boolean {
   return (
     !!m.subcategory?.startsWith("wc-") ||
@@ -87,6 +174,139 @@ export function calcProb(market: Market, outcomeId: string): number {
   return (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
 }
 
+
+function GroupMarketSection({
+  market,
+  onBet,
+}: {
+  market: Market;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1, minWidth: 0, marginRight: 8 }}>
+          {market.title}
+        </div>
+        {closes && (
+          <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+            <Clock size={10} />
+            <span>{closes}</span>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {(market.outcomes ?? []).map((outcome) => {
+        const flag = getWCFlag(outcome.label);
+        const prob = calcProb(market, outcome.id);
+        return (
+          <div
+            key={outcome.id}
+            style={{
+              background: "linear-gradient(135deg, rgba(167,139,250,0.04) 0%, var(--bg-card) 60%)",
+              border: "1px solid rgba(167,139,250,0.12)",
+              borderRadius: 14,
+              padding: "11px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            {flag
+              ? <img src={flag} alt={outcome.label} style={{ width: 38, height: 38, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+              : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>🏳️</span>
+            }
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", marginBottom: 2 }}>{outcome.label}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
+                Nu {Number(outcome.totalBetAmount).toLocaleString()} pool
+              </div>
+            </div>
+            <div style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 8, padding: "4px 10px", textAlign: "center", flexShrink: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
+              <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 1 }}>win</div>
+            </div>
+            <button
+              onClick={() => onBet(market.id, outcome.id)}
+              style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+            >
+              Predict
+            </button>
+          </div>
+        );
+      })}
+      </div>
+    </div>
+  );
+}
+
+function MatchMarketCard({
+  market,
+  onBet,
+}: {
+  market: Market;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const totalPool = Number(market.totalPool ?? 0) ||
+    (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
+  const { team1, team2 } = parseMatchTeams(market.title);
+  const flag1 = getWCFlag(team1);
+  const flag2 = getWCFlag(team2);
+  return (
+    <div style={{ background: "var(--bg-card)", border: "1px solid var(--glass-border)", borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 0" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", lineHeight: 1.35, flex: 1, minWidth: 0, marginRight: 8 }}>
+          {market.title}
+        </div>
+        {closes && (
+          <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+            <Clock size={10} />
+            <span>{closes}</span>
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", padding: "16px 16px 10px", background: "linear-gradient(135deg, rgba(13,31,13,0.5) 0%, rgba(30,44,10,0.5) 100%)" }}>
+        <div style={{ textAlign: "center" }}>
+          {flag1
+            ? <img src={flag1} alt={team1} style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover" }} />
+            : <div style={{ fontSize: 36 }}>🏳️</div>
+          }
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", marginTop: 4 }}>{team1}</div>
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 900, color: "var(--text-muted)", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "4px 10px" }}>VS</div>
+        <div style={{ textAlign: "center" }}>
+          {flag2
+            ? <img src={flag2} alt={team2} style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover" }} />
+            : <div style={{ fontSize: 36 }}>🏳️</div>
+          }
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", marginTop: 4 }}>{team2}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, padding: "10px 12px 0" }}>
+        {market.outcomes?.map((outcome) => {
+          const prob = calcProb(market, outcome.id);
+          return (
+            <button
+              key={outcome.id}
+              onClick={() => onBet(market.id, outcome.id)}
+              style={{ flex: 1, padding: "9px 4px", background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, cursor: "pointer", textAlign: "center" }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 12px 12px" }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
+          Nu {totalPool.toLocaleString()} pool
+        </span>
+      </div>
+    </div>
+  );
+}
 
 // ── WorldCupHubPage ───────────────────────────────────────────────────────────
 
@@ -310,67 +530,13 @@ export function WorldCupHubPage() {
           (winnerMarkets.length === 0 ? (
             <EmptyState msg="No winner markets yet" />
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {winnerMarkets.map((market) => (
-                <div key={market.id}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                    {market.title}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {(market.outcomes ?? []).map((outcome) => {
-                  const flag = getWCFlag(outcome.label);
-                  const prob = calcProb(market, outcome.id);
-                  return (
-                    <div
-                      key={outcome.id}
-                      style={{
-                        background: "linear-gradient(135deg, rgba(167,139,250,0.04) 0%, var(--bg-card) 60%)",
-                        border: "1px solid rgba(167,139,250,0.12)",
-                        borderRadius: 16,
-                        padding: "13px 14px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
-                    >
-                      {flag
-                        ? <img src={flag} alt={outcome.label} style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
-                        : <span style={{ fontSize: 36, lineHeight: 1, flexShrink: 0 }}>🏳️</span>
-                      }
-                      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-main)", marginBottom: 3 }}>{outcome.label}</div>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
-                          Nu {Number(outcome.totalBetAmount).toLocaleString()} pool
-                        </div>
-                      </div>
-                      <div style={{
-                        background: "rgba(167,139,250,0.1)",
-                        border: "1px solid rgba(167,139,250,0.22)",
-                        borderRadius: 10, padding: "5px 10px",
-                        textAlign: "center", flexShrink: 0,
-                      }}>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>
-                          {Math.round(prob * 100)}%
-                        </div>
-                        <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>
-                          win
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setActiveBet({ marketId: market.id, outcomeId: outcome.id })}
-                        style={{
-                          background: "#A78BFA", color: "#000", border: "none",
-                          borderRadius: 10, padding: "8px 14px",
-                          fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0,
-                        }}
-                      >
-                        Predict
-                      </button>
-                    </div>
-                  );
-                  })}
-                  </div>
-                </div>
+                <WinnerMarketGroup
+                  key={market.id}
+                  market={market}
+                  onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                />
               ))}
             </div>
           ))}
@@ -418,45 +584,13 @@ export function WorldCupHubPage() {
                       </span>
                     </div>
 
-                    {gMarkets.map((market) =>
-                      (market.outcomes ?? []).map((outcome) => {
-                        const flag = getWCFlag(outcome.label);
-                        const prob = calcProb(market, outcome.id);
-                        return (
-                          <div
-                            key={outcome.id}
-                            style={{
-                              background: "linear-gradient(135deg, rgba(167,139,250,0.04) 0%, var(--bg-card) 60%)",
-                              border: "1px solid rgba(167,139,250,0.12)",
-                              borderRadius: 12,
-                              padding: "11px 14px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 10,
-                              marginBottom: 6,
-                            }}
-                          >
-                            {flag
-                              ? <img src={flag} alt={outcome.label} style={{ width: 34, height: 34, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
-                              : <span style={{ fontSize: 26, flexShrink: 0 }}>🏳️</span>
-                            }
-                            <span style={{ flex: 1, fontWeight: 700, fontSize: 14, color: "var(--text-main)", textAlign: "left" }}>
-                              {outcome.label}
-                            </span>
-                            <div style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 8, padding: "4px 9px", textAlign: "center", flexShrink: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
-                              <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 1 }}>win</div>
-                            </div>
-                            <button
-                              onClick={() => setActiveBet({ marketId: market.id, outcomeId: outcome.id })}
-                              style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
-                            >
-                              Predict
-                            </button>
-                          </div>
-                        );
-                      })
-                    )}
+                    {gMarkets.map((market) => (
+                      <GroupMarketSection
+                        key={market.id}
+                        market={market}
+                        onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                      />
+                    ))}
                   </div>
                 ))}
             </div>
@@ -468,131 +602,13 @@ export function WorldCupHubPage() {
             <EmptyState msg="No match markets yet" />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {matchMarkets.map((market) => {
-                const { team1, team2 } = parseMatchTeams(market.title);
-                const flag1 = getWCFlag(team1);
-                const flag2 = getWCFlag(team2);
-
-                return (
-                  <div
-                    key={market.id}
-                    style={{
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--glass-border)",
-                      borderRadius: 16,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {/* Market title */}
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", padding: "12px 14px 0", lineHeight: 1.35 }}>
-                      {market.title}
-                    </div>
-                    {/* Teams header */}
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-around",
-                        padding: "16px 16px 10px",
-                        background:
-                          "linear-gradient(135deg, rgba(13,31,13,0.5) 0%, rgba(30,44,10,0.5) 100%)",
-                      }}
-                    >
-                      <div style={{ textAlign: "center" }}>
-                        {flag1
-                          ? <img src={flag1} alt={team1} style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover" }} />
-                          : <div style={{ fontSize: 36 }}>🏳️</div>
-                        }
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: "var(--text-main)",
-                            marginTop: 4,
-                          }}
-                        >
-                          {team1}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 900,
-                          color: "var(--text-muted)",
-                          background: "rgba(255,255,255,0.06)",
-                          borderRadius: 8,
-                          padding: "4px 10px",
-                        }}
-                      >
-                        VS
-                      </div>
-                      <div style={{ textAlign: "center" }}>
-                        {flag2
-                          ? <img src={flag2} alt={team2} style={{ width: 42, height: 42, borderRadius: 6, objectFit: "cover" }} />
-                          : <div style={{ fontSize: 36 }}>🏳️</div>
-                        }
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: "var(--text-main)",
-                            marginTop: 4,
-                          }}
-                        >
-                          {team2}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Outcome buttons */}
-                    <div style={{ display: "flex", gap: 6, padding: "10px 12px 14px" }}>
-                      {market.outcomes?.map((outcome) => {
-                        const prob = calcProb(market, outcome.id);
-                        return (
-                          <button
-                            key={outcome.id}
-                            onClick={() =>
-                              setActiveBet({
-                                marketId: market.id,
-                                outcomeId: outcome.id,
-                              })
-                            }
-                            style={{
-                              flex: 1,
-                              padding: "9px 4px",
-                              background: "rgba(167,139,250,0.07)",
-                              border: "1px solid rgba(167,139,250,0.22)",
-                              borderRadius: 10,
-                              cursor: "pointer",
-                              textAlign: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 900,
-                                color: "#A78BFA",
-                              }}
-                            >
-                              {Math.round(prob * 100)}%
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: "var(--text-muted)",
-                                fontWeight: 600,
-                                marginTop: 2,
-                              }}
-                            >
-                              {outcome.label}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+              {matchMarkets.map((market) => (
+                <MatchMarketCard
+                  key={market.id}
+                  market={market}
+                  onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                />
+              ))}
             </div>
           ))}
       </div>
