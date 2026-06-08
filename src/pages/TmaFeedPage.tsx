@@ -690,9 +690,10 @@ const MarketCard = memo(function MarketCard({
         ) : (
           displayOutcomes.map((s, idx) => {
             const barWidth = Math.max(4, Math.min(100, s.pct));
-            // Per-outcome avatar: use outcome.imageUrl if set, else fall back to market images
+            // Per-outcome avatar: WC flag > explicit imageUrl > market images
+            const wcFlag = isWCMarket(market) ? getWCFlag(s.label) : "";
             const avatarUrl = !imgError
-              ? (s as any).imageUrl ||
+              ? (s as any).imageUrl || wcFlag ||
                 (idx === 0
                   ? market.imageUrl
                   : idx === 1
@@ -782,45 +783,43 @@ const MarketCard = memo(function MarketCard({
                     gap: 10,
                   }}
                 >
-                  {/* Circle avatar */}
-                  <div
-                    style={{
-                      flexShrink: 0,
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      background: vis.gradient,
-                      border: `2px solid ${s.color}40`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt=""
-                        onError={() => setImgError(true)}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 900,
-                          color: s.color,
-                        }}
-                      >
-                        {s.label.charAt(0)}
-                      </span>
-                    )}
-                  </div>
+                  {/* Circle avatar / flag */}
+                  {wcFlag ? (
+                    <img
+                      src={wcFlag}
+                      alt={s.label}
+                      onError={() => setImgError(true)}
+                      style={{ flexShrink: 0, width: 36, height: 36, objectFit: "cover", display: "block", borderRadius: 6 }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        background: vis.gradient,
+                        border: `2px solid ${s.color}40`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt=""
+                          onError={() => setImgError(true)}
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 14, fontWeight: 900, color: s.color }}>
+                          {s.label.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {/* Label + expert signal */}
                   <div
                     style={{
