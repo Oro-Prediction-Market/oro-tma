@@ -142,39 +142,6 @@ export function WorldCupHubPage() {
     <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)" }}>
       <div style={{ fontSize: 40, marginBottom: 8 }}>⚽</div>
       <div style={{ fontWeight: 700, fontSize: 15 }}>{msg}</div>
-      <div style={{ fontSize: 11, marginTop: 6, opacity: 0.55, lineHeight: 1.5 }}>
-        Create markets in Admin › category{" "}
-        <b style={{ color: "var(--text-main)" }}>Sports</b> › subcategory{" "}
-        <code
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            padding: "1px 5px",
-            borderRadius: 4,
-          }}
-        >
-          wc-winner
-        </code>
-        {" / "}
-        <code
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            padding: "1px 5px",
-            borderRadius: 4,
-          }}
-        >
-          wc-group
-        </code>
-        {" / "}
-        <code
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            padding: "1px 5px",
-            borderRadius: 4,
-          }}
-        >
-          wc-match
-        </code>
-      </div>
     </div>
   );
 
@@ -516,6 +483,10 @@ export function WorldCupHubPage() {
                       overflow: "hidden",
                     }}
                   >
+                    {/* Market title */}
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", padding: "12px 14px 0", lineHeight: 1.35 }}>
+                      {market.title}
+                    </div>
                     {/* Teams header */}
                     <div
                       style={{

@@ -1334,7 +1334,8 @@ export const TmaFeedPage: FC = () => {
     ...Array.from(new Set(markets.map((m) => m.category || "other"))).sort(),
   ];
 
-  // Subcategory pills: only show when a specific category is selected and markets have subcategories
+  // Subcategory pills: only show when a specific category is selected and markets have subcategories.
+  // Exclude wc-* subcategories — those are internal WC tags, not user-facing filters.
   const availableSubcategories =
     selectedCategory === "All"
       ? []
@@ -1346,7 +1347,9 @@ export const TmaFeedPage: FC = () => {
                 .filter(
                   (m) =>
                     (m.category || "other").toLowerCase() ===
-                      selectedCategory.toLowerCase() && m.subcategory,
+                      selectedCategory.toLowerCase() &&
+                    m.subcategory &&
+                    !m.subcategory.startsWith("wc-"),
                 )
                 .map((m) => m.subcategory!),
             ),
