@@ -18,7 +18,7 @@ import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
-import { isWCMarket, getWCFlag, parseWinnerCountry, calcProb } from "./WorldCupHubPage";
+import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
 
 // Live Activity Ticker
 
@@ -1104,7 +1104,6 @@ export const TmaFeedPage: FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSubcategory, setSelectedSubcategory] = useState("All");
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Full pending bet objects — used for the picks strip + "YOUR PICK" badge
   const [myPendingBets, setMyPendingBets] = useState<Bet[]>([]);
@@ -1319,12 +1318,6 @@ export const TmaFeedPage: FC = () => {
       );
     }
 
-    // Country multi-select filter
-    if (selectedCountries.length > 0) {
-      filtered = filtered.filter(
-        (m) => !isWCMarket(m) || selectedCountries.includes(parseWinnerCountry(m.title)),
-      );
-    }
 
     // Search Filter
     if (!searchQuery.trim()) return filtered;
@@ -2090,57 +2083,6 @@ export const TmaFeedPage: FC = () => {
           </div>
         )}
 
-        {/* ── Country multi-select pills ── */}
-        {wcWinnerItems.length > 0 && !searchQuery.trim() && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-              {wcWinnerItems.filter((item) => item.flag !== "").map((item) => {
-                const active = selectedCountries.includes(item.country);
-                return (
-                  <button
-                    key={item.country}
-                    onClick={() =>
-                      setSelectedCountries((prev) =>
-                        active ? prev.filter((c) => c !== item.country) : [...prev, item.country]
-                      )
-                    }
-                    style={{
-                      flexShrink: 0,
-                      display: "flex", alignItems: "center", gap: 5,
-                      padding: "5px 10px",
-                      borderRadius: 20,
-                      fontSize: "0.7rem", fontWeight: 700,
-                      border: `1px solid ${active ? "#A78BFA" : "rgba(255,255,255,0.1)"}`,
-                      background: active ? "rgba(167,139,250,0.12)" : "var(--bg-card)",
-                      color: active ? "#A78BFA" : "var(--text-muted)",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    {item.flag && <img src={item.flag} alt="" style={{ width: 16, height: 16, borderRadius: 2, objectFit: "cover" }} />}
-                    {item.country}
-                  </button>
-                );
-              })}
-              {selectedCountries.length > 0 && (
-                <button
-                  onClick={() => setSelectedCountries([])}
-                  style={{
-                    flexShrink: 0, padding: "5px 10px", borderRadius: 20,
-                    fontSize: "0.7rem", fontWeight: 700,
-                    border: "1px solid rgba(255,100,100,0.3)",
-                    background: "rgba(255,100,100,0.08)",
-                    color: "rgba(255,100,100,0.7)",
-                    cursor: "pointer", whiteSpace: "nowrap",
-                  }}
-                >
-                  ✕ Clear
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
