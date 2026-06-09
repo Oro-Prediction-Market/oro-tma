@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, LayoutGrid, Swords, Clock } from "lucide-react";
+import { Trophy, LayoutGrid, Swords, Clock, CalendarDays } from "lucide-react";
 import { getMarkets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
@@ -325,6 +325,7 @@ export function WorldCupHubPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("countries");
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
+  const [timeFilter, setTimeFilter] = useState<"all" | "today" | "tomorrow">("all");
 
   useEffect(() => {
     getMarkets()
@@ -338,13 +339,32 @@ export function WorldCupHubPage() {
   const wcMarkets = markets.filter(isWCMarket);
   const winnerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-winner");
   const groupMarkets = wcMarkets.filter((m) => m.subcategory === "wc-group");
-  const matchMarkets = wcMarkets.filter(
-    (m) =>
-      m.subcategory === "wc-match" ||
-      (isWCMarket(m) &&
-        m.subcategory !== "wc-winner" &&
-        m.subcategory !== "wc-group"),
-  );
+  const matchMarkets = wcMarkets
+    .filter(
+      (m) =>
+        m.subcategory === "wc-match" ||
+        (isWCMarket(m) &&
+          m.subcategory !== "wc-winner" &&
+          m.subcategory !== "wc-group"),
+    )
+    .sort((a, b) => {
+      const ta = a.opensAt ? new Date(a.opensAt).getTime() : a.closesAt ? new Date(a.closesAt).getTime() : Infinity;
+      const tb = b.opensAt ? new Date(b.opensAt).getTime() : b.closesAt ? new Date(b.closesAt).getTime() : Infinity;
+      return ta - tb;
+    });
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(todayStart.getTime() + 86_400_000);
+  const dayAfterTomorrow = new Date(tomorrowStart.getTime() + 86_400_000);
+
+  const filteredMatchMarkets = matchMarkets.filter((m) => {
+    if (timeFilter === "all") return true;
+    const ref = m.opensAt ? new Date(m.opensAt) : m.closesAt ? new Date(m.closesAt) : null;
+    if (!ref) return true;
+    if (timeFilter === "today") return ref >= todayStart && ref < tomorrowStart;
+    return ref >= tomorrowStart && ref < dayAfterTomorrow;
+  });
 
   const byGroup: Record<string, Market[]> = {};
   groupMarkets.forEach((m) => {
@@ -601,15 +621,47 @@ export function WorldCupHubPage() {
           (matchMarkets.length === 0 ? (
             <EmptyState msg="No match markets yet" />
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {matchMarkets.map((market) => (
-                <MatchMarketCard
-                  key={market.id}
-                  market={market}
-                  onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
-                />
-              ))}
-            </div>
+            <>
+              {/* Time filter chips */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {(["all", "today", "tomorrow"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setTimeFilter(f)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "6px 14px",
+                      borderRadius: 20,
+                      border: "none",
+                      background: timeFilter === f ? "#A78BFA" : "rgba(167,139,250,0.12)",
+                      color: timeFilter === f ? "#000" : "rgba(255,255,255,0.7)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <CalendarDays size={12} />
+                    {f === "all" ? "All" : f === "today" ? "Today" : "Tomorrow"}
+                  </button>
+                ))}
+              </div>
+
+              {filteredMatchMarkets.length === 0 ? (
+                <EmptyState msg="No matches scheduled for this day" />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {filteredMatchMarkets.map((market) => (
+                    <MatchMarketCard
+                      key={market.id}
+                      market={market}
+                      onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           ))}
       </div>
 
