@@ -5,9 +5,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { linkDKBank, getMe, setPwaPassword, type AuthUser } from "@shared/api/client";
 import {
   ChevronLeft,
-  Copy,
   Check,
-  Send,
   User,
   Building2,
   Info,
@@ -31,8 +29,6 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-
-const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
 
 // ── How It Works modal ────────────────────────────────────────────────────────
 const STEPS = [
@@ -320,7 +316,6 @@ export const TmaSettingsPage: FC = () => {
   const { user: authUser, retry } = useAuth();
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  const [copied, setCopied] = useState(false);
   const [cidInput, setCidInput] = useState("");
   const [linkStep, setLinkStep] = useState<
     "idle" | "loading" | "success" | "error"
@@ -345,25 +340,6 @@ export const TmaSettingsPage: FC = () => {
   }, []);
 
   const currentUser = user ?? authUser;
-  const refId = currentUser?.telegramId ?? currentUser?.id ?? "";
-  const refLink = `https://t.me/${BOT_USERNAME}/app?startapp=ref_${refId}`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(refLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  const handleShare = () => {
-    const text = `🏆 I'm predicting on Oro — join me and let's see who's sharper!\n\n${refLink}`;
-    const url = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`;
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      window.Telegram.WebApp.openTelegramLink(url);
-    } else {
-      window.open(url, "_blank");
-    }
-  };
 
   const handleLinkDKBank = async () => {
     if (cidInput.length !== 11) {
@@ -463,123 +439,6 @@ export const TmaSettingsPage: FC = () => {
             >
               Settings
             </h1>
-          </div>
-
-          {/* ══════════════════════════════════════════════════════
-            REFERRAL LINK — most prominent
-        ══════════════════════════════════════════════════════ */}
-          <div style={{ padding: "0 16px", marginTop: 8 }}>
-            <div
-              style={{
-                background: "linear-gradient(135deg, #1e3a5f, #1a2e4a)",
-                border: "1px solid rgba(59,130,246,0.35)",
-                borderRadius: 18,
-                padding: "18px 16px",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              {/* glow */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: -40,
-                  right: -40,
-                  width: 120,
-                  height: 120,
-                  borderRadius: "50%",
-                  background: "rgba(59,130,246,0.15)",
-                  pointerEvents: "none",
-                }}
-              />
-
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                  color: "#93c5fd",
-                  marginBottom: 4,
-                }}
-              >
-                Your Referral Link
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.5)",
-                  marginBottom: 14,
-                }}
-              >
-                Invite friends — earn perks when they join and predict
-              </div>
-
-              {/* Link display */}
-              <div
-                style={{
-                  background: "rgba(0,0,0,0.3)",
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                  marginBottom: 12,
-                  fontFamily: "monospace",
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.7)",
-                  wordBreak: "break-all",
-                  lineHeight: 1.4,
-                }}
-              >
-                {refLink}
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={handleCopy}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 7,
-                    padding: "11px 0",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    background: copied
-                      ? "rgba(34,197,94,0.15)"
-                      : "rgba(255,255,255,0.08)",
-                    color: copied ? "#4ade80" : "#fff",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {copied ? <Check size={15} /> : <Copy size={15} />}
-                  {copied ? "Copied!" : "Copy Link"}
-                </button>
-
-                <button
-                  onClick={handleShare}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 7,
-                    padding: "11px 0",
-                    borderRadius: 12,
-                    border: "none",
-                    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  <Send size={15} />
-                  Share via Telegram
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* ══════════════════════════════════════════════════════

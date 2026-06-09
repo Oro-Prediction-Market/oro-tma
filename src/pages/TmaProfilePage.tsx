@@ -948,7 +948,7 @@ export const TmaProfilePage: FC = () => {
                 Nu {referralStats?.flatBonus ?? 50} +{" "}
                 {referralStats?.betPct ?? 5}%
               </b>{" "}
-              of their first bet when they sign up with your link.
+              of their first prediction when they sign up with your link.
             </p>
             {referralStats?.totalEarned ? (
               <div
