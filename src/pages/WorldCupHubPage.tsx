@@ -55,7 +55,7 @@ export function parseWinnerCountry(title: string): string {
 
 export function parseGroupInfo(title: string): { team: string; group: string } {
   const teamM = title.match(/^will\s+(.+?)\s+(?:top|qualify|win group|advance)\b/i);
-  const groupM = title.match(/\bgroup\s+([a-h])\b/i);
+  const groupM = title.match(/\bgroup\s+([a-l])\b/i);
   return {
     team: teamM ? teamM[1].trim() : title.split(" ").slice(0, 2).join(" "),
     group: groupM ? groupM[1].toUpperCase() : "?",
