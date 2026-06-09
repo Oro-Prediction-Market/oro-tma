@@ -360,8 +360,14 @@ export function WorldCupHubPage() {
 
   const filteredMatchMarkets = matchMarkets.filter((m) => {
     if (timeFilter === "all") return true;
-    const ref = m.opensAt ? new Date(m.opensAt) : m.closesAt ? new Date(m.closesAt) : null;
-    if (!ref) return true;
+    const ref = m.bettingClosesAt
+      ? new Date(m.bettingClosesAt)
+      : m.closesAt
+        ? new Date(m.closesAt)
+        : m.opensAt
+          ? new Date(m.opensAt)
+          : null;
+    if (!ref) return false;
     if (timeFilter === "today") return ref >= todayStart && ref < tomorrowStart;
     return ref >= tomorrowStart && ref < dayAfterTomorrow;
   });
