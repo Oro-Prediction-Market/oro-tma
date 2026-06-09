@@ -1281,9 +1281,10 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  const openMarkets = markets.filter((m) => m.status === "open");
-  const resolvingMarkets = markets.filter((m) => m.status === "resolving");
-  const upcomingMarkets = markets.filter((m) => m.status === "upcoming");
+  const nonWCMarkets = markets.filter((m) => !isWCMarket(m));
+  const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
+  const resolvingMarkets = nonWCMarkets.filter((m) => m.status === "resolving");
+  const upcomingMarkets = nonWCMarkets.filter((m) => m.status === "upcoming");
   const activeMarket = activeBet
     ? markets.find((m) => m.id === activeBet.marketId)
     : null;
