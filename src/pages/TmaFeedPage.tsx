@@ -19,6 +19,13 @@ import { useNavigate } from "react-router-dom";
 import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
+import {
+  isBplMarket,
+  getBplCrest,
+  shortClubName,
+  BPL_CLUBS,
+  Crest,
+} from "./BplHubPage";
 
 // Live Activity Ticker
 
@@ -1281,7 +1288,8 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  const nonWCMarkets = markets.filter((m) => !isWCMarket(m));
+  // WC and BPL markets live in their own hubs — the banners are their entry points
+  const nonWCMarkets = markets.filter((m) => !isWCMarket(m) && !isBplMarket(m));
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
   const resolvingMarkets = nonWCMarkets.filter((m) => m.status === "resolving");
   const upcomingMarkets = nonWCMarkets.filter((m) => m.status === "upcoming");
@@ -1414,6 +1422,30 @@ export const TmaFeedPage: FC = () => {
     wcMarketItems.length > 0
       ? wcMarketItems
       : WC_DEFAULT_NATIONS.map((n) => ({ ...n, prob: 0, hasData: false }));
+
+  // BoB Bhutan Premier League banner strip — live match outcomes, club fallback
+  const bplMarketItems = markets
+    .filter(
+      (m) => m.status === "open" && isBplMarket(m) && /\bvs\b/i.test(m.title),
+    )
+    .flatMap((m) =>
+      (m.outcomes ?? []).map((outcome, idx) => ({
+        crest: getBplCrest(m, idx),
+        label: shortClubName(outcome.label),
+        prob: calcProb(m, outcome.id),
+        hasData: Number(m.totalPool) > 0,
+      })),
+    );
+
+  const bplItems =
+    bplMarketItems.length > 0
+      ? bplMarketItems
+      : BPL_CLUBS.map((c) => ({
+          crest: null as string | null,
+          label: c.short,
+          prob: 0,
+          hasData: false,
+        }));
 
   const hasResults =
     filteredOpen.length + filteredResolving.length + filteredUpcoming.length >
@@ -2083,6 +2115,101 @@ export const TmaFeedPage: FC = () => {
               </span>
             </div>
           </div>
+          </div>
+        )}
+
+        {/* ── BoB Bhutan Premier League Banner Card ── */}
+        {!searchQuery.trim() && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/bpl")}
+            onKeyDown={(e) => e.key === "Enter" && navigate("/bpl")}
+            style={{
+              marginBottom: 16,
+              borderRadius: 16,
+              overflow: "hidden",
+              cursor: "pointer",
+              position: "relative",
+              backgroundImage: "url('/bpl-banner.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              outline: "none",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Legibility overlay — dark on the left under the title, clear over the trophy */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(90deg, rgba(5,12,28,0.78) 0%, rgba(5,12,28,0.4) 55%, rgba(5,12,28,0.08) 100%)",
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            />
+            {/* ── Main row: title left, trophy photo showing right ── */}
+            <div style={{ display: "flex", alignItems: "stretch", minHeight: 136, position: "relative", zIndex: 1 }}>
+              {/* Left: text */}
+              <div style={{ flex: 1, padding: "20px 0 12px 16px", display: "flex", flexDirection: "column", justifyContent: "center", textShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
+                <div style={{ fontSize: 34, fontWeight: 900, color: "#7dd3fc", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                  BoB
+                </div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.02em" }}>
+                  Bhutan Premier League
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: "#f87171", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                  Prediction
+                </div>
+              </div>
+            </div>
+
+            {/* ── Bottom: animated club strip + "View more" ── */}
+            <div style={{
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              padding: "6px 12px 6px 4px",
+              position: "relative",
+              zIndex: 1,
+              gap: 8,
+            }}>
+              {/* Scrolling clubs */}
+              <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+                <div style={{
+                  position: "absolute", left: 0, top: 0, bottom: 0, width: 20,
+                  background: "linear-gradient(to right, rgba(0,0,0,0.5), transparent)", zIndex: 1, pointerEvents: "none",
+                }} />
+                <div style={{
+                  display: "flex",
+                  animation: `wcMarquee ${Math.max(12, bplItems.length * 2)}s linear infinite`,
+                  width: "max-content",
+                }}>
+                  {[...bplItems, ...bplItems].map((item, i) => (
+                    <div key={i} title={item.label} style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      padding: "2px 10px", gap: 1,
+                      borderRight: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                      <Crest src={item.crest} label={item.label} size={26} />
+                      <span style={{
+                        fontSize: 10, fontWeight: 800,
+                        color: item.hasData ? "#ffffff" : "rgba(255,255,255,0.4)",
+                      }}>
+                        {item.hasData ? `${Math.round(item.prob * 100)}%` : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* View more */}
+              <span style={{
+                fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
+                whiteSpace: "nowrap", flexShrink: 0,
+              }}>
+                Click Here »
+              </span>
+            </div>
           </div>
         )}
 

@@ -262,24 +262,13 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
 );
 
 const TerCoin: FC<{ size?: number }> = ({ size = 36 }) => (
-  <svg width={size} height={size} viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
-    <defs>
-      <radialGradient id="terCoinGrad" cx="35%" cy="28%" r="80%">
-        <stop offset="0%" stopColor="#ffe9b8" />
-        <stop offset="45%" stopColor="#F4AF39" />
-        <stop offset="100%" stopColor="#b97a14" />
-      </radialGradient>
-    </defs>
-    <circle cx="18" cy="18" r="17" fill="url(#terCoinGrad)" />
-    <circle cx="18" cy="18" r="13.5" fill="none" stroke="rgba(122,77,10,0.5)" strokeWidth="1" />
-    <text
-      x="18" y="21.5" textAnchor="middle"
-      fontSize="8.5" fontWeight="800" fill="#5c3d08"
-      fontFamily="Inter, -apple-system, sans-serif" letterSpacing="0.5"
-    >
-      TER
-    </text>
-  </svg>
+  <img
+    src="/ter.png"
+    alt="TER"
+    width={size}
+    height={size}
+    style={{ flexShrink: 0, objectFit: "contain", display: "block" }}
+  />
 );
 
 interface Props {
