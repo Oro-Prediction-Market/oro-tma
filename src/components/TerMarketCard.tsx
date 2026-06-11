@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { getTerPrice, type Market, type TerPrice } from "@shared/api/client";
+import { getTerPrice, getTerPriceHistory, type Market, type TerPrice } from "@shared/api/client";
 
 function useCountdown(targetAt: string | null): string {
   const [label, setLabel] = useState("");
@@ -29,6 +29,17 @@ function useLiveTerPrice(active: boolean) {
   const [history, setHistory] = useState<number[]>([]);
   useEffect(() => {
     if (!active) return;
+    // Seed the chart from the backend's rolling history so it renders on
+    // first paint instead of waiting several polls to accumulate points
+    getTerPriceHistory()
+      .then((pts) => {
+        if (pts.length === 0) return;
+        setLive((l) => l ?? pts[pts.length - 1]);
+        setHistory((h) =>
+          pts.length > h.length ? pts.slice(-60).map((p) => p.buyPrice) : h,
+        );
+      })
+      .catch(() => {});
     const fetch_ = () =>
       getTerPrice()
         .then((p) => {
@@ -428,7 +439,7 @@ export const TerMarketCard: FC<Props> = memo(
         </div>
 
         {/* Chart */}
-        {priceHistory.length > 2 && (
+        {priceHistory.length >= 2 && (
           <div style={{ height: 150, background: "rgba(0,0,0,0.18)" }}>
             <TerSparkline history={priceHistory} refPrice={refPrice} />
           </div>

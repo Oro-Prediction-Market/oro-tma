@@ -870,6 +870,14 @@ export function getTerPrice(): Promise<TerPrice> {
   return request<TerPrice>("/ter/price");
 }
 
+/**
+ * Fetch recent TER price history (sampled every 5s on the backend).
+ * Used to seed the live chart instantly on first page load.
+ */
+export function getTerPriceHistory(): Promise<TerPrice[]> {
+  return request<TerPrice[]>("/ter/price/history");
+}
+
 // ── BTC Price API ─────────────────────────────────────────────────────────────
 
 export interface BtcPrice {
@@ -880,4 +888,12 @@ export interface BtcPrice {
 
 export function getBtcPrice(): Promise<BtcPrice> {
   return request<BtcPrice>("/btc/price");
+}
+
+/**
+ * Fetch recent BTC price history (sampled every 2s on the backend).
+ * Used to seed the live chart instantly on first page load.
+ */
+export function getBtcPriceHistory(): Promise<BtcPrice[]> {
+  return request<BtcPrice[]>("/btc/price/history");
 }
