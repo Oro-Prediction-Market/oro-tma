@@ -1301,6 +1301,9 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                   lineHeight: 1.5,
                 }}
               >
+                <span style={{ display: "block", marginBottom: 6 }}>
+                  Oro operates under a license issued by the GMC Bhutan. Access to and use of the Platform is subject to all applicable laws and regulations. By using Oro, you represent and warrant that your participation is lawful in your jurisdiction. Oro reserves the right to restrict access from jurisdictions where such services are prohibited.
+                </span>
                 I agree to the{" "}
                 <a
                   href="#"
