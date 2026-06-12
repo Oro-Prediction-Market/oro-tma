@@ -97,13 +97,18 @@ function WinnerMarketGroup({
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const resolving = market.status === "resolving";
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           {market.title}
         </div>
-        {closes && (
+        {resolving ? (
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+            Resolving
+          </div>
+        ) : closes && (
           <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
             <Clock size={10} />
             <span>{closes}</span>
@@ -141,12 +146,14 @@ function WinnerMarketGroup({
                 <div style={{ fontSize: 15, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
                 <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>win</div>
               </div>
-              <button
-                onClick={() => onBet(market.id, outcome.id)}
-                style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
-              >
-                Predict
-              </button>
+              {!resolving && (
+                <button
+                  onClick={() => onBet(market.id, outcome.id)}
+                  style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+                >
+                  Predict
+                </button>
+              )}
             </div>
           );
         })}
@@ -183,13 +190,18 @@ function GroupMarketSection({
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const resolving = market.status === "resolving";
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1, minWidth: 0, marginRight: 8 }}>
           {market.title}
         </div>
-        {closes && (
+        {resolving ? (
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+            Resolving
+          </div>
+        ) : closes && (
           <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
             <Clock size={10} />
             <span>{closes}</span>
@@ -227,12 +239,14 @@ function GroupMarketSection({
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA", lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 9, color: "rgba(167,139,250,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 1 }}>win</div>
             </div>
-            <button
-              onClick={() => onBet(market.id, outcome.id)}
-              style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
-            >
-              Predict
-            </button>
+            {!resolving && (
+              <button
+                onClick={() => onBet(market.id, outcome.id)}
+                style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+              >
+                Predict
+              </button>
+            )}
           </div>
         );
       })}
@@ -249,6 +263,7 @@ function MatchMarketCard({
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const resolving = market.status === "resolving";
   const totalPool = Number(market.totalPool ?? 0) ||
     (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
   const { team1, team2 } = parseMatchTeams(market.title);
@@ -260,7 +275,11 @@ function MatchMarketCard({
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", lineHeight: 1.35, flex: 1, minWidth: 0, marginRight: 8 }}>
           {market.title}
         </div>
-        {closes && (
+        {resolving ? (
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+            Resolving
+          </div>
+        ) : closes && (
           <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
             <Clock size={10} />
             <span>{closes}</span>
@@ -290,8 +309,9 @@ function MatchMarketCard({
           return (
             <button
               key={outcome.id}
+              disabled={resolving}
               onClick={() => onBet(market.id, outcome.id)}
-              style={{ flex: 1, padding: "9px 4px", background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, cursor: "pointer", textAlign: "center" }}
+              style={{ flex: 1, padding: "9px 4px", background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, cursor: resolving ? "default" : "pointer", opacity: resolving ? 0.55 : 1, textAlign: "center" }}
             >
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
@@ -330,7 +350,14 @@ export function WorldCupHubPage() {
   useEffect(() => {
     getMarkets()
       .then((d) =>
-        setMarkets(d.filter((m) => m.status === "open" || m.status === "upcoming")),
+        setMarkets(
+          d.filter(
+            (m) =>
+              m.status === "open" ||
+              m.status === "upcoming" ||
+              m.status === "resolving",
+          ),
+        ),
       )
       .catch(console.error)
       .finally(() => setLoading(false));
