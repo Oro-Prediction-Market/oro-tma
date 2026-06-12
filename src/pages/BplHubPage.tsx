@@ -13,16 +13,16 @@ const ACCENT = "#29abe2"; // BPL blue
 
 // 2026 season clubs — used for market detection and as the banner fallback strip
 export const BPL_CLUBS = [
-  { name: "Paro FC", short: "Paro" },
-  { name: "Thimphu City FC", short: "Thimphu City" },
+  { name: "Paro FC", short: "Paro FC" },
+  { name: "Thimphu City FC", short: "Thimphu City FC" },
   { name: "Transport United FC", short: "Transport Utd" },
-  { name: "Drukpa FC", short: "Drukpa" },
-  { name: "RTC FC", short: "RTC" },
-  { name: "Tensung FC", short: "Tensung" },
-  { name: "Thimphu FC", short: "Thimphu" },
-  { name: "Tsirang FC", short: "Tsirang" },
-  { name: "Ugyen Academy FC", short: "Ugyen Acad" },
-  { name: "BFF Academy U20", short: "BFF Acad" },
+  { name: "Drukpa FC", short: "Drukpa FC" },
+  { name: "RTC FC", short: "RTC FC" },
+  { name: "Tensung FC", short: "Tensung FC" },
+  { name: "Thimphu FC", short: "Thimphu FC" },
+  { name: "Tsirang FC", short: "Tsirang FC" },
+  { name: "Ugyen Academy FC", short: "Ugyen Academy" },
+  { name: "BFF Academy U20", short: "BFF Academy" },
 ];
 
 const CLUB_KEYWORDS = [
