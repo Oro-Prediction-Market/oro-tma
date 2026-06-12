@@ -22,7 +22,6 @@ export const ChallengeAFriend: FC<ChallengeAFriendProps> = ({
 }) => {
   const refLink = `https://t.me/${botUsername}/app?startapp=ref_${referralId ?? ""}_m_${marketId}`;
 
-  // If there's a known opposing outcome, taunt with it; otherwise generic
   const opposingLabel = opposingOutcomeLabel
     ? `Will you bet on **${opposingOutcomeLabel}**?`
     : "Think you can do better?";
@@ -30,7 +29,6 @@ export const ChallengeAFriend: FC<ChallengeAFriendProps> = ({
   const challengeText = `I just bet on **${pickedOutcomeLabel}** in:\n"${marketTitle}"\n\n${opposingLabel} Prove it 👇\n${refLink}`;
 
   const handleChallenge = () => {
-    // Opens Telegram forward-to-friend sheet
     const url = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(challengeText)}`;
     if (window.Telegram?.WebApp?.openTelegramLink) {
       window.Telegram.WebApp.openTelegramLink(url);
@@ -71,7 +69,7 @@ export const ChallengeAFriend: FC<ChallengeAFriendProps> = ({
       }
     >
       <Users size={15} />
-      Challenge a Friend
+      Challenge Friends
     </button>
   );
 };

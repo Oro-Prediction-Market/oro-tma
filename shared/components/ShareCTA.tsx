@@ -28,7 +28,6 @@ export const ShareCTA: FC<ShareCTAProps> = ({
 }) => {
   const { user } = useAuth();
 
-  // e.g., https://t.me/OroPredictBot/app?startapp=ref_user123
   const botUsername = "OroPredictBot";
   const refLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegramId || user?.id || ""}`;
 
@@ -56,7 +55,7 @@ export const ShareCTA: FC<ShareCTAProps> = ({
 
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
 
-    if (window.Telegram?.WebApp && window.Telegram.WebApp.openTelegramLink) {
+    if (window.Telegram?.WebApp?.openTelegramLink) {
       window.Telegram.WebApp.openTelegramLink(shareUrl);
     } else {
       window.open(shareUrl, "_blank");
