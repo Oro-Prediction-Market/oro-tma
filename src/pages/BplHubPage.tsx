@@ -141,6 +141,7 @@ function BplMatchCard({
   market: Market;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
+  const navigate = useNavigate();
   const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
   const resolving = market.status === "resolving";
   const locked = resolving || market.status === "closed";
@@ -149,7 +150,7 @@ function BplMatchCard({
     (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
   const { team1, team2 } = parseMatchTeams(market.title);
   return (
-    <div style={{ background: "var(--bg-card, #1a1a1a)", border: "1px solid var(--glass-border, rgba(255,255,255,0.08))", borderRadius: 16, overflow: "hidden" }}>
+    <div onClick={() => navigate(`/market/${market.id}`)} style={{ background: "var(--bg-card, #1a1a1a)", border: "1px solid var(--glass-border, rgba(255,255,255,0.08))", borderRadius: 16, overflow: "hidden", cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px 0" }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #fff)", lineHeight: 1.35, flex: 1, minWidth: 0, marginRight: 8 }}>
           {market.title}
@@ -196,7 +197,7 @@ function BplMatchCard({
             <button
               key={outcome.id}
               disabled={locked}
-              onClick={() => onBet(market.id, outcome.id)}
+              onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
               style={{ flex: 1, padding: "9px 4px", background: "rgba(41,171,226,0.07)", border: "1px solid rgba(41,171,226,0.25)", borderRadius: 10, cursor: locked ? "default" : "pointer", textAlign: "center" }}
             >
               <div style={{ fontSize: 14, fontWeight: 900, color: ACCENT }}>{Math.round(prob * 100)}%</div>
@@ -231,6 +232,7 @@ function BplSeasonMarket({
   market: Market;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
+  const navigate = useNavigate();
   const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
   const resolving = market.status === "resolving";
   const locked = resolving || market.status === "closed";
@@ -267,6 +269,7 @@ function BplSeasonMarket({
           return (
             <div
               key={outcome.id}
+              onClick={() => navigate(`/market/${market.id}`)}
               style={{
                 background: "linear-gradient(135deg, rgba(41,171,226,0.04) 0%, var(--bg-card, #1a1a1a) 60%)",
                 border: "1px solid rgba(41,171,226,0.14)",
@@ -275,6 +278,7 @@ function BplSeasonMarket({
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
+                cursor: "pointer",
               }}
             >
               <Crest src={getBplCrest(market, idx)} label={outcome.label} size={38} />
@@ -299,7 +303,7 @@ function BplSeasonMarket({
                 </div>
               ) : (
                 <button
-                  onClick={() => onBet(market.id, outcome.id)}
+                  onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
                   style={{ background: ACCENT, color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
                 >
                   Predict
