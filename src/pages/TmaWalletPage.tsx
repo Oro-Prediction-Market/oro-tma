@@ -1644,12 +1644,12 @@ export const TmaWalletPage: FC = () => {
                     : [
                         {
                           icon: <Send size={14} color="#2775d0" />,
-                          text: "Open the Bhutan National Bank app",
+                          text: "Open the My Bhutan App",
                           delay: "0ms",
                         },
                         {
                           icon: <Hash size={14} color="#2775d0" />,
-                          text: "Copy the 6-digit OTP sent to your registered phone",
+                          text: "Enter 6-digit OTP sent to My Bhutan App",
                           delay: "120ms",
                         },
                         {
