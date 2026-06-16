@@ -43,14 +43,16 @@ export function isBplMarket(m: Market): boolean {
 }
 
 // Crest priority: per-outcome imageUrl (set in the admin form), then the
-// market-level images (imageUrl = first outcome, imageUrlAlt = second)
-export function getBplCrest(market: Market, outcomeIdx: number): string | null {
-  const outcome = market.outcomes?.[outcomeIdx] as
-    | { imageUrl?: string | null }
-    | undefined;
+// market-level images (imageUrl = first outcome, imageUrlAlt = second).
+// Skips Draw outcomes so index 0/1 always refer to the two playing teams.
+export function getBplCrest(market: Market, teamIdx: number): string | null {
+  const teamOutcomes = (market.outcomes ?? []).filter(
+    (o) => o.label.toLowerCase().trim() !== "draw",
+  );
+  const outcome = teamOutcomes[teamIdx] as { imageUrl?: string | null } | undefined;
   if (outcome?.imageUrl) return outcome.imageUrl;
-  if (outcomeIdx === 0) return market.imageUrl;
-  if (outcomeIdx === 1) return market.imageUrlAlt;
+  if (teamIdx === 0) return market.imageUrl;
+  if (teamIdx === 1) return market.imageUrlAlt;
   return null;
 }
 
