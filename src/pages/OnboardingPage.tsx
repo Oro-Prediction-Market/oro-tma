@@ -75,19 +75,24 @@ function useViewportHeight() {
       (window as any).Telegram?.WebApp?.viewportHeight ??
       window.innerHeight,
   );
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
   useEffect(() => {
     const update = () => {
-      const h =
+      const vvh =
         window.visualViewport?.height ??
         (window as any).Telegram?.WebApp?.viewportHeight ??
         window.innerHeight;
-      setHeight(h);
-      // After keyboard resize, scroll focused input back into view
+      setHeight(vvh);
+      // Keyboard height = difference between the fixed inner height and visible viewport
+      const kh = Math.max(0, window.innerHeight - vvh);
+      setKeyboardHeight(kh);
+      // After keyboard finishes animating (~300ms on iOS), scroll focused element into view
       const el = document.activeElement;
-      if (el instanceof HTMLInputElement) {
+      if (el instanceof HTMLElement) {
         setTimeout(
-          () => el.scrollIntoView({ behavior: "smooth", block: "center" }),
-          50,
+          () => el.scrollIntoView({ behavior: "smooth", block: "nearest" }),
+          350,
         );
       }
     };
@@ -99,14 +104,15 @@ function useViewportHeight() {
       tg?.offEvent("viewportChanged", update);
     };
   }, []);
-  return height;
+
+  return { height, keyboardHeight };
 }
 
 function scrollIntoView(e: React.FocusEvent<HTMLInputElement>) {
-  setTimeout(
-    () => e.target.scrollIntoView({ behavior: "smooth", block: "center" }),
-    50,
-  );
+  const el = e.target;
+  // Two-stage scroll: once as keyboard starts rising, once after animation settles
+  setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
+  setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "nearest" }), 400);
 }
 
 interface OnboardingPageProps {
@@ -115,7 +121,7 @@ interface OnboardingPageProps {
 
 export function OnboardingPage({ auth }: OnboardingPageProps) {
   const { telegramProfile, preKycToken, register } = auth;
-  const viewportHeight = useViewportHeight();
+  const { height: viewportHeight, keyboardHeight } = useViewportHeight();
 
   const [step, setStep] = useState<Step>("intro");
 
@@ -390,7 +396,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
           style={{
             flex: 1,
             overflowY: "auto",
-            padding: "32px 20px 16px",
+            padding: "32px 20px 32px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -484,10 +490,9 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
               </div>
             ))}
           </div>
-        </div>
-        <div style={{ padding: "8px 20px 32px", flexShrink: 0 }}>
+
           <button
-            style={BTN.primary}
+            style={{ ...BTN.primary, marginTop: 24 }}
             onClick={() => {
               haptic();
               setStep("username");
@@ -1026,9 +1031,10 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+      <div style={{ flex: 1, overflowY: "auto", paddingLeft: 20, paddingRight: 20, paddingBottom: Math.max(20, keyboardHeight) }}>
         {/* USERNAME STEP */}
         {step === "username" && (
+          <>
           <div style={{ paddingTop: 8 }}>
             <label style={S.label}>Username</label>
             <div style={{ position: "relative" }}>
@@ -1106,6 +1112,23 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
               </p>
             )}
           </div>
+
+          {/* Username step — Continue button */}
+          <button
+            style={{
+              ...BTN.primary,
+              marginTop: 24,
+              opacity: usernameStatus !== "available" ? 0.4 : 1,
+              pointerEvents: usernameStatus !== "available" ? "none" : "auto",
+            }}
+            onClick={() => {
+              haptic();
+              setStep("contact");
+            }}
+          >
+            Continue <ArrowRight size={18} />
+          </button>
+          </>
         )}
 
         {/* CONTACT STEP */}
@@ -1248,37 +1271,17 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                   setPhone(e164);
                   if (contactError) setContactError("");
                 }}
+                onFocus={scrollIntoView}
                 error={contactError || undefined}
               />
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Footer */}
-      <div style={{ padding: "12px 20px 32px", flexShrink: 0 }}>
-        {step === "username" ? (
-          <button
-            style={{
-              ...BTN.primary,
-              opacity: usernameStatus !== "available" ? 0.4 : 1,
-              pointerEvents: usernameStatus !== "available" ? "none" : "auto",
-            }}
-            onClick={() => {
-              haptic();
-              setStep("contact");
-            }}
-          >
-            Continue <ArrowRight size={18} />
-          </button>
-        ) : (
-          <>
+            {/* Terms checkbox */}
             <label
               style={{
                 display: "flex",
                 alignItems: "flex-start",
                 gap: 8,
-                marginBottom: 14,
                 cursor: "pointer",
               }}
             >
@@ -1302,7 +1305,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                 }}
               >
                 <span style={{ display: "block", marginBottom: 6 }}>
-                  Oro operates under a license issued by the GMC Bhutan. Access to and use of the Platform is subject to all applicable laws and regulations. By using Oro, you represent and warrant that your participation is lawful in your jurisdiction. Oro reserves the right to restrict access from jurisdictions where such services are prohibited.
+                  Licensed by GMC Bhutan. Use of Oro is subject to applicable laws and regulations. By continuing, you confirm your participation is lawful in your jurisdiction. Access may be restricted where prohibited.
                 </span>
                 I agree to the{" "}
                 <a
@@ -1322,6 +1325,8 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                 </a>
               </span>
             </label>
+
+            {/* Send Code button */}
             <button
               disabled={
                 sendingOtp ||
@@ -1333,6 +1338,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
               }
               style={{
                 ...BTN.primary,
+                marginBottom: 12,
                 opacity:
                   sendingOtp ||
                   !fullName.trim() ||
@@ -1356,7 +1362,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                 </>
               )}
             </button>
-          </>
+          </div>
         )}
       </div>
 

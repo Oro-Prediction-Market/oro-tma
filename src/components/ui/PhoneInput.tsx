@@ -41,6 +41,7 @@ export interface PhoneInputProps {
   defaultCountry?: CountryCode;
   disabled?: boolean;
   error?: string;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export function PhoneInput({
@@ -49,6 +50,7 @@ export function PhoneInput({
   defaultCountry = "BT",
   disabled,
   error,
+  onFocus,
 }: PhoneInputProps) {
   const [country, setCountry] = useState<CountryCode>(() => {
     if (value) {
@@ -207,6 +209,7 @@ export function PhoneInput({
           value={inputValue}
           onChange={(e) => handleInput(e.target.value)}
           onPaste={handlePaste}
+          onFocus={onFocus}
           placeholder="17 000 000"
           style={{
             flex: 1,
