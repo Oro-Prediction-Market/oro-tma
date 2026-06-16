@@ -742,14 +742,20 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                     id={`bank-otp-${i}`}
                     type="text"
                     inputMode="numeric"
-                    maxLength={1}
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     value={bankOtp[i] ?? ""}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                      if (val.length > 1) {
+                        setBankOtp(val);
+                        setBankError("");
+                        document.getElementById(`bank-otp-${Math.min(val.length - 1, 5)}`)?.focus();
+                        return;
+                      }
                       const next = bankOtp.split("");
-                      next[i] = val.slice(-1);
-                      const joined = next.join("").slice(0, 6);
-                      setBankOtp(joined);
+                      next[i] = val;
+                      setBankOtp(next.join("").slice(0, 6));
                       setBankError("");
                       if (val && i < 5)
                         document.getElementById(`bank-otp-${i + 1}`)?.focus();
@@ -758,6 +764,14 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                       if (e.key === "Backspace" && !bankOtp[i] && i > 0) {
                         document.getElementById(`bank-otp-${i - 1}`)?.focus();
                       }
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                      if (!digits) return;
+                      setBankOtp(digits);
+                      setBankError("");
+                      document.getElementById(`bank-otp-${Math.min(digits.length - 1, 5)}`)?.focus();
                     }}
                     style={{
                       flex: 1,
@@ -1434,14 +1448,21 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                   id={`otp-${i}`}
                   type="text"
                   inputMode="numeric"
-                  maxLength={1}
+                  autoComplete="one-time-code"
+                  maxLength={6}
                   value={otpDigits[i] ?? ""}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    if (val.length > 1) {
+                      // iOS autofill delivers the full code into whichever box is focused
+                      setOtpDigits(val);
+                      setOtpError("");
+                      document.getElementById(`otp-${Math.min(val.length - 1, 5)}`)?.focus();
+                      return;
+                    }
                     const next = otpDigits.split("");
-                    next[i] = val.slice(-1);
-                    const joined = next.join("").slice(0, 6);
-                    setOtpDigits(joined);
+                    next[i] = val;
+                    setOtpDigits(next.join("").slice(0, 6));
                     setOtpError("");
                     if (val && i < 5)
                       document.getElementById(`otp-${i + 1}`)?.focus();
@@ -1450,6 +1471,14 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                     if (e.key === "Backspace" && !otpDigits[i] && i > 0) {
                       document.getElementById(`otp-${i - 1}`)?.focus();
                     }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                    if (!digits) return;
+                    setOtpDigits(digits);
+                    setOtpError("");
+                    document.getElementById(`otp-${Math.min(digits.length - 1, 5)}`)?.focus();
                   }}
                   style={{
                     flex: 1,
