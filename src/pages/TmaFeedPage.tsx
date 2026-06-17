@@ -1428,14 +1428,17 @@ export const TmaFeedPage: FC = () => {
     .filter(
       (m) => m.status === "open" && isBplMarket(m) && /\bvs\b/i.test(m.title),
     )
-    .flatMap((m) =>
-      (m.outcomes ?? []).map((outcome, idx) => ({
+    .flatMap((m) => {
+      const teamOutcomes = (m.outcomes ?? []).filter(
+        (o) => (o.label ?? "").toLowerCase().trim() !== "draw",
+      );
+      return teamOutcomes.map((outcome, idx) => ({
         crest: getBplCrest(m, idx),
         label: shortClubName(outcome.label),
         prob: calcProb(m, outcome.id),
         hasData: Number(m.totalPool) > 0,
-      })),
-    );
+      }));
+    });
 
   const bplItems =
     bplMarketItems.length > 0
