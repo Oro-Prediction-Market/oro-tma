@@ -450,8 +450,8 @@ export function WorldCupHubPage() {
           m.subcategory !== "wc-group"),
     )
     .sort((a, b) => {
-      const ta = a.opensAt ? new Date(a.opensAt).getTime() : a.closesAt ? new Date(a.closesAt).getTime() : Infinity;
-      const tb = b.opensAt ? new Date(b.opensAt).getTime() : b.closesAt ? new Date(b.closesAt).getTime() : Infinity;
+      const ta = a.closesAt ? new Date(a.closesAt).getTime() : a.opensAt ? new Date(a.opensAt).getTime() : Infinity;
+      const tb = b.closesAt ? new Date(b.closesAt).getTime() : b.opensAt ? new Date(b.opensAt).getTime() : Infinity;
       return ta - tb;
     });
 
@@ -462,13 +462,11 @@ export function WorldCupHubPage() {
 
   const filteredMatchMarkets = matchMarkets.filter((m) => {
     if (timeFilter === "all") return true;
-    const ref = m.bettingClosesAt
-      ? new Date(m.bettingClosesAt)
-      : m.closesAt
-        ? new Date(m.closesAt)
-        : m.opensAt
-          ? new Date(m.opensAt)
-          : null;
+    const ref = m.closesAt
+      ? new Date(m.closesAt)
+      : m.opensAt
+        ? new Date(m.opensAt)
+        : null;
     if (!ref) return false;
     if (timeFilter === "today") return ref >= todayStart && ref < tomorrowStart;
     return ref >= tomorrowStart && ref < dayAfterTomorrow;
