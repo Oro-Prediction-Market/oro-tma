@@ -42,14 +42,20 @@ export function isBplMarket(m: Market): boolean {
   return CLUB_KEYWORDS.some((k) => title.includes(k));
 }
 
+// Strips whitespace including zero-width chars that String.trim() misses.
+export function isDrawOutcome(label: string): boolean {
+  const normalized = (label ?? "").replace(/[\s\u200b\u200c\u200d\ufeff]/g, "").toLowerCase();
+  return normalized === "draw" || normalized === "tie";
+}
+
 // Crest priority: per-outcome imageUrl (set in the admin form), then the
 // market-level images (imageUrl = first outcome, imageUrlAlt = second).
 // Skips Draw outcomes so index 0/1 always refer to the two playing teams.
 export function getBplCrest(market: Market, teamIdx: number): string | null {
   const teamOutcomes = (market.outcomes ?? []).filter(
-    (o) => (o.label ?? "").toLowerCase().trim() !== "draw",
+    (o) => !isDrawOutcome(o.label ?? ""),
   );
-  const outcome = teamOutcomes[teamIdx] as { imageUrl?: string | null } | undefined;
+  const outcome = teamOutcomes[teamIdx];
   if (outcome?.imageUrl) return outcome.imageUrl;
   if (teamIdx === 0) return market.imageUrl;
   if (teamIdx === 1) return market.imageUrlAlt;
