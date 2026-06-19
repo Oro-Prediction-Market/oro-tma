@@ -2096,7 +2096,7 @@ export const TmaFeedPage: FC = () => {
                       borderRight: "1px solid rgba(255,255,255,0.08)",
                     }}>
                       {item.flag
-                        ? <img src={item.flag} alt="" style={{ width: 26, height: 26, borderRadius: 3, objectFit: "cover" }} />
+                        ? <img src={item.flag} alt="" loading="lazy" decoding="async" width={26} height={26} style={{ width: 26, height: 26, borderRadius: 3, objectFit: "cover" }} />
                         : null
                       }
                       <span style={{

@@ -267,7 +267,8 @@ const TerCoin: FC<{ size?: number }> = ({ size = 36 }) => (
     alt="TER"
     width={size}
     height={size}
-    style={{ flexShrink: 0, objectFit: "contain", display: "block" }}
+    decoding="async"
+    style={{ flexShrink: 0, objectFit: "contain", display: "block", borderRadius: "50%", background: "rgba(244,175,57,0.12)" }}
   />
 );
 
