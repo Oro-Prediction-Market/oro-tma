@@ -263,7 +263,7 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
 
 const TerCoin: FC<{ size?: number }> = ({ size = 36 }) => (
   <img
-    src="/ter.png"
+    src="/ter.webp"
     alt="TER"
     width={size}
     height={size}
