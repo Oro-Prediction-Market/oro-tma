@@ -859,22 +859,24 @@ const MarketCard = memo(function MarketCard({
                       </span>
                     </div>
                   </div>
-                  {/* % badge */}
+                  {/* odds + % badge */}
                   <div
                     style={{
                       background: `${s.color}22`,
                       border: `1.5px solid ${s.color}50`,
                       boxShadow: `2px 2px 6px rgba(0,0,0,0.2), -1px -1px 4px rgba(255,255,255,0.04)`,
                       color: s.color,
-                      fontSize: "1rem",
-                      fontWeight: 900,
                       padding: "4px 14px",
                       borderRadius: 99,
-                      letterSpacing: "-0.01em",
                       flexShrink: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      lineHeight: 1.15,
                     }}
                   >
-                    {Math.min(99, 100 / Math.max(s.pct, 1)).toFixed(1)}x
+                    <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{Math.min(99, 100 / Math.max(s.pct, 1)).toFixed(1)}x</span>
+                    <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{s.pct.toFixed(0)}%</span>
                   </div>
                 </div>
               </button>

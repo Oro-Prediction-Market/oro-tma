@@ -1295,14 +1295,16 @@ export const MarketDetailPage: FC = () => {
                               background: `${color}22`,
                               border: `1.5px solid ${color}50`,
                               color: color,
-                              fontSize: "1rem",
-                              fontWeight: 900,
                               padding: "4px 14px",
                               borderRadius: 99,
-                              letterSpacing: "-0.01em",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              lineHeight: 1.15,
                             }}
                           >
-                            {Math.min(99, 100 / Math.max(pct, 1)).toFixed(1)}x
+                            <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{Math.min(99, 100 / Math.max(pct, 1)).toFixed(1)}x</span>
+                            <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
                           </div>
                           {isOpen && (
                             <div
