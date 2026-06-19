@@ -504,6 +504,14 @@ export function getRecentActivity(): Promise<ActivityEvent[]> {
   return request<ActivityEvent[]>("/markets/activity");
 }
 
+export function feedHeartbeat(sessionId: string): Promise<{ count: number }> {
+  return request<{ count: number }>("/markets/feed/heartbeat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
+}
+
 export function getMarkets(q?: string): Promise<Market[]> {
   const qs = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
   return request<Market[]>(`/markets${qs}`);
