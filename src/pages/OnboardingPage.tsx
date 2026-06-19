@@ -1319,7 +1319,7 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
                 }}
               >
                 <span style={{ display: "block", marginBottom: 6 }}>
-                  Licensed by GMC Bhutan. Use of Oro is subject to applicable laws and regulations. By continuing, you confirm your participation is lawful in your jurisdiction. Access may be restricted where prohibited.
+                  Licensed by GMC Gelephu. Use of Oro is subject to applicable laws and regulations. By continuing, you confirm your participation is lawful in your jurisdiction. Access may be restricted where prohibited.
                 </span>
                 I agree to the{" "}
                 <a
