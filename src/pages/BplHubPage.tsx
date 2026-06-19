@@ -212,11 +212,9 @@ function BplMatchCard({
             >
               <div style={{ fontSize: 14, fontWeight: 900, color: ACCENT }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted, #888)", fontWeight: 600, marginTop: 2 }}>{shortClubName(outcome.label)}</div>
-              {locked && (
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {odds ? `${odds.toFixed(2)}x · Nu 100 → ${Math.floor(100 * odds)}` : "no predictions"}
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
+                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x · {Math.round(prob * 100)}%
                 </div>
-              )}
             </button>
           );
         })}
@@ -302,23 +300,24 @@ function BplSeasonMarket({
                 <div style={{ fontSize: 15, fontWeight: 900, color: ACCENT, lineHeight: 1 }}>{Math.round(prob * 100)}%</div>
                 <div style={{ fontSize: 9, color: "rgba(41,171,226,0.6)", fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>win</div>
               </div>
-              {locked ? (
-                <div style={{ textAlign: "center", flexShrink: 0, minWidth: 64 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {odds ? `${odds.toFixed(2)}x` : "—"}
+                    {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                   </div>
                   <div style={{ fontSize: 9, color: "rgba(251,191,36,0.7)", fontWeight: 700, marginTop: 3 }}>
-                    {odds ? `Nu 100 → ${Math.floor(100 * odds)}` : "no predictions"}
+                    {Math.round(prob * 100)}%
                   </div>
                 </div>
-              ) : (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
-                  style={{ background: ACCENT, color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
-                >
-                  Predict
-                </button>
-              )}
+                {!locked && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
+                    style={{ background: ACCENT, color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+                  >
+                    Predict
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
