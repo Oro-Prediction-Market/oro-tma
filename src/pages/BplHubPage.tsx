@@ -115,6 +115,8 @@ export function Crest({
       <img
         src={src}
         alt={label}
+        loading="lazy"
+        decoding="async"
         onError={() => setFailed(true)}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, background: "rgba(255,255,255,0.06)" }}
       />
@@ -212,7 +214,7 @@ function BplMatchCard({
               <div style={{ fontSize: 11, color: "var(--text-muted, #888)", fontWeight: 600, marginTop: 2 }}>{shortClubName(outcome.label)}</div>
               {locked && (
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {odds ? `${odds.toFixed(2)}x · Nu 100 → ${Math.floor(100 * odds)}` : "no bets"}
+                  {odds ? `${odds.toFixed(2)}x · Nu 100 → ${Math.floor(100 * odds)}` : "no predictions"}
                 </div>
               )}
             </button>
@@ -306,7 +308,7 @@ function BplSeasonMarket({
                     {odds ? `${odds.toFixed(2)}x` : "—"}
                   </div>
                   <div style={{ fontSize: 9, color: "rgba(251,191,36,0.7)", fontWeight: 700, marginTop: 3 }}>
-                    {odds ? `Nu 100 → ${Math.floor(100 * odds)}` : "no bets"}
+                    {odds ? `Nu 100 → ${Math.floor(100 * odds)}` : "no predictions"}
                   </div>
                 </div>
               ) : (

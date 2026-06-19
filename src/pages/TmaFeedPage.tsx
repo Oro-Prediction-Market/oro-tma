@@ -874,7 +874,7 @@ const MarketCard = memo(function MarketCard({
                       flexShrink: 0,
                     }}
                   >
-                    {s.pct.toFixed(0)}%
+                    {Math.min(99, 100 / Math.max(s.pct, 1)).toFixed(1)}x
                   </div>
                 </div>
               </button>
