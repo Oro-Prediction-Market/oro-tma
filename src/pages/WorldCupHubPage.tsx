@@ -165,9 +165,6 @@ function WinnerMarketGroup({
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
                     {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                   </div>
-                  <div style={{ fontSize: 9, color: "rgba(251,191,36,0.7)", fontWeight: 700, marginTop: 3 }}>
-                    {Math.round(prob * 100)}%
-                  </div>
                 </div>
                 {!locked && (
                   <button
@@ -293,9 +290,6 @@ function GroupMarketSection({
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
                     {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                   </div>
-                  <div style={{ fontSize: 9, color: "rgba(251,191,36,0.7)", fontWeight: 700, marginTop: 3 }}>
-                    {Math.round(prob * 100)}%
-                  </div>
                 </div>
                 {!locked && (
                   <button
@@ -387,7 +381,7 @@ function MatchMarketCard({
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x · {Math.round(prob * 100)}%
+                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                 </div>
             </button>
           );
