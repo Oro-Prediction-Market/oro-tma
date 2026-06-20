@@ -294,7 +294,7 @@ function OpenPicksStrip({
             : isResolving
               ? "#f59e0b"
               : "#94a3b8";
-          const statusLabel = isOpen ? "LIVE" : isResolving ? "WAIT" : "CLOSED";
+          const statusLabel = isOpen ? "LIVE" : isResolving ? "RESOLVING" : "CLOSED";
 
           return (
             <button
@@ -571,7 +571,7 @@ const MarketCard = memo(function MarketCard({
                     borderRadius: 4,
                   }}
                 >
-                  {isUpcoming ? "SOON" : "WAIT"}
+                  {isUpcoming ? "SOON" : "RESOLVING"}
                 </span>
               )}
               {hasLegendBet && (
