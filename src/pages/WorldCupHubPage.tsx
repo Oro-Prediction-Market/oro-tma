@@ -148,7 +148,7 @@ function WinnerMarketGroup({
             >
               {flag
                 ? <img src={flag} alt={outcome.label} loading="lazy" decoding="async" style={{ width: 38, height: 38, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
-                : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>🏳️</span>
+                : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>⚽</span>
               }
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", marginBottom: 2 }}>{outcome.label}</div>
@@ -273,7 +273,7 @@ function GroupMarketSection({
           >
             {flag
               ? <img src={flag} alt={outcome.label} loading="lazy" decoding="async" style={{ width: 38, height: 38, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
-              : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>🏳️</span>
+              : <span style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>⚽</span>
             }
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", marginBottom: 2 }}>{outcome.label}</div>
