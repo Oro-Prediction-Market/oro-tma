@@ -1434,7 +1434,7 @@ export const TmaFeedPage: FC = () => {
   const filteredUpcoming = filterByQuery(upcomingMarkets);
 
   // All cards in display order: resolving → open → upcoming
-  const allCards = [...filteredResolving, ...filteredOpen, ...filteredUpcoming];
+  const allCards = [...filteredOpen, ...filteredResolving, ...filteredUpcoming];
   const visibleCards = allCards.slice(0, visibleCount);
   const hasMore = visibleCount < allCards.length;
 
@@ -2000,39 +2000,7 @@ export const TmaFeedPage: FC = () => {
         )}
 
         {/* ── Section headers (shown once, above the lazy list) ── */}
-        {filteredResolving.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 12,
-              paddingLeft: 4,
-            }}
-          >
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#f59e0b",
-              }}
-            />
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: "var(--text-main)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              WAITING
-            </div>
-          </div>
-        )}
-
-        {filteredResolving.length === 0 && filteredOpen.length > 0 && (
+        {filteredOpen.length > 0 && (
           <div
             style={{
               display: "flex",
@@ -2064,6 +2032,38 @@ export const TmaFeedPage: FC = () => {
               LIVE
             </div>
             <LiveTicker />
+          </div>
+        )}
+
+        {filteredOpen.length === 0 && filteredResolving.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 12,
+              paddingLeft: 4,
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#f59e0b",
+              }}
+            />
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 800,
+                color: "var(--text-main)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              WAITING
+            </div>
           </div>
         )}
 
@@ -2286,12 +2286,12 @@ export const TmaFeedPage: FC = () => {
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
           // Insert section dividers between groups
-          const isFirstOpen =
-            market === filteredOpen[0] && filteredResolving.length > 0;
+          const isFirstResolving =
+            market === filteredResolving[0] && filteredOpen.length > 0;
           const isFirstUpcoming = market === filteredUpcoming[0];
           return (
             <div key={market.id}>
-              {isFirstOpen && (
+              {isFirstResolving && (
                 <div
                   style={{
                     display: "flex",
@@ -2299,7 +2299,6 @@ export const TmaFeedPage: FC = () => {
                     gap: 8,
                     margin: "4px 0 12px",
                     paddingLeft: 4,
-                    overflow: "hidden",
                   }}
                 >
                   <div
@@ -2307,8 +2306,7 @@ export const TmaFeedPage: FC = () => {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: "#22c55e",
-                      animation: "heartbeat 2.4s ease-in-out infinite",
+                      background: "#f59e0b",
                     }}
                   />
                   <div
@@ -2320,9 +2318,8 @@ export const TmaFeedPage: FC = () => {
                       letterSpacing: "0.05em",
                     }}
                   >
-                    LIVE
+                    WAITING
                   </div>
-                  <LiveTicker />
                 </div>
               )}
               {isFirstUpcoming && (
