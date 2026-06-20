@@ -275,7 +275,7 @@ function OpenPicksStrip({
           const marketTitle = betMarket?.title ?? "Market";
           const outcomeLabel = outcome?.label ?? "Your pick";
           const marketStatus = betMarket?.status;
-          const isResolving = marketStatus === "resolving";
+          const isResolving = marketStatus === "resolving" || marketStatus === "closed";
           const isOpen = marketStatus === "open";
 
           let currentPct: number | null = null;
@@ -465,7 +465,7 @@ const MarketCard = memo(function MarketCard({
   );
 
   const isUpcoming = market.status === "upcoming";
-  const isResolving = market.status === "resolving";
+  const isResolving = market.status === "resolving" || market.status === "closed";
   const countdown = useCountdown(
     isUpcoming ? (market.opensAt ?? null) : market.closesAt,
   );
@@ -1162,7 +1162,7 @@ export const TmaFeedPage: FC = () => {
     setSelectedSubcategory("All");
   }, [selectedCategory]);
 
-  const ACTIVE_STATUSES = ["open", "resolving", "upcoming"] as const;
+  const ACTIVE_STATUSES = ["open", "resolving", "closed", "upcoming"] as const;
   const filterActive = (d: Market[]) =>
     d.filter((m) => ACTIVE_STATUSES.includes(m.status as any));
 
@@ -1230,6 +1230,7 @@ export const TmaFeedPage: FC = () => {
             (m) =>
               m.status === "open" ||
               m.status === "resolving" ||
+              m.status === "closed" ||
               m.status === "upcoming",
           ),
         );
@@ -1307,7 +1308,7 @@ export const TmaFeedPage: FC = () => {
   // WC and BPL markets live in their own hubs — the banners are their entry points
   const nonWCMarkets = markets.filter((m) => !isWCMarket(m) && !isBplMarket(m));
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
-  const resolvingMarkets = nonWCMarkets.filter((m) => m.status === "resolving");
+  const resolvingMarkets = nonWCMarkets.filter((m) => m.status === "resolving" || m.status === "closed");
   const upcomingMarkets = nonWCMarkets.filter((m) => m.status === "upcoming");
   const activeMarket = activeBet
     ? markets.find((m) => m.id === activeBet.marketId)
