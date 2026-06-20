@@ -1426,12 +1426,14 @@ export const TmaFeedPage: FC = () => {
   const wcMarketItems = wcEntryMarkets
     .filter((m) => m.subcategory === "wc-winner")
     .flatMap((m) =>
-      (m.outcomes ?? []).map((outcome) => ({
-        flag: getWCFlag(outcome.label),
-        country: outcome.label,
-        prob: calcProb(m, outcome.id),
-        hasData: Number(m.totalPool) > 0,
-      }))
+      (m.outcomes ?? [])
+        .map((outcome) => ({
+          flag: getWCFlag(outcome.label),
+          country: outcome.label,
+          prob: calcProb(m, outcome.id),
+          hasData: Number(m.totalPool) > 0,
+        }))
+        .filter((item) => item.flag)
     );
 
   const wcWinnerItems =
