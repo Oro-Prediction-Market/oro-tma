@@ -275,7 +275,8 @@ function OpenPicksStrip({
           const marketTitle = betMarket?.title ?? "Market";
           const outcomeLabel = outcome?.label ?? "Your pick";
           const marketStatus = betMarket?.status;
-          const isResolving = marketStatus === "resolving" || marketStatus === "closed";
+          const isResolving = marketStatus === "resolving";
+          const isBetClosed = marketStatus === "closed";
           const isOpen = marketStatus === "open";
 
           let currentPct: number | null = null;
@@ -291,7 +292,7 @@ function OpenPicksStrip({
 
           const statusColor = isOpen
             ? "#22c55e"
-            : isResolving
+            : isResolving || isBetClosed
               ? "#f59e0b"
               : "#94a3b8";
           const statusLabel = isOpen ? "LIVE" : isResolving ? "RESOLVING" : "CLOSED";
@@ -310,7 +311,7 @@ function OpenPicksStrip({
                 borderRadius: 16,
                 background: "var(--bg-card)",
                 border: `1px solid ${statusColor}28`,
-                boxShadow: isResolving
+                boxShadow: isResolving || isBetClosed
                   ? `0 0 0 1.5px rgba(245,158,11,0.25), 0 4px 14px rgba(0,0,0,0.2)`
                   : `0 4px 14px rgba(0,0,0,0.15)`,
                 cursor: "pointer",
@@ -373,7 +374,7 @@ function OpenPicksStrip({
                   style={{
                     fontSize: 17,
                     fontWeight: 900,
-                    color: isResolving ? "#f59e0b" : "#22c55e",
+                    color: isResolving || isBetClosed ? "#f59e0b" : "#22c55e",
                     letterSpacing: "-0.02em",
                     fontFamily: "var(--font-display)",
                   }}
@@ -465,7 +466,8 @@ const MarketCard = memo(function MarketCard({
   );
 
   const isUpcoming = market.status === "upcoming";
-  const isResolving = market.status === "resolving" || market.status === "closed";
+  const isClosed = market.status === "closed";
+  const isResolving = market.status === "resolving";
   const countdown = useCountdown(
     isUpcoming ? (market.opensAt ?? null) : market.closesAt,
   );
@@ -560,7 +562,7 @@ const MarketCard = memo(function MarketCard({
                   {market.category}
                 </span>
               )}
-              {(isUpcoming || isResolving) && (
+              {(isUpcoming || isResolving || isClosed) && (
                 <span
                   style={{
                     fontSize: 9,
@@ -571,7 +573,7 @@ const MarketCard = memo(function MarketCard({
                     borderRadius: 4,
                   }}
                 >
-                  {isUpcoming ? "SOON" : "RESOLVING"}
+                  {isUpcoming ? "SOON" : isResolving ? "RESOLVING" : "CLOSED"}
                 </span>
               )}
               {hasLegendBet && (
@@ -678,6 +680,41 @@ const MarketCard = memo(function MarketCard({
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               Dispute Window — {disputeCountdown}
+            </div>
+          </Link>
+        ) : isClosed ? (
+          <Link to={`/market/${market.id}`} style={{ textDecoration: "none" }}>
+            <div
+              style={{
+                padding: "13px 16px",
+                borderRadius: 14,
+                background: "rgba(245,158,11,0.08)",
+                border: "1.5px dashed rgba(245,158,11,0.4)",
+                fontSize: "0.8rem",
+                color: "#f59e0b",
+                fontWeight: 800,
+                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Awaiting Resolution
             </div>
           </Link>
         ) : isUpcoming ? (
@@ -930,7 +967,7 @@ const MarketCard = memo(function MarketCard({
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: isResolving
+              background: isResolving || isClosed
                 ? "#f59e0b"
                 : isUpcoming
                   ? "#3b82f6"
