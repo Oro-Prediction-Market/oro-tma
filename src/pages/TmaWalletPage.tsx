@@ -288,6 +288,10 @@ export const TmaWalletPage: FC = () => {
   const [bankAccountRevealed, setBankAccountRevealed] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to finish initializing — on a direct load/reload the token
+    // isn't in storage yet, so firing these immediately would 401.
+    if (authLoading) return;
+
     getMe()
       .then(setFreshUser)
       .catch(() => setFreshUser(authUser))
@@ -300,7 +304,7 @@ export const TmaWalletPage: FC = () => {
       })
       .catch(() => {})
       .finally(() => setBankLinkLoading(false));
-  }, []);
+  }, [authLoading]);
 
   // Fallback: if no LinkedBankAccount record but user has dkCid from onboarding, synthesize one
   useEffect(() => {
@@ -367,8 +371,9 @@ export const TmaWalletPage: FC = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     refreshWallet();
-  }, []);
+  }, [authLoading]);
 
   const user = freshUser ?? authUser;
   const loading = authLoading && freshLoading;

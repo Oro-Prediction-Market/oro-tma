@@ -52,6 +52,10 @@ export const TmaProfilePage: FC = () => {
   const [badgePopup, setBadgePopup] = useState<CollectibleBadge | null>(null);
 
   useEffect(() => {
+    // Wait for auth to finish — on a direct load/reload the token isn't in
+    // storage yet, so firing these immediately would 401.
+    if (authLoading) return;
+
     getMe()
       .then((u) => {
         setFreshUser(u);
@@ -90,7 +94,7 @@ export const TmaProfilePage: FC = () => {
     getReferralStats()
       .then(setReferralStats)
       .catch(() => undefined);
-  }, []);
+  }, [authLoading]);
 
   const user = freshUser ?? authUser;
   const loading = authLoading && freshLoading;
