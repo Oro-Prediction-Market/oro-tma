@@ -14,6 +14,9 @@ const CARD_MIN_H = 76;
 const BLOCK_H = 128; // Round-of-32 cell height = card (~110px) + vertical gap
 const COL_W = 188;
 const GAP = 44; // horizontal space between rounds (room for connector elbows)
+const STRIP_W = 44; // width of a collapsed round (thin strip)
+const HEADER_H = 16; // round-label line height (kept fixed so card rows align)
+const HEADER_MB = 10; // gap below the round label
 
 interface Props {
   /** wc-match markets (already filtered) used to populate slots by kickoff time */
@@ -101,8 +104,14 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [paths, setPaths] = useState<string[]>([]);
 
-  const scrollByCol = (dir: number) =>
-    scrollRef.current?.scrollBy({ left: dir * (COL_W + GAP), behavior: "smooth" });
+  // How many leading rounds are folded into thin strips. ‹ expands, › collapses.
+  const [collapsedCount, setCollapsedCount] = useState(0);
+  const maxCollapsed = WC_KNOCKOUT.length - 1; // always keep ≥1 round expanded
+
+  // Spacing is relative to the FIRST expanded round, so collapsing earlier
+  // rounds compresses the bracket vertically (the remaining cards pack up into
+  // view instead of staying spread across the full Round-of-32 height).
+  const bodyHeight = WC_KNOCKOUT[collapsedCount].slots.length * BLOCK_H;
 
   useLayoutEffect(() => {
     const compute = () => {
@@ -139,7 +148,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       ro.disconnect();
       window.removeEventListener("resize", compute);
     };
-  }, [markets]);
+  }, [markets, collapsedCount]);
 
   const renderSlot = (slot: BracketSlot) => {
     const market = findMarketForSlot(slot, markets);
@@ -253,9 +262,14 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
       <button
         type="button"
-        aria-label="Previous rounds"
-        onClick={() => scrollByCol(-1)}
-        style={chevronStyle}
+        aria-label="Expand an earlier round"
+        disabled={collapsedCount === 0}
+        onClick={() => setCollapsedCount((c) => Math.max(0, c - 1))}
+        style={{
+          ...chevronStyle,
+          opacity: collapsedCount === 0 ? 0.35 : 1,
+          cursor: collapsedCount === 0 ? "default" : "pointer",
+        }}
       >
         ‹
       </button>
@@ -288,22 +302,62 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           ))}
         </svg>
         {WC_KNOCKOUT.map((round, ri) => {
-          // Each card lives in a fixed cell that doubles in height per round, so
-          // every column is the same total height and a later-round card centers
-          // on the pair below it. Spacing = cellHeight − card height.
-          const cellHeight = BLOCK_H * Math.pow(2, ri);
+          // Leading rounds fold into a thin clickable strip. Tap a strip to
+          // expand back to that round.
+          if (ri < collapsedCount) {
+            return (
+              <div
+                key={round.key}
+                onClick={() => setCollapsedCount(ri)}
+                title={`Expand ${round.label}`}
+                style={{ flexShrink: 0, width: STRIP_W, cursor: "pointer" }}
+              >
+                <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
+                <div
+                  style={{
+                    height: bodyHeight,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--bg-card, #1a1a1a)",
+                    border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+                    borderRadius: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      writingMode: "vertical-rl",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: ACCENT,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {round.label}
+                  </span>
+                </div>
+              </div>
+            );
+          }
+          // Cell height doubles each round RELATIVE to the first expanded round,
+          // so the leftmost visible round packs its cards tightly (BLOCK_H) and
+          // every expanded column shares the same total height (= bodyHeight).
+          const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
           return (
             <div key={round.key} style={{ flexShrink: 0 }}>
               {/* Round header */}
               <div
                 style={{
+                  height: HEADER_H,
                   fontSize: 12,
                   fontWeight: 800,
                   color: ACCENT,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
                   textAlign: "center",
-                  marginBottom: 10,
+                  marginBottom: HEADER_MB,
                   width: COL_W,
                 }}
               >
@@ -331,9 +385,14 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       </div>
       <button
         type="button"
-        aria-label="Next rounds"
-        onClick={() => scrollByCol(1)}
-        style={chevronStyle}
+        aria-label="Collapse the earliest round"
+        disabled={collapsedCount >= maxCollapsed}
+        onClick={() => setCollapsedCount((c) => Math.min(maxCollapsed, c + 1))}
+        style={{
+          ...chevronStyle,
+          opacity: collapsedCount >= maxCollapsed ? 0.35 : 1,
+          cursor: collapsedCount >= maxCollapsed ? "default" : "pointer",
+        }}
       >
         ›
       </button>
