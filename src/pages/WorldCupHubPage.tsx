@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, LayoutGrid, Swords, Clock, CalendarDays } from "lucide-react";
+import { Trophy, LayoutGrid, Swords, Clock, CalendarDays, Network } from "lucide-react";
+import { WorldCupBracket } from "@shared/components/WorldCupBracket";
 import { getMarkets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
@@ -322,7 +323,16 @@ function MatchMarketCard({
   const settleEta = useClosesAt(resolving ? market.disputeDeadlineAt : null);
   const totalPool = Number(market.totalPool ?? 0) ||
     (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
-  const { team1, team2 } = parseMatchTeams(market.title);
+  // Prefer the title ("Argentina vs Austria"); if it has no "vs", fall back to
+  // the actual outcome labels (ignoring a Draw) so we never show "Team A/Team B".
+  const parsed = parseMatchTeams(market.title);
+  const namedOutcomes = (market.outcomes ?? []).filter(
+    (o) => o.label.trim().toLowerCase() !== "draw",
+  );
+  const team1 =
+    parsed.team1 === "Team A" ? (namedOutcomes[0]?.label ?? "Team A") : parsed.team1;
+  const team2 =
+    parsed.team2 === "Team B" ? (namedOutcomes[1]?.label ?? "Team B") : parsed.team2;
   const flag1 = getWCFlag(team1);
   const flag2 = getWCFlag(team2);
   return (
@@ -399,12 +409,13 @@ function MatchMarketCard({
 // ── WorldCupHubPage ───────────────────────────────────────────────────────────
 
 type ActiveBet = { marketId: string; outcomeId: string };
-type Tab = "countries" | "groups" | "games";
+type Tab = "countries" | "groups" | "games" | "knockout";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "countries", label: "Countries", icon: <Trophy size={15} /> },
   { key: "groups", label: "Groups", icon: <LayoutGrid size={15} /> },
   { key: "games", label: "Games", icon: <Swords size={15} /> },
+  { key: "knockout", label: "Knockout", icon: <Network size={15} /> },
 ];
 
 export function WorldCupHubPage() {
@@ -454,7 +465,11 @@ export function WorldCupHubPage() {
   const tomorrowStart = new Date(todayStart.getTime() + 86_400_000);
   const dayAfterTomorrow = new Date(tomorrowStart.getTime() + 86_400_000);
 
-  const filteredMatchMarkets = matchMarkets.filter((m) => {
+  // Matches assigned to a knockout bracket slot live in the Knockout tab, so
+  // exclude them from the Games tab to avoid showing the same fixture twice.
+  const gamesMarkets = matchMarkets.filter((m) => !m.metadata?.bracketSlot);
+
+  const filteredMatchMarkets = gamesMarkets.filter((m) => {
     if (timeFilter === "all") return true;
     const ref = m.closesAt
       ? new Date(m.closesAt)
@@ -568,7 +583,7 @@ export function WorldCupHubPage() {
           {[
             { label: "Winner predictions", val: winnerMarkets.length },
             { label: "Group predictions", val: groupMarkets.length },
-            { label: "Match predictions", val: matchMarkets.length },
+            { label: "Match predictions", val: gamesMarkets.length },
           ].map(({ label, val }) => (
             <div
               key={label}
@@ -718,7 +733,7 @@ export function WorldCupHubPage() {
 
         {/* Games */}
         {tab === "games" &&
-          (matchMarkets.length === 0 ? (
+          (gamesMarkets.length === 0 ? (
             <EmptyState msg="No match markets yet" />
           ) : (
             <>
@@ -763,6 +778,20 @@ export function WorldCupHubPage() {
               )}
             </>
           ))}
+
+        {/* Knockout */}
+        {tab === "knockout" && (
+          <>
+            <div style={{ fontSize: 11, color: "var(--text-muted, #888)", marginBottom: 14, lineHeight: 1.5 }}>
+              Tap a team to back it — slots without an open market are display-only.
+            </div>
+            <WorldCupBracket
+              markets={matchMarkets}
+              getFlag={getWCFlag}
+              onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+            />
+          </>
+        )}
       </div>
 
       {/* ── Bet modal ────────────────────────────────────────────────── */}
