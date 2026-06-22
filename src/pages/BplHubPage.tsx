@@ -223,11 +223,6 @@ function BplMatchCard({
         <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
           Nu {totalPool.toLocaleString()} pool
         </span>
-        {market.settlementSource && (
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>
-            · Resolves via bhutanfootball.org
-          </span>
-        )}
       </div>
     </div>
   );
