@@ -104,6 +104,9 @@ export function TmaBetModal({
     return betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
   })();
   const estProfit = estPayout - betAmount;
+  // No one has placed a bet on this market yet — the user would be the first
+  // predictor, so there's no pool to compute a meaningful payout against.
+  const poolEmpty = (Number(market.totalPool) || 0) === 0;
 
   if (!isOpen) return null;
 
@@ -735,7 +738,50 @@ export function TmaBetModal({
               >
                 Stake (Nu)
               </div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              {/* Primary stake input — large & auto-focused so it's clearly typeable */}
+              <div style={{ position: "relative", marginBottom: 10 }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 16,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: "var(--text-subtle)",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Nu
+                </span>
+                <input
+                  type="number"
+                  min={MIN_BET}
+                  value={amountStr}
+                  autoFocus
+                  inputMode="numeric"
+                  placeholder="Enter amount"
+                  onChange={(e) => setAmountStr(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "16px 16px 16px 50px",
+                    borderRadius: 12,
+                    border:
+                      isValidAmount || !betAmount
+                        ? "2px solid var(--glass-border)"
+                        : "2px solid #fca5a5",
+                    fontSize: 24,
+                    fontWeight: 800,
+                    color: "var(--text-main)",
+                    background: "var(--bg-main)",
+                    outline: "none",
+                  }}
+                />
+              </div>
+              {/* Quick-fill chips */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {QUICK_AMOUNTS.map((q) => (
                   <button
                     key={q}
@@ -743,8 +789,8 @@ export function TmaBetModal({
                     className="tma-outcome-btn"
                     style={{
                       flex: 1,
-                      padding: "10px 0",
-                      borderRadius: 12,
+                      padding: "8px 0",
+                      borderRadius: 10,
                       border:
                         amountStr === q.toString()
                           ? "2px solid #10b981"
@@ -773,8 +819,8 @@ export function TmaBetModal({
                     }
                     className="tma-outcome-btn"
                     style={{
-                      padding: "10px 12px",
-                      borderRadius: 12,
+                      padding: "8px 12px",
+                      borderRadius: 10,
                       border:
                         amountStr === Math.floor(creditsBalance).toString()
                           ? "2px solid #10b981"
@@ -798,46 +844,38 @@ export function TmaBetModal({
                   </button>
                 )}
               </div>
-              <div style={{ position: "relative", marginBottom: 16 }}>
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 13,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--text-subtle)",
-                    pointerEvents: "none",
-                  }}
-                >
-                  Nu
-                </span>
-                <input
-                  type="number"
-                  min={MIN_BET}
-                  value={amountStr}
-                  onChange={(e) => setAmountStr(e.target.value)}
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    padding: "12px 14px 12px 34px",
-                    borderRadius: 10,
-                    border:
-                      isValidAmount || !betAmount
-                        ? "2px solid var(--glass-border)"
-                        : "2px solid #fca5a5",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "var(--text-main)",
-                    background: "var(--bg-main)",
-                    outline: "none",
-                  }}
-                />
-              </div>
 
               {/* Estimated payout */}
-              {isValidAmount && (
+              {isValidAmount && poolEmpty ? (
+                <div
+                  style={{
+                    background: "var(--bg-main)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: 10,
+                    padding: "12px 14px",
+                    marginBottom: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    No one has predicted yet
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-subtle)",
+                      marginTop: 2,
+                    }}
+                  >
+                    Be the first — your payout grows as others join.
+                  </div>
+                </div>
+              ) : isValidAmount ? (
                 <div
                   style={{
                     display: "flex",
@@ -909,7 +947,7 @@ export function TmaBetModal({
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {isValidAmount && (
                 <PayoutBreakdown
