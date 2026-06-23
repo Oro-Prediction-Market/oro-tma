@@ -47,6 +47,7 @@ export function TmaBetModal({
   const [error, setError] = useState("");
   const [creditsBalance, setCreditsBalance] = useState<number | null>(null);
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [streak, setStreak] = useState<BetStreak | null>(null);
   const { user } = useAuth();
 
@@ -65,12 +66,20 @@ export function TmaBetModal({
       .catch(() => {});
   }, [isOpen]);
 
+  // Track visual viewport so the bottom sheet follows the keyboard precisely
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const handleResize = () => setViewportHeight(vv.height);
-    vv.addEventListener("resize", handleResize);
-    return () => vv.removeEventListener("resize", handleResize);
+    const handle = () => {
+      setViewportHeight(vv.height);
+      setViewportOffsetTop(vv.offsetTop);
+    };
+    vv.addEventListener("resize", handle);
+    vv.addEventListener("scroll", handle);
+    return () => {
+      vv.removeEventListener("resize", handle);
+      vv.removeEventListener("scroll", handle);
+    };
   }, []);
 
   const outcome = market.outcomes.find((o) => o.id === outcomeId);
@@ -175,11 +184,14 @@ export function TmaBetModal({
     <div
       style={{
         position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        background: "rgba(0,0,0,0.35)",
+        top: viewportOffsetTop,
+        left: 0,
+        right: 0,
+        height: viewportHeight,
+        zIndex: 1100,
+        background: "rgba(0,0,0,0.45)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-end",
         justifyContent: "center",
       }}
       onClick={(e) => {
@@ -187,9 +199,9 @@ export function TmaBetModal({
       }}
     >
       <style>{`
-        @keyframes tmaModalUp {
-          from { opacity: 0; transform: translateY(24px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes tmaSheetUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
         }
         @keyframes tmaSuccessPop {
           0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
@@ -221,20 +233,23 @@ export function TmaBetModal({
       <div
         style={{
           background: "var(--bg-card)",
-          borderRadius: 20,
-          padding: "24px 20px 28px",
+          borderRadius: "20px 20px 0 0",
+          padding: "0 20px calc(28px + env(safe-area-inset-bottom))",
           width: "100%",
-          maxWidth: 460,
+          maxWidth: 500,
           boxSizing: "border-box",
-          margin: "0 16px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          animation: "tmaModalUp 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
-          maxHeight: `${viewportHeight * 0.85}px`,
+          boxShadow: "0 -4px 32px rgba(0,0,0,0.22)",
+          animation: "tmaSheetUp 0.32s cubic-bezier(0.32,0.72,0,1) forwards",
+          maxHeight: `${viewportHeight * 0.92}px`,
           overflowY: "auto",
           display: "flex",
           flexDirection: "column",
         }}
       >
+        {/* Drag handle */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--glass-border)" }} />
+        </div>
         {/* ── Success ── */}
         {status === "success" && (
           <div
@@ -738,47 +753,103 @@ export function TmaBetModal({
               >
                 Stake (Nu)
               </div>
-              {/* Primary stake input — large & auto-focused so it's clearly typeable */}
-              <div style={{ position: "relative", marginBottom: 10 }}>
-                <span
+              {/* Stake input with stepper buttons */}
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
+                {/* Decrement */}
+                <button
+                  onClick={() => {
+                    const step = QUICK_AMOUNTS[0];
+                    const next = Math.max(MIN_BET, (parseFloat(amountStr) || 0) - step);
+                    setAmountStr(next.toString());
+                  }}
                   style={{
-                    position: "absolute",
-                    left: 16,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "var(--text-subtle)",
-                    pointerEvents: "none",
+                    width: 48,
+                    flexShrink: 0,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-main)",
+                    fontSize: 22,
+                    fontWeight: 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
                   }}
                 >
-                  Nu
-                </span>
-                <input
-                  type="number"
-                  min={MIN_BET}
-                  value={amountStr}
-                  autoFocus
-                  inputMode="numeric"
-                  placeholder="Enter amount"
-                  onChange={(e) => setAmountStr(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    padding: "16px 16px 16px 50px",
-                    borderRadius: 12,
-                    border:
-                      isValidAmount || !betAmount
-                        ? "2px solid var(--glass-border)"
-                        : "2px solid #fca5a5",
-                    fontSize: 24,
-                    fontWeight: 800,
-                    color: "var(--text-main)",
-                    background: "var(--bg-main)",
-                    outline: "none",
+                  −
+                </button>
+
+                {/* Input */}
+                <div style={{ position: "relative", flex: 1 }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 14,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "var(--text-subtle)",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    Nu
+                  </span>
+                  <input
+                    type="number"
+                    min={MIN_BET}
+                    value={amountStr}
+                    inputMode="numeric"
+                    placeholder="Amount"
+                    onChange={(e) => setAmountStr(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "16px 12px 16px 44px",
+                      borderRadius: 12,
+                      border:
+                        isValidAmount || !betAmount
+                          ? "2px solid var(--glass-border)"
+                          : "2px solid #fca5a5",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: "var(--text-main)",
+                      background: "var(--bg-main)",
+                      outline: "none",
+                      textAlign: "center",
+                    }}
+                  />
+                </div>
+
+                {/* Increment */}
+                <button
+                  onClick={() => {
+                    const step = QUICK_AMOUNTS[0];
+                    const max = creditsBalance !== null ? Math.floor(creditsBalance) : Infinity;
+                    const next = Math.min(max, (parseFloat(amountStr) || 0) + step);
+                    setAmountStr(next.toString());
                   }}
-                />
+                  style={{
+                    width: 48,
+                    flexShrink: 0,
+                    borderRadius: 12,
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-main)",
+                    fontSize: 22,
+                    fontWeight: 400,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
+                  }}
+                >
+                  +
+                </button>
               </div>
               {/* Quick-fill chips */}
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

@@ -827,7 +827,7 @@ export function TmaPaymentModal({
                     marginBottom: 3,
                   }}
                 >
-                  Placing a bet on
+                  Placing a prediction on
                 </div>
                 <div
                   style={{
