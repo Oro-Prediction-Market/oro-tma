@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { Check } from "lucide-react";
 import type { Market } from "@shared/api/client";
 import {
   WC_KNOCKOUT,
@@ -42,10 +43,12 @@ function TeamRow({
   name,
   flag,
   onClick,
+  won = false,
 }: {
   name: string;
   flag: string;
   onClick?: () => void;
+  won?: boolean;
 }) {
   const tappable = !!onClick;
   return (
@@ -59,10 +62,16 @@ function TeamRow({
         gap: 7,
         width: "100%",
         padding: "3px 4px",
-        background: tappable ? "rgba(167,139,250,0.07)" : "transparent",
-        border: tappable
-          ? "1px solid rgba(167,139,250,0.22)"
-          : "1px solid transparent",
+        background: won
+          ? "rgba(34,197,94,0.12)"
+          : tappable
+            ? "rgba(167,139,250,0.07)"
+            : "transparent",
+        border: won
+          ? "1px solid rgba(34,197,94,0.45)"
+          : tappable
+            ? "1px solid rgba(167,139,250,0.22)"
+            : "1px solid transparent",
         borderRadius: 7,
         cursor: tappable ? "pointer" : "default",
         textAlign: "left",
@@ -81,6 +90,7 @@ function TeamRow({
       )}
       <span
         style={{
+          flex: 1,
           fontSize: 12,
           fontWeight: 700,
           color: name === "TBD" ? "var(--text-muted, #888)" : "var(--text-main, #fff)",
@@ -91,6 +101,15 @@ function TeamRow({
       >
         {name}
       </span>
+      {won && (
+        <Check
+          size={14}
+          strokeWidth={3}
+          color="#22c55e"
+          style={{ flexShrink: 0 }}
+          aria-label="Winner"
+        />
+      )}
     </button>
   );
 }
@@ -152,8 +171,11 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
 
   const renderSlot = (slot: BracketSlot) => {
     const market = findMarketForSlot(slot, markets);
+    const settled =
+      !!market && (market.status === "resolved" || market.status === "settled");
     const locked =
       !!market && (market.status === "closed" || market.status === "resolving");
+    const winnerId = settled ? market.resolvedOutcomeId : null;
 
     let team1 = "TBD";
     let team2 = "TBD";
@@ -174,7 +196,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     }
 
     const dateIso = market?.bettingClosesAt ?? market?.closesAt ?? slot.kickoff;
-    const canBet = !!market && !locked;
+    const canBet = !!market && !locked && !settled;
     const pool = Number(market?.totalPool) || 0;
 
     return (
@@ -207,19 +229,25 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           }}
         >
           {fmtDate(dateIso)}
-          {locked && (
-            <span style={{ color: "#fbbf24", marginLeft: 6 }}>• Locked</span>
+          {settled ? (
+            <span style={{ color: "#22c55e", marginLeft: 6 }}>• Final</span>
+          ) : (
+            locked && (
+              <span style={{ color: "#fbbf24", marginLeft: 6 }}>• Locked</span>
+            )
           )}
         </div>
         <TeamRow
           name={team1}
           flag={team1 === "TBD" ? "" : getFlag(team1)}
           onClick={canBet && out1 ? () => onBet(market!.id, out1!) : undefined}
+          won={!!winnerId && winnerId === out1}
         />
         <TeamRow
           name={team2}
           flag={team2 === "TBD" ? "" : getFlag(team2)}
           onClick={canBet && out2 ? () => onBet(market!.id, out2!) : undefined}
+          won={!!winnerId && winnerId === out2}
         />
         {market && (
           <div
