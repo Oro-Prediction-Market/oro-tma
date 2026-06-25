@@ -260,6 +260,12 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+      {/* Snap one round per scroll. scroll-snap-stop:always means even a fast
+          flick / momentum scroll settles on the very next round — never skips. */}
+      <style>{`
+        .wc-bracket-scroll { scroll-snap-type: x mandatory; scroll-padding-left: 0; }
+        .wc-bracket-round { scroll-snap-align: start; scroll-snap-stop: always; }
+      `}</style>
       <button
         type="button"
         aria-label="Expand an earlier round"
@@ -275,7 +281,8 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       </button>
       <div
         ref={scrollRef}
-        style={{ flex: 1, overflowX: "auto", paddingBottom: 12, WebkitOverflowScrolling: "touch" }}
+        className="wc-bracket-scroll"
+        style={{ flex: 1, overflowX: "auto", paddingBottom: 12, WebkitOverflowScrolling: "touch", display: "flex", justifyContent: "safe center" }}
       >
         <div ref={innerRef} style={{ display: "flex", gap: GAP, minWidth: "min-content", position: "relative" }}>
         {/* Connector lines (drawn behind the cards) */}
@@ -308,6 +315,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
             return (
               <div
                 key={round.key}
+                className="wc-bracket-round"
                 onClick={() => setCollapsedCount(ri)}
                 title={`Expand ${round.label}`}
                 style={{ flexShrink: 0, width: STRIP_W, cursor: "pointer" }}
@@ -346,7 +354,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           // every expanded column shares the same total height (= bodyHeight).
           const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
           return (
-            <div key={round.key} style={{ flexShrink: 0 }}>
+            <div key={round.key} className="wc-bracket-round" style={{ flexShrink: 0 }}>
               {/* Round header */}
               <div
                 style={{
