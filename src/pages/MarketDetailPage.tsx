@@ -1303,7 +1303,14 @@ export const MarketDetailPage: FC = () => {
                               lineHeight: 1.15,
                             }}
                           >
-                            <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{Math.min(99, 100 / Math.max(pct, 1)).toFixed(1)}x</span>
+                            <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{(() => {
+                              const outcomePool = Number(outcome.totalBetAmount) || 0;
+                              const edge = Number(m.houseEdgePct) || 0;
+                              const odds = totalBets > 0 && outcomePool > 0
+                                ? (totalBets * (1 - edge / 100)) / outcomePool
+                                : 100 / Math.max(pct, 1);
+                              return Math.min(99, odds).toFixed(2);
+                            })()}x</span>
                             <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
                           </div>
                           {isOpen && (
