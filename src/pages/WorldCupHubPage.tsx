@@ -551,9 +551,12 @@ export function WorldCupHubPage() {
   }, []);
 
   const wcMarkets = markets.filter(isWCMarket);
-  const winnerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-winner");
-  const groupMarkets = wcMarkets.filter((m) => m.subcategory === "wc-group");
-  const playerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-player");
+  // Countries & Stats hide markets whose betting window has closed (status
+  // "closed") — they reappear once resolved/settled, but not while just locked.
+  const visibleInHub = (m: Market) => m.status !== "closed";
+  const winnerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-winner" && visibleInHub(m));
+  const groupMarkets = wcMarkets.filter((m) => m.subcategory === "wc-group" && visibleInHub(m));
+  const playerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-player" && visibleInHub(m));
   const matchMarkets = wcMarkets
     .filter(
       (m) =>
