@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, LayoutGrid, Swords, Clock, CalendarDays, Network } from "lucide-react";
+import { Trophy, BarChart3, Clock, CalendarDays, Network } from "lucide-react";
 import { WorldCupBracket } from "@shared/components/WorldCupBracket";
 import { getMarkets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
@@ -61,6 +61,13 @@ export function parseGroupInfo(title: string): { team: string; group: string } {
     team: teamM ? teamM[1].trim() : title.split(" ").slice(0, 2).join(" "),
     group: groupM ? groupM[1].toUpperCase() : "?",
   };
+}
+
+// Milliseconds until a market's betting closes — drives soonest-first sorting.
+// Mirrors the field the countdown timer uses (bettingClosesAt ?? closesAt).
+function wcCloseMs(m: Market): number {
+  const t = m.bettingClosesAt ?? m.closesAt ?? m.opensAt;
+  return t ? new Date(t).getTime() : Infinity;
 }
 
 export function parseMatchTeams(title: string): { team1: string; team2: string } {
@@ -129,7 +136,7 @@ function WinnerMarketGroup({
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {(market.outcomes ?? []).map((outcome) => {
-          const flag = getWCFlag(outcome.label);
+          const flag = outcome.imageUrl || getWCFlag(outcome.label);
           const prob = calcProb(market, outcome.id);
           const odds = calcOdds(market, outcome.id);
           return (
@@ -254,7 +261,7 @@ function GroupMarketSection({
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {(market.outcomes ?? []).map((outcome) => {
-        const flag = getWCFlag(outcome.label);
+        const flag = outcome.imageUrl || getWCFlag(outcome.label);
         const prob = calcProb(market, outcome.id);
         const odds = calcOdds(market, outcome.id);
         return (
@@ -304,6 +311,104 @@ function GroupMarketSection({
           </div>
         );
       })}
+      </div>
+    </div>
+  );
+}
+
+// Compact, tappable chip layout for prop markets (e.g. "How many goals will
+// Ronaldo score?" → 1 / 2 / 3, or "Which team scores first?" → two teams).
+// Each outcome is a single tappable card laid out in a row.
+function PropMarketSection({
+  market,
+  onBet,
+}: {
+  market: Market;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const resolving = market.status === "resolving";
+  const locked = resolving || market.status === "closed";
+  const settleEta = useClosesAt(resolving ? market.disputeDeadlineAt : null);
+  const totalPool =
+    Number(market.totalPool ?? 0) ||
+    (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1, minWidth: 0, marginRight: 8 }}>
+          {market.title}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)" }}>
+            Nu {totalPool.toLocaleString()} pool
+          </span>
+          {locked ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {settleEta && settleEta !== "Closed" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)" }}>
+                  <Clock size={10} />
+                  <span>{settleEta}</span>
+                </div>
+              )}
+              <div style={{ fontSize: 9, fontWeight: 800, color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {resolving ? "Resolving" : "Closed"}
+              </div>
+            </div>
+          ) : closes ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)" }}>
+              <Clock size={10} />
+              <span>{closes}</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {(market.outcomes ?? []).map((outcome) => {
+          const img = outcome.imageUrl || getWCFlag(outcome.label);
+          const prob = calcProb(market, outcome.id);
+          const odds = calcOdds(market, outcome.id);
+          return (
+            <button
+              key={outcome.id}
+              disabled={locked}
+              onClick={() => { if (!locked) onBet(market.id, outcome.id); }}
+              style={{
+                flex: "1 1 88px",
+                minWidth: 88,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 5,
+                background: "linear-gradient(135deg, rgba(167,139,250,0.08) 0%, var(--bg-card) 70%)",
+                border: "1px solid rgba(167,139,250,0.2)",
+                borderRadius: 12,
+                padding: "10px 10px 9px",
+                cursor: locked ? "default" : "pointer",
+                opacity: locked ? 0.55 : 1,
+              }}
+            >
+              {img && (
+                <img
+                  src={img}
+                  alt={outcome.label}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ width: 28, height: 28, borderRadius: 6, objectFit: "cover" }}
+                />
+              )}
+              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", textAlign: "center", lineHeight: 1.15 }}>
+                {outcome.label}
+              </span>
+              <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#A78BFA" }}>{Math.round(prob * 100)}%</span>
+                <span style={{ fontSize: 12, fontWeight: 900, color: "#fbbf24" }}>
+                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -413,8 +518,8 @@ type Tab = "countries" | "groups" | "games" | "knockout";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "countries", label: "Countries", icon: <Trophy size={15} /> },
-  { key: "groups", label: "Groups", icon: <LayoutGrid size={15} /> },
-  { key: "games", label: "Games", icon: <Swords size={15} /> },
+  { key: "groups", label: "Stats", icon: <BarChart3 size={15} /> },
+  // { key: "games", label: "Games", icon: <Swords size={15} /> },
   { key: "knockout", label: "Knockout", icon: <Network size={15} /> },
 ];
 
@@ -435,7 +540,9 @@ export function WorldCupHubPage() {
               m.status === "open" ||
               m.status === "upcoming" ||
               m.status === "closed" ||
-              m.status === "resolving",
+              m.status === "resolving" ||
+              m.status === "resolved" ||
+              m.status === "settled",
           ),
         ),
       )
@@ -446,13 +553,15 @@ export function WorldCupHubPage() {
   const wcMarkets = markets.filter(isWCMarket);
   const winnerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-winner");
   const groupMarkets = wcMarkets.filter((m) => m.subcategory === "wc-group");
+  const playerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-player");
   const matchMarkets = wcMarkets
     .filter(
       (m) =>
         m.subcategory === "wc-match" ||
         (isWCMarket(m) &&
           m.subcategory !== "wc-winner" &&
-          m.subcategory !== "wc-group"),
+          m.subcategory !== "wc-group" &&
+          m.subcategory !== "wc-player"),
     )
     .sort((a, b) => {
       const ta = a.closesAt ? new Date(a.closesAt).getTime() : a.opensAt ? new Date(a.opensAt).getTime() : Infinity;
@@ -481,11 +590,21 @@ export function WorldCupHubPage() {
     return ref >= tomorrowStart && ref < dayAfterTomorrow;
   });
 
+  // wc-group markets that don't map to a real group letter (e.g. "Which team
+  // scores first?", "Highest assist") are props, not standings — route them to
+  // the Player Props section instead of a "Specials" bucket under Groups.
   const byGroup: Record<string, Market[]> = {};
+  const groupPropMarkets: Market[] = [];
   groupMarkets.forEach((m) => {
     const { group } = parseGroupInfo(m.title);
-    (byGroup[group] ??= []).push(m);
+    if (group === "?") groupPropMarkets.push(m);
+    else (byGroup[group] ??= []).push(m);
   });
+  // Sort everything in the Stats tab by soonest-closing.
+  Object.values(byGroup).forEach((arr) => arr.sort((a, b) => wcCloseMs(a) - wcCloseMs(b)));
+  const propMarkets = [...groupPropMarkets, ...playerMarkets].sort(
+    (a, b) => wcCloseMs(a) - wcCloseMs(b),
+  );
 
   const activeMarket = activeBet
     ? markets.find((m) => m.id === activeBet.marketId)
@@ -583,7 +702,7 @@ export function WorldCupHubPage() {
           {[
             { label: "Winner predictions", val: winnerMarkets.length },
             { label: "Group predictions", val: groupMarkets.length },
-            { label: "Match predictions", val: gamesMarkets.length },
+            { label: "Player props", val: playerMarkets.length },
           ].map(({ label, val }) => (
             <div
               key={label}
@@ -678,12 +797,29 @@ export function WorldCupHubPage() {
 
         {/* Groups */}
         {tab === "groups" &&
-          (groupMarkets.length === 0 ? (
-            <EmptyState msg="No group markets yet" />
+          (Object.keys(byGroup).length === 0 && propMarkets.length === 0 ? (
+            <EmptyState msg="No stats markets yet" />
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+              {Object.keys(byGroup).length > 0 && (
+              <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 900,
+                  color: "var(--text-main, #fff)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: 14,
+                  paddingBottom: 8,
+                  borderBottom: "1px solid rgba(167,139,250,0.18)",
+                }}
+              >
+                Groups
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               {Object.entries(byGroup)
-                .sort(([a], [b]) => a.localeCompare(b))
+                .sort(([, am], [, bm]) => wcCloseMs(am[0]) - wcCloseMs(bm[0]))
                 .map(([group, gMarkets]) => (
                   <div key={group}>
                     <div
@@ -728,6 +864,38 @@ export function WorldCupHubPage() {
                     ))}
                   </div>
                 ))}
+              </div>
+              </div>
+              )}
+
+              {/* Player props sub-section */}
+              {propMarkets.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 900,
+                    color: "var(--text-main, #fff)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: 14,
+                    paddingBottom: 8,
+                    borderBottom: "1px solid rgba(167,139,250,0.18)",
+                  }}
+                >
+                  Player &amp; Team Props
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  {propMarkets.map((market) => (
+                    <PropMarketSection
+                      key={market.id}
+                      market={market}
+                      onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                    />
+                  ))}
+                </div>
+              </div>
+              )}
             </div>
           ))}
 
