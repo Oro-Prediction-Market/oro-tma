@@ -551,16 +551,13 @@ export function WorldCupHubPage() {
   }, []);
 
   const wcMarkets = markets.filter(isWCMarket);
-  // Countries & Stats hide markets whose betting window has closed — both the
-  // explicit "closed" status AND still-"open"/"upcoming" markets whose betting
-  // deadline has already elapsed (these show a "Closed" countdown). Resolved /
-  // settled / resolving markets stay visible.
-  const visibleInHub = (m: Market) => {
-    if (m.status === "closed") return false;
-    if ((m.status === "open" || m.status === "upcoming") && wcCloseMs(m) <= Date.now())
-      return false;
-    return true;
-  };
+  // Countries & Stats show only actively-bettable markets. A market qualifies
+  // only when it is open/upcoming AND its betting deadline is still in the
+  // future. This hides closed, resolving, resolved and settled markets — the
+  // latter two otherwise render a misleading "Closed" countdown with an active
+  // Predict button, because the card's `locked` flag only covers closed/resolving.
+  const visibleInHub = (m: Market) =>
+    (m.status === "open" || m.status === "upcoming") && wcCloseMs(m) > Date.now();
   const winnerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-winner" && visibleInHub(m));
   const groupMarkets = wcMarkets.filter((m) => m.subcategory === "wc-group" && visibleInHub(m));
   const playerMarkets = wcMarkets.filter((m) => m.subcategory === "wc-player" && visibleInHub(m));
