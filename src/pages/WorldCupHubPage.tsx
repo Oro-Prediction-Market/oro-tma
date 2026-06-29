@@ -35,11 +35,24 @@ const SVG_MAP: Record<string, string> = {
   uruguay: "Uruguay", uzbekistan: "Uzbekistan",
 };
 
+// Outcome labels that are answers/markers, not countries — must never map to a flag.
+const NON_COUNTRY_LABELS = new Set([
+  "yes", "no", "over", "under", "draw", "tie", "odd", "even",
+  "none", "both", "neither", "other", "tbd",
+]);
+
 export function getWCFlag(country: string): string {
   const lower = country.toLowerCase().trim();
+  // Generic prop/outcome labels are NOT teams — never resolve them to a flag,
+  // e.g. "No" must not fuzzy-match "Norway", "Yes"/"Draw"/"Over" etc.
+  if (!lower || NON_COUNTRY_LABELS.has(lower)) return "";
   if (SVG_MAP[lower]) return `/worldcup/${SVG_MAP[lower]}.svg`;
   for (const [key, file] of Object.entries(SVG_MAP)) {
-    if (lower.includes(key) || key.includes(lower)) return `/worldcup/${file}.svg`;
+    // Label contains a country name, OR (only for sufficiently long labels) the
+    // country name contains the label. The length guard blocks short tokens
+    // ("no", "us") from matching a longer country via the reverse direction.
+    if (lower.includes(key) || (lower.length >= 4 && key.includes(lower)))
+      return `/worldcup/${file}.svg`;
   }
   return "";
 }
