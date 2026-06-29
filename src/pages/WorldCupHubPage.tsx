@@ -617,7 +617,6 @@ export function WorldCupHubPage() {
   // Aggregate across every WC market regardless of status so the figures
   // reflect total tournament volume, not just what's currently bettable.
   const poolValues = wcMarkets.map((m) => Number(m.totalPool) || 0);
-  const totalPool = poolValues.reduce((a, b) => a + b, 0);
   const biggestPool = poolValues.length ? Math.max(...poolValues) : 0;
   const activeMarkets = wcMarkets.filter(
     (m) => m.status === "open" || m.status === "upcoming",
@@ -629,8 +628,17 @@ export function WorldCupHubPage() {
         ? Math.round(n / 1_000) + "K"
         : Math.round(n).toLocaleString();
 
+  // Title favorite = most-backed outcome across the winner market(s).
+  const winnerOutcomes = wcMarkets
+    .filter((m) => m.subcategory === "wc-winner")
+    .flatMap((m) => m.outcomes ?? []);
+  let favorite = winnerOutcomes[0] ?? null;
+  for (const o of winnerOutcomes) {
+    if (Number(o.totalBetAmount || 0) > Number(favorite?.totalBetAmount || 0)) favorite = o;
+  }
+
   const headerStats = [
-    { label: "Total pool", val: `Nu ${fmtNu(totalPool)}` },
+    { label: "Title favorite", val: favorite?.label ?? "—" },
     { label: "Biggest pool", val: `Nu ${fmtNu(biggestPool)}` },
     { label: "Active markets", val: String(activeMarkets) },
   ];
@@ -741,7 +749,7 @@ export function WorldCupHubPage() {
               }}
             >
               <div
-                style={{ fontSize: 18, fontWeight: 900, color: "#ffffffff", whiteSpace: "nowrap" }}
+                style={{ fontSize: 18, fontWeight: 900, color: "#ffffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
               >
                 {val}
               </div>

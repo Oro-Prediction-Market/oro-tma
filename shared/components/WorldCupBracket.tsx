@@ -169,6 +169,33 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     };
   }, [markets, collapsedCount]);
 
+  // Winner of each settled slot, so we can auto-advance teams into the next
+  // round's TBD positions (slots 2i & 2i+1 → slot i, same as the connectors).
+  const slotWinner = new Map<string, string>();
+  WC_KNOCKOUT.forEach((round) => {
+    round.slots.forEach((slot) => {
+      const m = findMarketForSlot(slot, markets);
+      if (
+        m &&
+        (m.status === "resolved" || m.status === "settled") &&
+        m.resolvedOutcomeId
+      ) {
+        const win = (m.outcomes ?? []).find((o) => o.id === m.resolvedOutcomeId);
+        if (win) slotWinner.set(slot.id, win.label);
+      }
+    });
+  });
+  // slotId → [feeder1 id, feeder2 id] from the previous round.
+  const feeders = new Map<string, [string, string]>();
+  for (let ri = 1; ri < WC_KNOCKOUT.length; ri++) {
+    const prev = WC_KNOCKOUT[ri - 1];
+    WC_KNOCKOUT[ri].slots.forEach((slot, j) => {
+      const f1 = prev.slots[2 * j];
+      const f2 = prev.slots[2 * j + 1];
+      if (f1 && f2) feeders.set(slot.id, [f1.id, f2.id]);
+    });
+  }
+
   const renderSlot = (slot: BracketSlot) => {
     const market = findMarketForSlot(slot, markets);
     const settled =
@@ -193,6 +220,13 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         team2 = o[1].label;
         out2 = o[1].id;
       }
+    }
+    // No market yet (or unnamed teams): project the winners advancing from the
+    // two feeder matches so a decided team visibly moves into the next round.
+    const fed = feeders.get(slot.id);
+    if (fed) {
+      if (team1 === "TBD") team1 = slotWinner.get(fed[0]) ?? "TBD";
+      if (team2 === "TBD") team2 = slotWinner.get(fed[1]) ?? "TBD";
     }
 
     const dateIso = market?.bettingClosesAt ?? market?.closesAt ?? slot.kickoff;
