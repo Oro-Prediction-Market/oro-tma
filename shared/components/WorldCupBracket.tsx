@@ -230,7 +230,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         >
           {fmtDate(dateIso)}
           {settled ? (
-            <span style={{ color: "#22c55e", marginLeft: 6 }}>• Final</span>
+            <span style={{ color: "#22c55e", marginLeft: 6 }}>• Decided</span>
           ) : (
             locked && (
               <span style={{ color: "#fbbf24", marginLeft: 6 }}>• Locked</span>

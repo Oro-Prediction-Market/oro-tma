@@ -613,6 +613,28 @@ export function WorldCupHubPage() {
     (a, b) => wcCloseMs(a) - wcCloseMs(b),
   );
 
+  // ── Pool & volume stats (header) ──────────────────────────────────
+  // Aggregate across every WC market regardless of status so the figures
+  // reflect total tournament volume, not just what's currently bettable.
+  const poolValues = wcMarkets.map((m) => Number(m.totalPool) || 0);
+  const totalPool = poolValues.reduce((a, b) => a + b, 0);
+  const biggestPool = poolValues.length ? Math.max(...poolValues) : 0;
+  const activeMarkets = wcMarkets.filter(
+    (m) => m.status === "open" || m.status === "upcoming",
+  ).length;
+  const fmtNu = (n: number) =>
+    n >= 1_000_000
+      ? (n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1) + "M"
+      : n >= 10_000
+        ? Math.round(n / 1_000) + "K"
+        : Math.round(n).toLocaleString();
+
+  const headerStats = [
+    { label: "Total pool", val: `Nu ${fmtNu(totalPool)}` },
+    { label: "Biggest pool", val: `Nu ${fmtNu(biggestPool)}` },
+    { label: "Active markets", val: String(activeMarkets) },
+  ];
+
   const activeMarket = activeBet
     ? markets.find((m) => m.id === activeBet.marketId)
     : null;
@@ -706,11 +728,7 @@ export function WorldCupHubPage() {
             position: "relative",
           }}
         >
-          {[
-            { label: "Winner predictions", val: winnerMarkets.length },
-            { label: "Group predictions", val: groupMarkets.length },
-            { label: "Player props", val: playerMarkets.length },
-          ].map(({ label, val }) => (
+          {headerStats.map(({ label, val }) => (
             <div
               key={label}
               style={{
@@ -723,7 +741,7 @@ export function WorldCupHubPage() {
               }}
             >
               <div
-                style={{ fontSize: 20, fontWeight: 900, color: "#ffffffff" }}
+                style={{ fontSize: 18, fontWeight: 900, color: "#ffffffff", whiteSpace: "nowrap" }}
               >
                 {val}
               </div>
