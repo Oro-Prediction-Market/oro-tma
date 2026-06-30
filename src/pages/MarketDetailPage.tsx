@@ -1134,15 +1134,16 @@ export const MarketDetailPage: FC = () => {
                 const color = colors[idx % colors.length];
                 const signal = outcome.reputationSignal;
                 const barWidth = Math.max(4, Math.min(100, pct));
+                const eliminated = !!outcome.isEliminated;
                 return (
                   <Link
                     key={outcome.id}
                     to={
-                      isOpen
+                      isOpen && !eliminated
                         ? `/dkbank-bet/${m.id}?outcomeId=${outcome.id}`
                         : "#"
                     }
-                    style={{ textDecoration: "none", display: "block" }}
+                    style={{ textDecoration: "none", display: "block", opacity: eliminated ? 0.5 : 1 }}
                   >
                     <div
                       style={{
@@ -1152,12 +1153,12 @@ export const MarketDetailPage: FC = () => {
                         background: "var(--bg-secondary)",
                         border: `1.5px solid ${color}30`,
                         boxShadow: `0 2px 8px rgba(0,0,0,0.18), inset 0 0 0 1px ${color}18`,
-                        cursor: isOpen ? "pointer" : "default",
+                        cursor: isOpen && !eliminated ? "pointer" : "default",
                         transition:
                           "transform 0.12s ease, box-shadow 0.15s ease",
                       }}
                       onMouseDown={(e) => {
-                        if (!isOpen) return;
+                        if (!isOpen || eliminated) return;
                         const el = e.currentTarget as HTMLDivElement;
                         el.style.transform = "scale(0.982)";
                         el.style.boxShadow = `inset 3px 3px 8px rgba(0,0,0,0.28), inset 0 0 0 1px ${color}50`;
@@ -1313,7 +1314,23 @@ export const MarketDetailPage: FC = () => {
                             })()}x</span>
                             <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
                           </div>
-                          {isOpen && (
+                          {eliminated ? (
+                            <div
+                              style={{
+                                background: "rgba(239,68,68,0.15)",
+                                color: "#ef4444",
+                                border: "1px solid rgba(239,68,68,0.35)",
+                                fontSize: "0.65rem",
+                                fontWeight: 800,
+                                padding: "4px 10px",
+                                borderRadius: 99,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              Out
+                            </div>
+                          ) : isOpen && (
                             <div
                               style={{
                                 background: color,

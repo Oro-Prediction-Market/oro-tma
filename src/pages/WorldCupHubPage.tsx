@@ -152,6 +152,7 @@ function WinnerMarketGroup({
           const flag = outcome.imageUrl || getWCFlag(outcome.label);
           const prob = calcProb(market, outcome.id);
           const odds = calcOdds(market, outcome.id);
+          const eliminated = !!outcome.isEliminated;
           return (
             <div
               key={outcome.id}
@@ -165,6 +166,7 @@ function WinnerMarketGroup({
                 alignItems: "center",
                 gap: 10,
                 cursor: "pointer",
+                opacity: eliminated ? 0.5 : 1,
               }}
             >
               {flag
@@ -187,7 +189,11 @@ function WinnerMarketGroup({
                     {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                   </div>
                 </div>
-                {!locked && (
+                {eliminated ? (
+                  <div style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 9, padding: "7px 10px", fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>
+                    Out
+                  </div>
+                ) : !locked && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
                     style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
@@ -277,6 +283,7 @@ function GroupMarketSection({
         const flag = outcome.imageUrl || getWCFlag(outcome.label);
         const prob = calcProb(market, outcome.id);
         const odds = calcOdds(market, outcome.id);
+        const eliminated = !!outcome.isEliminated;
         return (
           <div
             key={outcome.id}
@@ -290,6 +297,7 @@ function GroupMarketSection({
               alignItems: "center",
               gap: 10,
               cursor: "pointer",
+              opacity: eliminated ? 0.5 : 1,
             }}
           >
             {flag
@@ -312,7 +320,11 @@ function GroupMarketSection({
                     {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
                   </div>
                 </div>
-                {!locked && (
+                {eliminated ? (
+                  <div style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "7px 10px", fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0 }}>
+                    Out
+                  </div>
+                ) : !locked && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
                     style={{ background: "#A78BFA", color: "#000", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
@@ -381,11 +393,12 @@ function PropMarketSection({
           const img = outcome.imageUrl || getWCFlag(outcome.label);
           const prob = calcProb(market, outcome.id);
           const odds = calcOdds(market, outcome.id);
+          const eliminated = !!outcome.isEliminated;
           return (
             <button
               key={outcome.id}
-              disabled={locked}
-              onClick={() => { if (!locked) onBet(market.id, outcome.id); }}
+              disabled={locked || eliminated}
+              onClick={() => { if (!locked && !eliminated) onBet(market.id, outcome.id); }}
               style={{
                 flex: "1 1 88px",
                 minWidth: 88,
@@ -397,8 +410,8 @@ function PropMarketSection({
                 border: "1px solid rgba(167,139,250,0.2)",
                 borderRadius: 12,
                 padding: "10px 10px 9px",
-                cursor: locked ? "default" : "pointer",
-                opacity: locked ? 0.55 : 1,
+                cursor: locked || eliminated ? "default" : "pointer",
+                opacity: locked || eliminated ? 0.45 : 1,
               }}
             >
               {img && (
@@ -499,12 +512,13 @@ function MatchMarketCard({
         {market.outcomes?.map((outcome) => {
           const prob = calcProb(market, outcome.id);
           const odds = calcOdds(market, outcome.id);
+          const eliminated = !!outcome.isEliminated;
           return (
             <button
               key={outcome.id}
-              disabled={locked}
-              onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
-              style={{ flex: 1, padding: "9px 4px", background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, cursor: locked ? "default" : "pointer", textAlign: "center" }}
+              disabled={locked || eliminated}
+              onClick={(e) => { e.stopPropagation(); if (!locked && !eliminated) onBet(market.id, outcome.id); }}
+              style={{ flex: 1, padding: "9px 4px", background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.22)", borderRadius: 10, cursor: locked || eliminated ? "default" : "pointer", opacity: eliminated ? 0.45 : 1, textAlign: "center" }}
             >
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
