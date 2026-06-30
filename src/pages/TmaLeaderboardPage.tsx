@@ -1613,7 +1613,7 @@ export const TmaLeaderboardPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                10+ predictions needed to appear on the board
+                15+ predictions needed to appear on the board
               </p>
             </div>
 
