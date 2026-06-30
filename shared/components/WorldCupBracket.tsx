@@ -126,6 +126,20 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
   // How many leading rounds are folded into thin strips. ‹ expands, › collapses.
   const [collapsedCount, setCollapsedCount] = useState(0);
   const maxCollapsed = WC_KNOCKOUT.length - 1; // always keep ≥1 round expanded
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
+  );
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const onChange = () => setIsMobile(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const gap = isMobile ? 12 : GAP;
+  const stripW = isMobile ? 40 : STRIP_W;
 
   // Spacing is relative to the FIRST expanded round, so collapsing earlier
   // rounds compresses the bracket vertically (the remaining cards pack up into
@@ -167,7 +181,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       ro.disconnect();
       window.removeEventListener("resize", compute);
     };
-  }, [markets, collapsedCount]);
+  }, [markets, collapsedCount, isMobile]);
 
   // Winner of each settled slot, so we can auto-advance teams into the next
   // round's TBD positions (slots 2i & 2i+1 → slot i, same as the connectors).
@@ -242,7 +256,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         }}
         style={{
           minHeight: CARD_MIN_H,
-          width: COL_W,
+          width: isMobile ? "100%" : COL_W,
           background: "var(--bg-card, #1a1a1a)",
           border: `1px solid ${market ? "rgba(167,139,250,0.3)" : "var(--glass-border, rgba(255,255,255,0.08))"}`,
           borderRadius: 12,
@@ -346,7 +360,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         className="wc-bracket-scroll"
         style={{ flex: 1, overflowX: "auto", paddingBottom: 12, WebkitOverflowScrolling: "touch", display: "flex", justifyContent: "safe center" }}
       >
-        <div ref={innerRef} style={{ display: "flex", gap: GAP, minWidth: "min-content", position: "relative" }}>
+        <div ref={innerRef} style={{ display: "flex", gap, minWidth: isMobile ? 0 : "min-content", width: isMobile ? "100%" : undefined, position: "relative" }}>
         {/* Connector lines (drawn behind the cards) */}
         <svg
           style={{
@@ -371,16 +385,24 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           ))}
         </svg>
         {WC_KNOCKOUT.map((round, ri) => {
-          // Leading rounds fold into a thin clickable strip. Tap a strip to
-          // expand back to that round.
-          if (ri < collapsedCount) {
+          // On mobile only the active round (collapsedCount) is expanded; the
+          // round right after it becomes a thin strip and everything else is
+          // hidden. On desktop every round from collapsedCount onward stays
+          // expanded and only earlier rounds fold into strips.
+          if (isMobile && ri !== collapsedCount && ri !== collapsedCount + 1) {
+            return null;
+          }
+          const asStrip = isMobile ? ri !== collapsedCount : ri < collapsedCount;
+          // Rounds fold into a thin clickable strip. Tap a strip to make that
+          // round the active (expanded) one.
+          if (asStrip) {
             return (
               <div
                 key={round.key}
                 className="wc-bracket-round"
                 onClick={() => setCollapsedCount(ri)}
                 title={`Expand ${round.label}`}
-                style={{ flexShrink: 0, width: STRIP_W, cursor: "pointer" }}
+                style={{ flexShrink: 0, width: stripW, cursor: "pointer" }}
               >
                 <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
                 <div
@@ -416,7 +438,11 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           // every expanded column shares the same total height (= bodyHeight).
           const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
           return (
-            <div key={round.key} className="wc-bracket-round" style={{ flexShrink: 0 }}>
+            <div
+              key={round.key}
+              className="wc-bracket-round"
+              style={{ flexShrink: 0, flex: isMobile ? 1 : undefined, minWidth: isMobile ? 0 : undefined }}
+            >
               {/* Round header */}
               <div
                 style={{
@@ -428,7 +454,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
                   letterSpacing: "0.06em",
                   textAlign: "center",
                   marginBottom: HEADER_MB,
-                  width: COL_W,
+                  width: isMobile ? "100%" : COL_W,
                 }}
               >
                 {round.label}
