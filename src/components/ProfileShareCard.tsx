@@ -234,8 +234,8 @@ async function renderProfileCard(
 
   // Referral link footer
   const refUrl = opts.referralId
-    ? `https://t.me/${BOT_USERNAME}/app?startapp=ref_${opts.referralId}`
-    : `https://t.me/${BOT_USERNAME}/app`;
+    ? `https://t.me/${BOT_USERNAME}?startapp=ref_${opts.referralId}`
+    : `https://t.me/${BOT_USERNAME}`;
   ctx.font = "600 12px system-ui, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.35)";
   ctx.textAlign = "left";
@@ -274,7 +274,7 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
   const handleShare = async () => {
     if (!blobUrl) return;
     const tier = tierLabel(props.reputationTier);
-    const shareText = `I'm a ${tier} on Oro Predict. Can you beat my record?\n\nhttps://t.me/${BOT_USERNAME}/app${props.referralId ? `?startapp=ref_${props.referralId}` : ""}`;
+    const shareText = `I'm a ${tier} on Oro Predict. Can you beat my record?\n\nhttps://t.me/${BOT_USERNAME}${props.referralId ? `?startapp=ref_${props.referralId}` : ""}`;
     try {
       const blob = await fetch(blobUrl).then((r) => r.blob());
       const file = new File([blob], "oro-profile.png", { type: "image/png" });
@@ -285,7 +285,7 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
     } catch {}
     // Fallback: open Telegram share
     const encoded = encodeURIComponent(shareText);
-    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${BOT_USERNAME}/app`)}&text=${encoded}`;
+    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}&text=${encoded}`;
     window.open(tgUrl, "_blank");
   };
 

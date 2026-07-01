@@ -29,7 +29,7 @@ export const ShareCTA: FC<ShareCTAProps> = ({
   const { user } = useAuth();
 
   const botUsername = import.meta.env.VITE_BOT_USERNAME as string;
-  const refLink = `https://t.me/${botUsername}/app?startapp=ref_${user?.telegramId || user?.id || ""}`;
+  const refLink = `https://t.me/${botUsername}?startapp=ref_${user?.telegramId || user?.id || ""}`;
 
   const handleShare = () => {
     trackEvent({ eventType: "share.tap", platform: "tma", meta: { context: type } });

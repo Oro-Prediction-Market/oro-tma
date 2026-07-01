@@ -20,7 +20,7 @@ export const ChallengeAFriend: FC<ChallengeAFriendProps> = ({
   referralId,
   botUsername = BOT_USERNAME,
 }) => {
-  const refLink = `https://t.me/${botUsername}/app?startapp=ref_${referralId ?? ""}_m_${marketId}`;
+  const refLink = `https://t.me/${botUsername}?startapp=ref_${referralId ?? ""}_m_${marketId}`;
 
   const opposingLabel = opposingOutcomeLabel
     ? `Will you bet on **${opposingOutcomeLabel}**?`

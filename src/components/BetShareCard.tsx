@@ -204,7 +204,7 @@ async function renderCard(
   ctx.fillText("staked", CARD_W - 32, pillY + 36);
 
   // CTA / reflink
-  const refLink = `https://t.me/${opts.botUsername ?? BOT_USERNAME}/app?startapp=ref_${opts.referralId ?? ""}`;
+  const refLink = `https://t.me/${opts.botUsername ?? BOT_USERNAME}?startapp=ref_${opts.referralId ?? ""}`;
   ctx.font = "12px system-ui";
   ctx.fillStyle = "rgba(255,255,255,0.3)";
   ctx.textAlign = "left";
@@ -268,7 +268,7 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.marketTitle, props.outcomePicked, props.stakeAmount]);
 
-  const refLink = `https://t.me/${props.botUsername ?? BOT_USERNAME}/app?startapp=ref_${props.referralId ?? ""}`;
+  const refLink = `https://t.me/${props.botUsername ?? BOT_USERNAME}?startapp=ref_${props.referralId ?? ""}`;
   const shareText = `🏆 I'm calling it! Nu ${props.stakeAmount.toLocaleString()} on "${props.outcomePicked}" in:\n"${props.marketTitle}"\n\nCan you predict better? Join 👇\n${refLink}`;
 
   const handleShare = async () => {
