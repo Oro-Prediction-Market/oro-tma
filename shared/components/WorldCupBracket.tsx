@@ -152,9 +152,21 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
   const gap = isMobile ? 12 : GAP;
   const stripW = isMobile ? 40 : STRIP_W;
 
-  // Spacing is relative to the FIRST expanded round, so collapsing earlier
-  // rounds compresses the bracket vertically (the remaining cards pack up into
-  // view instead of staying spread across the full Round-of-32 height).
+
+  const [viewportW, setViewportW] = useState(0);
+  useLayoutEffect(() => {
+    const measure = () => setViewportW(scrollRef.current?.clientWidth ?? 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [isMobile]);
+  // Card fills the viewport minus a fixed peek gap, so the next round pokes in
+  // ~(PEEK − gap) px at the right edge. Falls back to a vw-based guess pre-measure.
+  const PEEK = 44;
+  const mobileColW =
+    viewportW > 0 ? `${Math.max(220, viewportW - PEEK)}px` : MOBILE_COL_W;
+
+
   const bodyHeight = WC_KNOCKOUT[collapsedCount].slots.length * BLOCK_H;
 
   useLayoutEffect(() => {
@@ -192,7 +204,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       ro.disconnect();
       window.removeEventListener("resize", compute);
     };
-  }, [markets, collapsedCount, isMobile]);
+  }, [markets, collapsedCount, isMobile, viewportW]);
 
   // Winner of each settled slot, so we can auto-advance teams into the next
   // round's TBD positions (slots 2i & 2i+1 → slot i, same as the connectors).
@@ -468,7 +480,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
               <div
                 key={round.key}
                 className="wc-bracket-round"
-                style={{ flexShrink: 0, width: isMobile ? MOBILE_COL_W : undefined }}
+                style={{ flexShrink: 0, width: isMobile ? mobileColW : undefined }}
               >
                 {/* Round header */}
                 <div
