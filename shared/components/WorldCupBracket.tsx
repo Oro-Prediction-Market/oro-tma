@@ -14,6 +14,7 @@ const ACCENT = "#A78BFA";
 const CARD_MIN_H = 76;
 const BLOCK_H = 128; // Round-of-32 cell height = card (~110px) + vertical gap
 const COL_W = 188;
+const MOBILE_COL_W = "min(80vw, 300px)";
 const GAP = 44; // horizontal space between rounds (room for connector elbows)
 const STRIP_W = 44; // width of a collapsed round (thin strip)
 const HEADER_H = 16; // round-label line height (kept fixed so card rows align)
@@ -83,7 +84,13 @@ function TeamRow({
           alt=""
           loading="lazy"
           decoding="async"
-          style={{ width: 18, height: 18, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: 3,
+            objectFit: "cover",
+            flexShrink: 0,
+          }}
         />
       ) : (
         <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.5 }}>🛡️</span>
@@ -93,7 +100,10 @@ function TeamRow({
           flex: 1,
           fontSize: 12,
           fontWeight: 700,
-          color: name === "TBD" ? "var(--text-muted, #888)" : "var(--text-main, #fff)",
+          color:
+            name === "TBD"
+              ? "var(--text-muted, #888)"
+              : "var(--text-main, #fff)",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -115,7 +125,6 @@ function TeamRow({
 }
 
 export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
-
   // Measure each card's position so we can draw real bracket connector lines
   // between a card and the next-round card it feeds into (cards 2i & 2i+1 → i).
   const innerRef = useRef<HTMLDivElement>(null);
@@ -127,7 +136,9 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
   const [collapsedCount, setCollapsedCount] = useState(0);
   const maxCollapsed = WC_KNOCKOUT.length - 1; // always keep ≥1 round expanded
   const [isMobile, setIsMobile] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 640px)").matches,
   );
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -194,7 +205,9 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         (m.status === "resolved" || m.status === "settled") &&
         m.resolvedOutcomeId
       ) {
-        const win = (m.outcomes ?? []).find((o) => o.id === m.resolvedOutcomeId);
+        const win = (m.outcomes ?? []).find(
+          (o) => o.id === m.resolvedOutcomeId,
+        );
         if (win) slotWinner.set(slot.id, win.label);
       }
     });
@@ -302,7 +315,8 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
             style={{
               marginTop: 2,
               paddingTop: 5,
-              borderTop: "1px solid var(--glass-border, rgba(255,255,255,0.07))",
+              borderTop:
+                "1px solid var(--glass-border, rgba(255,255,255,0.07))",
               fontSize: 10,
               fontWeight: 600,
               color: "rgba(255,255,255,0.4)",
@@ -358,125 +372,138 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       <div
         ref={scrollRef}
         className="wc-bracket-scroll"
-        style={{ flex: 1, overflowX: "auto", paddingBottom: 12, WebkitOverflowScrolling: "touch", display: "flex", justifyContent: "safe center" }}
+        style={{
+          flex: 1,
+          overflowX: "auto",
+          paddingBottom: 12,
+          WebkitOverflowScrolling: "touch",
+          display: "flex",
+          justifyContent: "safe center",
+        }}
       >
-        <div ref={innerRef} style={{ display: "flex", gap, minWidth: isMobile ? 0 : "min-content", width: isMobile ? "100%" : undefined, position: "relative" }}>
-        {/* Connector lines (drawn behind the cards) */}
-        <svg
+        <div
+          ref={innerRef}
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            overflow: "visible",
-            zIndex: 0,
+            display: "flex",
+            gap,
+            minWidth: "min-content",
+            position: "relative",
           }}
         >
-          {paths.map((d, i) => (
-            <path
-              key={i}
-              d={d}
-              fill="none"
-              stroke="rgba(167,139,250,0.35)"
-              strokeWidth={1.5}
-            />
-          ))}
-        </svg>
-        {WC_KNOCKOUT.map((round, ri) => {
-          // On mobile only the active round (collapsedCount) is expanded; the
-          // round right after it becomes a thin strip and everything else is
-          // hidden. On desktop every round from collapsedCount onward stays
-          // expanded and only earlier rounds fold into strips.
-          if (isMobile && ri !== collapsedCount && ri !== collapsedCount + 1) {
-            return null;
-          }
-          const asStrip = isMobile ? ri !== collapsedCount : ri < collapsedCount;
-          // Rounds fold into a thin clickable strip. Tap a strip to make that
-          // round the active (expanded) one.
-          if (asStrip) {
+          {/* Connector lines (drawn behind the cards) */}
+          <svg
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none",
+              overflow: "visible",
+              zIndex: 0,
+            }}
+          >
+            {paths.map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                fill="none"
+                stroke="rgba(167,139,250,0.35)"
+                strokeWidth={1.5}
+              />
+            ))}
+          </svg>
+          {WC_KNOCKOUT.map((round, ri) => {
+            // Earlier (already-played) rounds fold into thin strips; every round
+            // from collapsedCount onward stays expanded as real cards. On mobile
+            // those expanded columns are ~peek width and scroll-snap, so the
+            // next round peeks at the right edge and you can swipe between rounds.
+            const asStrip = ri < collapsedCount;
+            // Rounds fold into a thin clickable strip. Tap a strip to make that
+            // round the active (expanded) one.
+            if (asStrip) {
+              return (
+                <div
+                  key={round.key}
+                  className="wc-bracket-round"
+                  onClick={() => setCollapsedCount(ri)}
+                  title={`Expand ${round.label}`}
+                  style={{ flexShrink: 0, width: stripW, cursor: "pointer" }}
+                >
+                  <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
+                  <div
+                    style={{
+                      height: bodyHeight,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "var(--bg-card, #1a1a1a)",
+                      border:
+                        "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+                      borderRadius: 12,
+                    }}
+                  >
+                    <span
+                      style={{
+                        writingMode: "vertical-rl",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: ACCENT,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {round.label}
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+            // Cell height doubles each round RELATIVE to the first expanded round,
+            // so the leftmost visible round packs its cards tightly (BLOCK_H) and
+            // every expanded column shares the same total height (= bodyHeight).
+            const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
             return (
               <div
                 key={round.key}
                 className="wc-bracket-round"
-                onClick={() => setCollapsedCount(ri)}
-                title={`Expand ${round.label}`}
-                style={{ flexShrink: 0, width: stripW, cursor: "pointer" }}
+                style={{ flexShrink: 0, width: isMobile ? MOBILE_COL_W : undefined }}
               >
-                <div style={{ height: HEADER_H, marginBottom: HEADER_MB }} />
+                {/* Round header */}
                 <div
                   style={{
-                    height: bodyHeight,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "var(--bg-card, #1a1a1a)",
-                    border: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
-                    borderRadius: 12,
+                    height: HEADER_H,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: ACCENT,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    textAlign: "center",
+                    marginBottom: HEADER_MB,
+                    width: isMobile ? "100%" : COL_W,
                   }}
                 >
-                  <span
-                    style={{
-                      writingMode: "vertical-rl",
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: ACCENT,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {round.label}
-                  </span>
+                  {round.label}
+                </div>
+                {/* Slots */}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {round.slots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      style={{
+                        height: cellHeight,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {renderSlot(slot)}
+                    </div>
+                  ))}
                 </div>
               </div>
             );
-          }
-          // Cell height doubles each round RELATIVE to the first expanded round,
-          // so the leftmost visible round packs its cards tightly (BLOCK_H) and
-          // every expanded column shares the same total height (= bodyHeight).
-          const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
-          return (
-            <div
-              key={round.key}
-              className="wc-bracket-round"
-              style={{ flexShrink: 0, flex: isMobile ? 1 : undefined, minWidth: isMobile ? 0 : undefined }}
-            >
-              {/* Round header */}
-              <div
-                style={{
-                  height: HEADER_H,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: ACCENT,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  textAlign: "center",
-                  marginBottom: HEADER_MB,
-                  width: isMobile ? "100%" : COL_W,
-                }}
-              >
-                {round.label}
-              </div>
-              {/* Slots */}
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {round.slots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    style={{
-                      height: cellHeight,
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    {renderSlot(slot)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+          })}
         </div>
       </div>
       <button
