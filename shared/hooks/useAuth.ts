@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { initData as tmaInitData } from "@tma.js/sdk-react";
+import {
+  initData as tmaInitData,
+  retrieveLaunchParams,
+} from "@tma.js/sdk-react";
 import {
   loginWithTelegram,
   registerTelegramUser,
@@ -56,8 +59,20 @@ export function useAuth(): UseAuth {
 
     try {
       const telegramInitData = (window as any).Telegram?.WebApp?.initData;
-      const startParam: string | undefined = (window as any).Telegram?.WebApp
-        ?.initDataUnsafe?.start_param;
+      // Resolve the deep-link start param. This app runs on the @tma.js SDK and
+      // does NOT load the legacy telegram-web-app.js, so window.Telegram.WebApp
+      // (and its initDataUnsafe.start_param) is usually absent — read from the
+      // SDK's launch params first, falling back to the global if present.
+      let startParam: string | undefined;
+      try {
+        startParam = retrieveLaunchParams().tgWebAppStartParam;
+      } catch {
+        // SDK not initialized (e.g. non-Telegram env) — ignore.
+      }
+      if (!startParam) {
+        startParam = (window as any).Telegram?.WebApp?.initDataUnsafe
+          ?.start_param;
+      }
       const referralCode = startParam?.startsWith("ref_")
         ? startParam
         : undefined;
