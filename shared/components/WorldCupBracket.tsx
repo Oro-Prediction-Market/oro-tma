@@ -130,9 +130,24 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [paths, setPaths] = useState<string[]>([]);
 
-  // How many leading rounds are folded into thin strips. ‹ expands, › collapses.
-  const [collapsedCount, setCollapsedCount] = useState(0);
   const maxCollapsed = WC_KNOCKOUT.length - 1; // always keep ≥1 round expanded
+
+  const R16_INDEX = 1;
+  let defaultRound = R16_INDEX;
+  for (let ri = R16_INDEX; ri < maxCollapsed; ri++) {
+    const allDecided = WC_KNOCKOUT[ri].slots.every((slot) => {
+      const m = findMarketForSlot(slot, markets);
+      return !!m && (m.status === "resolved" || m.status === "settled");
+    });
+    if (!allDecided) break;
+    defaultRound = ri + 1;
+  }
+
+  const [collapsedCount, setCollapsedCount] = useState(defaultRound);
+  const hasUserPaged = useRef(false);
+  useLayoutEffect(() => {
+    if (!hasUserPaged.current) setCollapsedCount(defaultRound);
+  }, [defaultRound]);
 
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches,
@@ -371,6 +386,7 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     const dy = e.clientY - start.y;
     // Ignore taps and mostly-vertical drags (let the page scroll normally).
     if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) <= Math.abs(dy)) return;
+    hasUserPaged.current = true;
     if (dx < 0) setCollapsedCount((c) => Math.min(maxCollapsed, c + 1)); // ← next
     else setCollapsedCount((c) => Math.max(0, c - 1)); // → previous
   };
@@ -422,7 +438,10 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         type="button"
         aria-label="Expand an earlier round"
         disabled={collapsedCount === 0}
-        onClick={() => setCollapsedCount((c) => Math.max(0, c - 1))}
+        onClick={() => {
+          hasUserPaged.current = true;
+          setCollapsedCount((c) => Math.max(0, c - 1));
+        }}
         style={{
           ...chevronStyle,
           opacity: collapsedCount === 0 ? 0.35 : 1,
@@ -532,7 +551,10 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
         type="button"
         aria-label="Collapse the earliest round"
         disabled={collapsedCount >= maxCollapsed}
-        onClick={() => setCollapsedCount((c) => Math.min(maxCollapsed, c + 1))}
+        onClick={() => {
+          hasUserPaged.current = true;
+          setCollapsedCount((c) => Math.min(maxCollapsed, c + 1));
+        }}
         style={{
           ...chevronStyle,
           opacity: collapsedCount >= maxCollapsed ? 0.35 : 1,
