@@ -31,6 +31,34 @@ interface Props {
   markets: Market[];
   onBet: (marketId: string, outcomeId: string) => void;
   getFlag: (country: string) => string;
+  /** Outcome ids the current user has already backed — highlighted as "your pick". */
+  pickedOutcomeIds?: Set<string>;
+}
+
+// Live win-probability for an outcome — LMSR probability when the engine has
+// set one, else a Laplace-smoothed share of the pool. Same math as the market
+// cards, so the bracket bar matches what the rest of the app shows.
+function outcomeProb(
+  market: Market,
+  outcome: Market["outcomes"][number],
+): number {
+  const n = market.outcomes?.length || 1;
+  const prior = 1000;
+  const tPool = Number(market.totalPool) || 0;
+  if ((outcome.lmsrProbability ?? 0) > 0) return outcome.lmsrProbability!;
+  return (Number(outcome.totalBetAmount) + prior / n) / (tPool + prior);
+}
+
+// Parimutuel payout multiplier — matches the bet modal's estimated payout.
+function outcomeOdds(
+  market: Market,
+  outcome: Market["outcomes"][number],
+): number | null {
+  const totalPool = Number(market.totalPool) || 0;
+  const outcomePool = Number(outcome.totalBetAmount) || 0;
+  const houseEdge = Number(market.houseEdgePct) || 0;
+  if (totalPool <= 0 || outcomePool <= 0) return null;
+  return (totalPool * (1 - houseEdge / 100)) / outcomePool;
 }
 
 function fmtDate(iso: string | null | undefined): string {
@@ -51,77 +79,144 @@ function TeamRow({
   flag,
   onClick,
   won = false,
+  pct = null,
+  odds = null,
+  isPick = false,
 }: {
   name: string;
   flag: string;
   onClick?: () => void;
   won?: boolean;
+  /** Live win-probability 0–100. null when there's no open market (TBD slot). */
+  pct?: number | null;
+  /** Payout multiplier, shown next to the percentage when available. */
+  odds?: number | null;
+  /** The current user has already backed this outcome. */
+  isPick?: boolean;
 }) {
   const tappable = !!onClick;
+  const hasBar = pct != null;
+  const barWidth = hasBar ? Math.max(2, Math.min(100, pct)) : 0;
+  // Fill colour: green once decided, accent (brighter) for the user's own pick.
+  const fill = won
+    ? "rgba(34,197,94,0.22)"
+    : isPick
+      ? "rgba(167,139,250,0.32)"
+      : "rgba(167,139,250,0.15)";
   return (
     <button
       type="button"
       disabled={!tappable}
       onClick={onClick}
       style={{
+        position: "relative",
+        overflow: "hidden",
         display: "flex",
         alignItems: "center",
         gap: 7,
         width: "100%",
-        padding: "3px 4px",
+        padding: "4px 6px",
         background: won
-          ? "rgba(34,197,94,0.12)"
+          ? "rgba(34,197,94,0.10)"
           : tappable
-            ? "rgba(167,139,250,0.07)"
+            ? "rgba(255,255,255,0.03)"
             : "transparent",
         border: won
           ? "1px solid rgba(34,197,94,0.45)"
-          : tappable
-            ? "1px solid rgba(167,139,250,0.22)"
-            : "1px solid transparent",
+          : isPick
+            ? "1px solid rgba(167,139,250,0.55)"
+            : tappable
+              ? "1px solid rgba(167,139,250,0.22)"
+              : "1px solid transparent",
         borderRadius: 7,
         cursor: tappable ? "pointer" : "default",
         textAlign: "left",
       }}
     >
-      {flag ? (
-        <img
-          src={flag}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style={{ width: 18, height: 18, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
+      {/* Poll fill — width tracks the live win-probability and eases as it moves. */}
+      {hasBar && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: `${barWidth}%`,
+            background: fill,
+            borderRadius: "6px 0 0 6px",
+            transition: "width 0.6s ease",
+            pointerEvents: "none",
+          }}
         />
-      ) : (
-        <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.5 }}>🛡️</span>
       )}
-      <span
+      <div
         style={{
-          flex: 1,
-          fontSize: 12,
-          fontWeight: 700,
-          color: name === "TBD" ? "var(--text-muted, #888)" : "var(--text-main, #fff)",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          width: "100%",
         }}
       >
-        {name}
-      </span>
-      {won && (
-        <Check
-          size={14}
-          strokeWidth={3}
-          color="#22c55e"
-          style={{ flexShrink: 0 }}
-          aria-label="Winner"
-        />
-      )}
+        {flag ? (
+          <img
+            src={flag}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={{ width: 18, height: 18, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
+          />
+        ) : (
+          <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.5 }}>🛡️</span>
+        )}
+        <span
+          style={{
+            flex: 1,
+            fontSize: 12,
+            fontWeight: 700,
+            color: name === "TBD" ? "var(--text-muted, #888)" : "var(--text-main, #fff)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {name}
+        </span>
+        {won ? (
+          <Check
+            size={14}
+            strokeWidth={3}
+            color="#22c55e"
+            style={{ flexShrink: 0 }}
+            aria-label="Winner"
+          />
+        ) : (
+          hasBar && (
+            <span
+              style={{
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "baseline",
+                gap: 5,
+              }}
+            >
+              {odds != null && (
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24" }}>
+                  {Math.min(99, odds).toFixed(2)}x
+                </span>
+              )}
+              <span style={{ fontSize: 12, fontWeight: 900, color: ACCENT }}>
+                {Math.round(pct)}%
+              </span>
+            </span>
+          )
+        )}
+      </div>
     </button>
   );
 }
 
-export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
+export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: Props) {
 
   // Measure each card's position so we can draw real bracket connector lines
   // between a card and the next-round card it feeds into (cards 2i & 2i+1 → i).
@@ -276,6 +371,12 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     let team2 = "TBD";
     let out1: string | undefined;
     let out2: string | undefined;
+    // Live win-probability (%) and payout multiplier per team, shown as a poll
+    // bar. null until the match has an open market with named outcomes.
+    let pct1: number | null = null;
+    let pct2: number | null = null;
+    let odds1: number | null = null;
+    let odds2: number | null = null;
     if (market) {
       // The two outcomes ARE the teams — admin names them when creating the
       // match (e.g. "Germany", "France"). Tapping a row bets on that outcome.
@@ -283,10 +384,14 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
       if (o[0]) {
         team1 = o[0].label;
         out1 = o[0].id;
+        pct1 = outcomeProb(market, o[0]) * 100;
+        odds1 = outcomeOdds(market, o[0]);
       }
       if (o[1]) {
         team2 = o[1].label;
         out2 = o[1].id;
+        pct2 = outcomeProb(market, o[1]) * 100;
+        odds2 = outcomeOdds(market, o[1]);
       }
     }
     // No market yet (or unnamed teams): project the winners advancing from the
@@ -300,6 +405,18 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
     const dateIso = market?.bettingClosesAt ?? market?.closesAt ?? slot.kickoff;
     const canBet = !!market && !locked && !settled;
     const pool = Number(market?.totalPool) || 0;
+    // Poll behaviour: reveal the win-percentages only once the user has backed a
+    // team in this match (or it's decided) — before that the rows show no bar.
+    const revealPct =
+      settled ||
+      (!!out1 && !!pickedOutcomeIds?.has(out1)) ||
+      (!!out2 && !!pickedOutcomeIds?.has(out2));
+    if (!revealPct) {
+      pct1 = null;
+      pct2 = null;
+      odds1 = null;
+      odds2 = null;
+    }
 
     return (
       <div
@@ -344,12 +461,18 @@ export function WorldCupBracket({ markets, onBet, getFlag }: Props) {
           flag={team1 === "TBD" ? "" : getFlag(team1)}
           onClick={canBet && out1 ? () => onBet(market!.id, out1!) : undefined}
           won={!!winnerId && winnerId === out1}
+          pct={pct1}
+          odds={odds1}
+          isPick={!!out1 && !!pickedOutcomeIds?.has(out1)}
         />
         <TeamRow
           name={team2}
           flag={team2 === "TBD" ? "" : getFlag(team2)}
           onClick={canBet && out2 ? () => onBet(market!.id, out2!) : undefined}
           won={!!winnerId && winnerId === out2}
+          pct={pct2}
+          odds={odds2}
+          isPick={!!out2 && !!pickedOutcomeIds?.has(out2)}
         />
         {market && (
           <div

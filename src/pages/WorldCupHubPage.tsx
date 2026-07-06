@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, BarChart3, Clock, CalendarDays, Network } from "lucide-react";
 import { WorldCupBracket } from "@shared/components/WorldCupBracket";
@@ -557,9 +557,12 @@ export function WorldCupHubPage() {
   const [tab, setTab] = useState<Tab>("countries");
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [timeFilter, setTimeFilter] = useState<"all" | "today" | "tomorrow">("all");
+  // Outcomes this user has backed this session — shown as "your pick" on the
+  // knockout bars. (The bet endpoint returns no position list, so track locally.)
+  const [pickedOutcomeIds, setPickedOutcomeIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    getMarkets()
+  const loadMarkets = useCallback(() => {
+    return getMarkets()
       .then((d) =>
         setMarkets(
           d.filter(
@@ -573,9 +576,16 @@ export function WorldCupHubPage() {
           ),
         ),
       )
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    loadMarkets().finally(() => setLoading(false));
+    // Refresh periodically so the knockout poll bars track others' bets while
+    // the hub is open. Backend caches markets ~30s, so poll on that beat.
+    const id = setInterval(loadMarkets, 30_000);
+    return () => clearInterval(id);
+  }, [loadMarkets]);
 
   const wcMarkets = markets.filter(isWCMarket);
 
@@ -1015,6 +1025,7 @@ export function WorldCupHubPage() {
               markets={matchMarkets}
               getFlag={getWCFlag}
               onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+              pickedOutcomeIds={pickedOutcomeIds}
             />
           </>
         )}
@@ -1027,7 +1038,11 @@ export function WorldCupHubPage() {
           onClose={() => setActiveBet(null)}
           market={activeMarket}
           outcomeId={activeBet.outcomeId}
-          onSuccess={() => setActiveBet(null)}
+          onSuccess={() => {
+            setPickedOutcomeIds((prev) => new Set(prev).add(activeBet.outcomeId));
+            setActiveBet(null);
+            loadMarkets(); // pull fresh pools so the bars reflect the new bet
+          }}
           onFailure={(e: string) => console.error(e)}
           onGoToWallet={() => navigate("/wallet")}
         />
