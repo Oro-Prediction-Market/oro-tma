@@ -83,6 +83,16 @@ function wcCloseMs(m: Market): number {
   return t ? new Date(t).getTime() : Infinity;
 }
 
+function wcAwaitingResolution(m: Market): boolean {
+  return m.status === "closed" || m.status === "resolving";
+}
+function wcStatsOrder(a: Market, b: Market): number {
+  return (
+    Number(wcAwaitingResolution(a)) - Number(wcAwaitingResolution(b)) ||
+    wcCloseMs(a) - wcCloseMs(b)
+  );
+}
+
 export function parseMatchTeams(title: string): { team1: string; team2: string } {
   const m = title.match(/^(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:?]|\s*\(|\s+(?:who|which|will)\b|$)/i);
   if (m) return { team1: m[1].trim(), team2: m[2].trim() };
@@ -656,11 +666,9 @@ export function WorldCupHubPage() {
     if (group === "?") groupPropMarkets.push(m);
     else (byGroup[group] ??= []).push(m);
   });
-  // Sort everything in the Stats tab by soonest-closing.
-  Object.values(byGroup).forEach((arr) => arr.sort((a, b) => wcCloseMs(a) - wcCloseMs(b)));
-  const propMarkets = [...groupPropMarkets, ...playerMarkets].sort(
-    (a, b) => wcCloseMs(a) - wcCloseMs(b),
-  );
+
+  Object.values(byGroup).forEach((arr) => arr.sort(wcStatsOrder));
+  const propMarkets = [...groupPropMarkets, ...playerMarkets].sort(wcStatsOrder);
 
   // ── Pool & volume stats (header) ──────────────────────────────────
   // Aggregate across every WC market regardless of status so the figures
@@ -901,7 +909,7 @@ export function WorldCupHubPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               {Object.entries(byGroup)
-                .sort(([, am], [, bm]) => wcCloseMs(am[0]) - wcCloseMs(bm[0]))
+                .sort(([, am], [, bm]) => wcStatsOrder(am[0], bm[0]))
                 .map(([group, gMarkets]) => (
                   <div key={group}>
                     <div
