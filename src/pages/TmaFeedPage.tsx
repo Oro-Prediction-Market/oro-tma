@@ -836,6 +836,25 @@ const MarketCard = memo(function MarketCard({
                       onError={() => setImgError(true)}
                       style={{ flexShrink: 0, width: 36, height: 36, objectFit: "cover", display: "block", borderRadius: 6 }}
                     />
+                  ) : avatarUrl ? (
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                      }}
+                    >
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        onError={() => setImgError(true)}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
+                      />
+                    </div>
                   ) : (
                     <div
                       style={{
@@ -843,7 +862,6 @@ const MarketCard = memo(function MarketCard({
                         width: 36,
                         height: 36,
                         borderRadius: "50%",
-                        overflow: "hidden",
                         background: vis.gradient,
                         border: `2px solid ${s.color}40`,
                         display: "flex",
@@ -851,18 +869,9 @@ const MarketCard = memo(function MarketCard({
                         justifyContent: "center",
                       }}
                     >
-                      {avatarUrl ? (
-                        <img
-                          src={avatarUrl}
-                          alt=""
-                          onError={() => setImgError(true)}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                        />
-                      ) : (
-                        <span style={{ fontSize: 14, fontWeight: 900, color: s.color }}>
-                          {s.label.charAt(0)}
-                        </span>
-                      )}
+                      <span style={{ fontSize: 14, fontWeight: 900, color: s.color }}>
+                        {s.label.charAt(0)}
+                      </span>
                     </div>
                   )}
                   {/* Label + expert signal */}
