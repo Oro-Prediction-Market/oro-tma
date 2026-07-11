@@ -2302,15 +2302,13 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
-          // Grouped multi-binary events (shared groupId) collapse into one
-          // GroupedMarketCard rendered at the first sibling's position.
           if (market.groupId) {
             const siblings = allCards.filter(
               (m) => m.groupId === market.groupId,
             );
             if (siblings[0]?.id !== market.id) return null;
             return (
-              <div key={`group-${market.groupId}`}>
+              <div key={`group-${market.groupId}`} style={{ marginBottom: 14 }}>
                 <GroupedMarketCard
                   markets={siblings}
                   onBet={(marketId, outcomeId) =>
