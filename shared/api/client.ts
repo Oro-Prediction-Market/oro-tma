@@ -440,6 +440,11 @@ export interface Market {
   externalSource: string | null;
   externalMarketType: string | null;
   settlementSource: string | null;
+  /** Non-null for grouped multi-binary events (e.g. political races): all
+   *  sibling Yes/No candidate markets share one groupId. */
+  groupId: string | null;
+  /** Umbrella event title shared by all markets in the group. */
+  groupTitle: string | null;
   metadata: Record<string, any> | null;
   evidenceNote: string | null;
   signalMeta: SignalMeta | null;

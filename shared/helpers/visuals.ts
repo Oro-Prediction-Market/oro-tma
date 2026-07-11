@@ -23,6 +23,10 @@ export const CATEGORY_VISUAL: Record<
     gradient: "linear-gradient(135deg, #1c2b1a 0%, #14532d 60%, #052e16 100%)",
     accentColor: "#4ade80",
   },
+  political: {
+    gradient: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #0f172a 100%)",
+    accentColor: "#60a5fa",
+  },
   other: {
     gradient: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #0f0f23 100%)",
     accentColor: "#a78bfa",

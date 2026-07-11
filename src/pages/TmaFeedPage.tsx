@@ -14,6 +14,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
+import { GroupedMarketCard } from "@/components/GroupedMarketCard";
 import { Link } from "@/components/Link/Link";
 import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -2301,6 +2302,24 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
+          // Grouped multi-binary events (shared groupId) collapse into one
+          // GroupedMarketCard rendered at the first sibling's position.
+          if (market.groupId) {
+            const siblings = allCards.filter(
+              (m) => m.groupId === market.groupId,
+            );
+            if (siblings[0]?.id !== market.id) return null;
+            return (
+              <div key={`group-${market.groupId}`}>
+                <GroupedMarketCard
+                  markets={siblings}
+                  onBet={(marketId, outcomeId) =>
+                    setActiveBet({ marketId, outcomeId })
+                  }
+                />
+              </div>
+            );
+          }
           // Insert section dividers between groups
           const isFirstResolving =
             market === filteredResolving[0] && filteredOpen.length > 0;

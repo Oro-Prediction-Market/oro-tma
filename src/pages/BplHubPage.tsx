@@ -32,6 +32,7 @@ const CLUB_KEYWORDS = [
 ];
 
 export function isBplMarket(m: Market): boolean {
+  if (m.category === "political") return false;
   if (isWCMarket(m)) return false;
   // covers bpl-match / bpl-winner / bpl-topscorer and legacy "Premier League (BPL)"
   if (m.subcategory?.toLowerCase().includes("bpl")) return true;
