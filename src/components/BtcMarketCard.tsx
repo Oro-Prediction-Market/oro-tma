@@ -22,32 +22,96 @@ function useCountdown(targetAt: string | null): string {
   return label;
 }
 
+const CHART_TICK_MS = 500; // one chart point per 500ms — live tick-style movement
+const CHART_MAX_POINTS = 120; // ~60s of points on screen
+
 function useLiveBtcPrice(active: boolean) {
   const [live, setLive] = useState<BtcPrice | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   useEffect(() => {
     if (!active) return;
+    let ws: WebSocket | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let tickId: ReturnType<typeof setInterval> | null = null;
+    let stopped = false;
+    let lastPrice: number | null = null;
+
     // Seed the chart from the backend's rolling history so it renders on
-    // first paint instead of waiting several polls to accumulate points
+    // first paint instead of waiting for stream points to accumulate
     getBtcPriceHistory()
       .then((pts) => {
         if (pts.length === 0) return;
+        lastPrice = pts[pts.length - 1].price;
         setLive((l) => l ?? pts[pts.length - 1]);
         setHistory((h) =>
-          pts.length > h.length ? pts.slice(-90).map((p) => p.price) : h,
+          pts.length > h.length
+            ? pts.slice(-CHART_MAX_POINTS).map((p) => p.price)
+            : h,
         );
       })
       .catch(() => {});
-    const fetch_ = () =>
-      getBtcPrice()
-        .then((p) => {
-          setLive(p);
-          setHistory((h) => [...h.slice(-89), p.price]);
-        })
-        .catch(() => {});
-    fetch_();
-    const id = setInterval(fetch_, 2_000);
-    return () => clearInterval(id);
+
+    // REST fallback if the websocket can't connect (or drops)
+    const startPolling = () => {
+      if (pollId || stopped) return;
+      const fetch_ = () =>
+        getBtcPrice()
+          .then((p) => {
+            lastPrice = p.price;
+            setLive(p);
+          })
+          .catch(() => {});
+      fetch_();
+      pollId = setInterval(fetch_, 2_000);
+    };
+
+    // Live trade stream from Coinbase — the same primary source the backend
+    // settles against, so what users watch is what decides the round
+    try {
+      ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
+      ws.onopen = () =>
+        ws?.send(
+          JSON.stringify({
+            type: "subscribe",
+            product_ids: ["BTC-USD"],
+            channels: ["ticker"],
+          }),
+        );
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type !== "ticker" || !msg.price) return;
+        const price = parseFloat(msg.price);
+        if (!Number.isFinite(price)) return;
+        lastPrice = price;
+        setLive({
+          price,
+          source: "coinbase",
+          fetchedAt: new Date().toISOString(),
+        } as BtcPrice);
+      };
+      ws.onerror = () => ws?.close();
+      ws.onclose = () => startPolling();
+    } catch {
+      startPolling();
+    }
+
+    // Push chart points on a fixed cadence so the sparkline scrolls steadily
+    tickId = setInterval(() => {
+      if (lastPrice == null) return;
+      const p = lastPrice;
+      setHistory((h) => [...h.slice(-(CHART_MAX_POINTS - 1)), p]);
+    }, CHART_TICK_MS);
+
+    return () => {
+      stopped = true;
+      try {
+        ws?.close();
+      } catch {
+        /* already closed */
+      }
+      if (pollId) clearInterval(pollId);
+      if (tickId) clearInterval(tickId);
+    };
   }, [active]);
   return { live, history };
 }
@@ -87,7 +151,7 @@ const BtcSparkline: FC<{ history: number[]; refPrice: number }> = memo(
 
     useEffect(() => {
       if (history.length < 2) return;
-      firstTsRef.current = Date.now() - (history.length - 1) * 2000;
+      firstTsRef.current = Date.now() - (history.length - 1) * CHART_TICK_MS;
       const s = stateRef.current;
       s.prevLast = s.curr.length > 0 ? s.curr[s.curr.length - 1] : history[history.length - 1];
       s.curr = [...history];
@@ -126,10 +190,9 @@ const BtcSparkline: FC<{ history: number[]; refPrice: number }> = memo(
               const animLast = s.prevLast + (s.curr[lastIdx] - s.prevLast) * et;
               const vals = s.curr.map((v, i) => i === lastIdx ? animLast : v);
 
-              const smooth = vals.map((v, i) => {
-                if (i < 2 || i >= vals.length - 2) return v;
-                return (vals[i - 2] + vals[i - 1] + v + vals[i + 1] + vals[i + 2]) / 5;
-              });
+              // Raw tick values — the stream is fast enough that smoothing
+              // would only flatten real movement
+              const smooth = vals;
 
               const rawMin = Math.min(...smooth);
               const rawMax = Math.max(...smooth);
@@ -223,7 +286,7 @@ const BtcSparkline: FC<{ history: number[]; refPrice: number }> = memo(
                   smooth.length - 1,
                 ];
                 idxs.forEach((idx, pos) => {
-                  const d  = new Date(fts + idx * 2000);
+                  const d  = new Date(fts + idx * CHART_TICK_MS);
                   const hh = String(d.getHours()).padStart(2, "0");
                   const mm = String(d.getMinutes()).padStart(2, "0");
                   const ss = String(d.getSeconds()).padStart(2, "0");
