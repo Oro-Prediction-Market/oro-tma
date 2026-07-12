@@ -1442,8 +1442,21 @@ export const TmaFeedPage: FC = () => {
     if (autoA && !autoB) return -1;
     if (autoB && !autoA) return 1;
     if (autoA && autoB) {
-      if (a.externalSource === "ter") return -1;
-      if (b.externalSource === "ter") return 1;
+      if (a.externalSource !== b.externalSource) {
+        if (a.externalSource === "ter") return -1;
+        if (b.externalSource === "ter") return 1;
+      }
+      // Two overlapping rounds of the same source: bettable round first,
+      // then the locked round that's waiting to settle
+      const now = Date.now();
+      const openA = a.bettingClosesAt
+        ? new Date(a.bettingClosesAt).getTime() > now
+        : true;
+      const openB = b.bettingClosesAt
+        ? new Date(b.bettingClosesAt).getTime() > now
+        : true;
+      if (openA && !openB) return -1;
+      if (openB && !openA) return 1;
     }
     return Number(b.totalPool) - Number(a.totalPool);
   });

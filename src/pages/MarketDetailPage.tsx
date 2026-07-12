@@ -52,7 +52,10 @@ function TerPricePanel({ market }: { market: Market }) {
   const displayPrice = isSettled
     ? settlementPrice
     : (live?.buyPrice ?? live?.midPrice);
-  const diff = displayPrice != null ? displayPrice - refPrice : null;
+  // Bet-first-then-measure: reference price locks only when betting closes
+  const refLocked = refPrice > 0;
+  const diff =
+    displayPrice != null && refLocked ? displayPrice - refPrice : null;
   const pct =
     diff != null && refPrice ? ((diff / refPrice) * 100).toFixed(2) : null;
   const dir =
@@ -94,16 +97,16 @@ function TerPricePanel({ market }: { market: Market }) {
               marginBottom: 2,
             }}
           >
-            Open price
+            Price to beat
           </div>
           <div
             style={{
-              fontSize: "1.3rem",
+              fontSize: refLocked ? "1.3rem" : "0.8rem",
               fontWeight: 800,
-              color: "var(--text-main)",
+              color: refLocked ? "var(--text-main)" : "var(--text-subtle)",
             }}
           >
-            Nu {refPrice.toFixed(4)}
+            {refLocked ? `Nu ${refPrice.toFixed(4)}` : "🔒 Locks at bet close"}
           </div>
         </div>
         <div style={{ fontSize: 22, color: "var(--text-subtle)" }}>→</div>

@@ -278,15 +278,20 @@ export const BtcMarketCard: FC<Props> = memo(
     const bettingClosed = !!(market.bettingClosesAt && new Date() > new Date(market.bettingClosesAt));
 
     const countdown = useCountdown(
-      isClosed || isSettled ? null : (market.bettingClosesAt ?? market.closesAt),
+      isClosed || isSettled
+        ? null
+        : bettingClosed
+          ? (market.closesAt ?? null)
+          : (market.bettingClosesAt ?? market.closesAt),
     );
     const livePrice = useLiveBtcPrice(!isSettled && !isClosed);
 
     const refPrice: number         = meta.referencePrice ?? 0;
+    const refLocked = refPrice > 0;
     const liveDisplayPrice: number | undefined = isSettled ? meta.settlementPrice : livePrice.live?.price;
     const priceHistory = livePrice.history;
 
-    const priceDiff  = liveDisplayPrice != null ? liveDisplayPrice - refPrice : null;
+    const priceDiff  = liveDisplayPrice != null && refLocked ? liveDisplayPrice - refPrice : null;
     const direction  = priceDiff == null ? null : priceDiff > 0 ? "up" : priceDiff < 0 ? "down" : "flat";
 
     const upOutcome   = market.outcomes.find((o) => o.label === "UP");
@@ -362,7 +367,7 @@ export const BtcMarketCard: FC<Props> = memo(
             }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: bettingClosed ? "#f59e0b" : "#f43f5e", flexShrink: 0 }} />
               <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: bettingClosed ? "#f59e0b" : "#f43f5e" }}>
-                {bettingClosed ? "Soon" : countdown || "--"}
+                {bettingClosed ? `${countdown || "Soon"}` : countdown || "--"}
               </span>
             </div>
           ) : (
@@ -382,9 +387,15 @@ export const BtcMarketCard: FC<Props> = memo(
         <div style={{ padding: "2px 16px 12px", display: "flex", gap: 0 }}>
           <div style={{ flex: 1 }}>
             <div style={{ ...label, marginBottom: 5 }}>Price to Beat</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
-              {refPrice > 0 ? fmtUsd(refPrice) : "—"}
-            </div>
+            {refLocked ? (
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                {fmtUsd(refPrice)}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.sub, lineHeight: "20px" }}>
+                Locks when prediction ends
+              </div>
+            )}
           </div>
 
           <div style={{ width: 1, background: C.divider, margin: "0 14px", alignSelf: "stretch" }} />

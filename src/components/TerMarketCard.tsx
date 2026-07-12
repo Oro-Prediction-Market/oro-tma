@@ -292,19 +292,28 @@ export const TerMarketCard: FC<Props> = memo(
     const isClosed   = market.status === "closed"  || market.status === "resolving";
     const bettingClosed = !!(market.bettingClosesAt && new Date() > new Date(market.bettingClosesAt));
 
+    // Betting phase counts down to the price lock; measuring phase counts
+    // down to settlement.
     const countdown = useCountdown(
-      isClosed || isSettled ? null : (market.bettingClosesAt ?? market.closesAt),
+      isClosed || isSettled
+        ? null
+        : bettingClosed
+          ? (market.closesAt ?? null)
+          : (market.bettingClosesAt ?? market.closesAt),
     );
     const livePrice = useLiveTerPrice(!isSettled && !isClosed);
 
     // Buy price — matches the TER portal's display convention
     const refPrice: number = meta.referenceBuyPrice ?? meta.referenceTerPrice ?? 0;
+    // Bet-first-then-measure: the reference price only exists once betting
+    // has closed. Before that there is nothing to compare against.
+    const refLocked = refPrice > 0;
     const liveDisplayPrice: number | undefined = isSettled
       ? (meta.settlementBuyPrice ?? meta.settlementTerPrice)
       : (livePrice.live?.buyPrice ?? livePrice.live?.midPrice);
     const priceHistory = livePrice.history;
 
-    const priceDiff  = liveDisplayPrice != null ? liveDisplayPrice - refPrice : null;
+    const priceDiff  = liveDisplayPrice != null && refLocked ? liveDisplayPrice - refPrice : null;
     const direction  = priceDiff == null ? null : priceDiff > 0 ? "up" : priceDiff < 0 ? "down" : "flat";
     const pips       = priceDiff != null ? Math.round(priceDiff * 10000) : null;
 
@@ -380,7 +389,7 @@ export const TerMarketCard: FC<Props> = memo(
             }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: bettingClosed ? "#f59e0b" : "#f43f5e", flexShrink: 0 }} />
               <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: bettingClosed ? "#f59e0b" : "#f43f5e" }}>
-                {bettingClosed ? "Soon" : countdown || "--"}
+                {bettingClosed ? `${countdown || "Soon"}` : countdown || "--"}
               </span>
             </div>
           ) : (
@@ -400,9 +409,15 @@ export const TerMarketCard: FC<Props> = memo(
         <div style={{ padding: "2px 16px 12px", display: "flex", gap: 0 }}>
           <div style={{ flex: 1 }}>
             <div style={{ ...label, marginBottom: 5 }}>Price to Beat</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
-              {refPrice > 0 ? fmtNu(refPrice) : "—"}
-            </div>
+            {refLocked ? (
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                {fmtNu(refPrice)}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.sub, lineHeight: "18px" }}>
+                Locks when prediction ends
+              </div>
+            )}
           </div>
 
           <div style={{ width: 1, background: C.divider, margin: "0 14px", alignSelf: "stretch" }} />
