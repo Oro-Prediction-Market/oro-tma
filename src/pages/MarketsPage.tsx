@@ -37,6 +37,19 @@ export const MarketsPage: FC = () => {
       }
     }
     load();
+    // Auto-refresh so fast-cycling TER/BTC rounds appear/disappear without
+    // a manual reload (matches the 10s cadence of the feed pages)
+    const reload = () => {
+      getMarkets()
+        .then(setMarkets)
+        .catch(() => {});
+    };
+    const id = setInterval(reload, 10_000);
+    window.addEventListener("oro:market-changed", reload);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("oro:market-changed", reload);
+    };
   }, []);
 
   if (loading) return <LoadingScreen message="Syncing markets…" />;
