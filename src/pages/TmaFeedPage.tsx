@@ -1371,14 +1371,6 @@ export const TmaFeedPage: FC = () => {
   const filterByQuery = (list: Market[]) => {
     let filtered = list;
 
-    if (selectedCategory === "All") {
-      filtered = filtered.filter(
-        (m) =>
-          !["ter", "btc"].includes(m.externalSource ?? "") ||
-          (m.category || "other") !== "economy",
-      );
-    }
-
     // Category Filter
     if (selectedCategory !== "All") {
       filtered = filtered.filter(
