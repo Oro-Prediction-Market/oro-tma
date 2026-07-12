@@ -57,7 +57,16 @@ export const MarketsPage: FC = () => {
     );
   }
 
-  const openMarkets = markets.filter((m) => m.status === "open");
+  // TER/BTC rounds that locked with zero bets stay hidden (the backend
+  // still settles them on its own)
+  const openMarkets = markets.filter(
+    (m) =>
+      m.status === "open" &&
+      (!["ter", "btc"].includes(m.externalSource ?? "") ||
+        Number(m.totalPool) > 0 ||
+        !m.bettingClosesAt ||
+        new Date(m.bettingClosesAt).getTime() > Date.now()),
+  );
   const upcomingMarkets = markets.filter((m) => m.status === "upcoming");
   const otherMarkets = markets.filter(
     (m) => !["open", "upcoming"].includes(m.status),

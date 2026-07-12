@@ -1370,6 +1370,13 @@ export const TmaFeedPage: FC = () => {
 
   const filterByQuery = (list: Market[]) => {
     let filtered = list;
+    filtered = filtered.filter(
+      (m) =>
+        !["ter", "btc"].includes(m.externalSource ?? "") ||
+        Number(m.totalPool) > 0 ||
+        !m.bettingClosesAt ||
+        new Date(m.bettingClosesAt).getTime() > Date.now(),
+    );
 
     // Category Filter
     if (selectedCategory !== "All") {
