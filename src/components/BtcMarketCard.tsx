@@ -79,8 +79,15 @@ function useLiveBtcPrice(active: boolean) {
         );
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
-        if (msg.type !== "ticker" || !msg.price) return;
-        const price = parseFloat(msg.price);
+        if (msg.type !== "ticker") return;
+        // Mid-price (bid/ask midpoint) — trade prices flip-flop between bid
+        // and ask, which renders as a square wave on the chart
+        const bid = parseFloat(msg.best_bid);
+        const ask = parseFloat(msg.best_ask);
+        const price =
+          Number.isFinite(bid) && Number.isFinite(ask)
+            ? (bid + ask) / 2
+            : parseFloat(msg.price);
         if (!Number.isFinite(price)) return;
         lastPrice = price;
         setLive({
@@ -95,10 +102,14 @@ function useLiveBtcPrice(active: boolean) {
       startPolling();
     }
 
-    // Push chart points on a fixed cadence so the sparkline scrolls steadily
+    // Push chart points on a fixed cadence so the sparkline scrolls steadily.
+    // Light exponential smoothing rounds tick steps into a flowing curve.
+    let chartEma: number | null = null;
     tickId = setInterval(() => {
       if (lastPrice == null) return;
-      const p = lastPrice;
+      chartEma =
+        chartEma == null ? lastPrice : chartEma + 0.25 * (lastPrice - chartEma);
+      const p = chartEma;
       setHistory((h) => [...h.slice(-(CHART_MAX_POINTS - 1)), p]);
     }, CHART_TICK_MS);
 
@@ -196,9 +207,12 @@ const BtcSparkline: FC<{ history: number[]; refPrice: number }> = memo(
 
               const rawMin = Math.min(...smooth);
               const rawMax = Math.max(...smooth);
-              const rawR   = rawMax - rawMin || 1;
-              const yMin   = rawMin - rawR * 0.12;
-              const yMax   = rawMax + rawR * 0.12;
+              // Minimum y-span (0.02% of price) so micro-noise doesn't zoom
+              // into a violent full-height wave
+              const mid    = (rawMax + rawMin) / 2;
+              const rawR   = Math.max(rawMax - rawMin, mid * 0.0002) || 1;
+              const yMin   = mid - rawR / 2 - rawR * 0.12;
+              const yMax   = mid + rawR / 2 + rawR * 0.12;
               const yR     = yMax - yMin;
 
               const LPAD   = 44;
@@ -455,13 +469,10 @@ export const BtcMarketCard: FC<Props> = memo(
                 {fmtUsd(refPrice)}
               </div>
             ) : (
-              // Indicative target: the reference locks at whatever the live
-              // price is when betting closes, so preview it with the live price
-              <>
-                <div style={{ fontSize: 20, fontWeight: 700, color: C.text, opacity: 0.75, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
-                  {liveDisplayPrice != null ? `~${fmtUsd(liveDisplayPrice)}` : "—"}
-                </div>
-              </>
+              // No reference exists while betting is open — it locks at bet close
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.sub, lineHeight: 1 }}>
+                —
+              </div>
             )}
           </div>
 

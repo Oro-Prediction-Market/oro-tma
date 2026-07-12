@@ -414,13 +414,10 @@ export const TerMarketCard: FC<Props> = memo(
                 {fmtNu(refPrice)}
               </div>
             ) : (
-              // Indicative target: the reference locks at whatever the live
-              // price is when betting closes, so preview it with the live price
-              <>
-                <div style={{ fontSize: 18, fontWeight: 700, color: C.text, opacity: 0.75, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
-                  {liveDisplayPrice != null ? `~${fmtNu(liveDisplayPrice)}` : "—"}
-                </div>
-              </>
+              // No reference exists while betting is open — it locks at bet close
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.sub, lineHeight: 1 }}>
+                —
+              </div>
             )}
           </div>
 
