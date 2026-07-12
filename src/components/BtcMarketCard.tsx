@@ -469,9 +469,10 @@ export const BtcMarketCard: FC<Props> = memo(
                 {fmtUsd(refPrice)}
               </div>
             ) : (
-              // No reference exists while betting is open — it locks at bet close
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.sub, lineHeight: 1 }}>
-                —
+              // Indicative while betting is open: the reference locks at
+              // whatever the live price is when betting closes
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.text, opacity: 0.75, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                {liveDisplayPrice != null ? `~${fmtUsd(liveDisplayPrice)}` : "—"}
               </div>
             )}
           </div>
