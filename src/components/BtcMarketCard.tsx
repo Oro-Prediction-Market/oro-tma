@@ -398,9 +398,6 @@ export const BtcMarketCard: FC<Props> = memo(
                 <div style={{ fontSize: 20, fontWeight: 700, color: C.text, opacity: 0.75, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
                   {liveDisplayPrice != null ? `~${fmtUsd(liveDisplayPrice)}` : "—"}
                 </div>
-                <div style={{ fontSize: 9, fontWeight: 600, color: C.sub, marginTop: 3 }}>
-                  locks in {countdown || "--"}
-                </div>
               </>
             )}
           </div>
