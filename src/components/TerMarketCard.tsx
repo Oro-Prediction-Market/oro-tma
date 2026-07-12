@@ -414,9 +414,16 @@ export const TerMarketCard: FC<Props> = memo(
                 {fmtNu(refPrice)}
               </div>
             ) : (
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.sub, lineHeight: "18px" }}>
-                Locks when prediction ends
-              </div>
+              // Indicative target: the reference locks at whatever the live
+              // price is when betting closes, so preview it with the live price
+              <>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.text, opacity: 0.75, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                  {liveDisplayPrice != null ? `~${fmtNu(liveDisplayPrice)}` : "—"}
+                </div>
+                <div style={{ fontSize: 9, fontWeight: 600, color: C.sub, marginTop: 3 }}>
+                  locks in {countdown || "--"}
+                </div>
+              </>
             )}
           </div>
 
