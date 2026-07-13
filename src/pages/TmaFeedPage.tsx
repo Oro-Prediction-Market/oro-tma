@@ -2217,7 +2217,8 @@ export const TmaFeedPage: FC = () => {
         )}
 
         {/* ── BoB Bhutan Premier League Banner Card ── */}
-        {!searchQuery.trim() && (
+        {/* Hidden for now — remove `false &&` to bring it back */}
+        {false && !searchQuery.trim() && (
           <div
             role="button"
             tabIndex={0}
