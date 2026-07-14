@@ -6,6 +6,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
 import { TerMarketCard } from "@/components/TerMarketCard";
+import { calcProb } from "./WorldCupHubPage";
 
 export const MarketsPage: FC = () => {
   const { user } = useAuth();
@@ -409,17 +410,9 @@ export const MarketsPage: FC = () => {
                         }}
                       >
                         {market.outcomes.map((outcome, idx) => {
-                          const n = market.outcomes.length || 1;
-                          const prior = 1000;
-                          const pct =
-                            outcome.lmsrProbability != null &&
-                            outcome.lmsrProbability > 0
-                              ? Math.round(outcome.lmsrProbability * 100)
-                              : Math.round(
-                                  ((Number(outcome.totalBetAmount) + prior / n) /
-                                    (totalPool + prior)) *
-                                    100,
-                                );
+                          const pct = Math.round(
+                            calcProb(market, outcome.id) * 100,
+                          );
                           const color = colors[idx % colors.length];
                           return (
                             <Link

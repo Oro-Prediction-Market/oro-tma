@@ -18,6 +18,7 @@ import {
 } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import { getMarket, placeBetWithWallet, Market } from "@shared/api/client";
+import { calcProb } from "./WorldCupHubPage";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 export const TONBetPage: FC = () => {
@@ -165,11 +166,16 @@ export const TONBetPage: FC = () => {
           {market.outcomes.map((outcome) => {
             const isSelected = selectedOutcomeId === outcome.id;
 
-            // Use LMSR probability if available, fallback to 50%
-            const lmsrProb = Number(outcome.lmsrProbability || 0);
-            const probability = lmsrProb > 0 ? lmsrProb : 1 / market.outcomes.length;
+            // calcProb: normalized LMSR when every outcome has one, else
+            // smoothed pool share (uniform prior before any bets)
+            const probability =
+              calcProb(market, outcome.id) || 1 / market.outcomes.length;
             const probabilityPercent = Math.round(probability * 100);
-            const decimalOdds = probability > 0 ? (1 / probability).toFixed(2) : "—";
+            // No fabricated multiplier before the first bet
+            const decimalOdds =
+              Number(market.totalPool) > 0 && probability > 0
+                ? `${(1 / probability).toFixed(2)}x`
+                : "—";
 
             return (
               <Cell
@@ -177,7 +183,7 @@ export const TONBetPage: FC = () => {
                 onClick={() =>
                   canBet && wallet && setSelectedOutcomeId(outcome.id)
                 }
-                subtitle={`${probabilityPercent}% · ${decimalOdds}x · Pool: ${outcome.totalBetAmount} TON`}
+                subtitle={`${probabilityPercent}% · ${decimalOdds} · Pool: ${outcome.totalBetAmount} TON`}
                 after={
                   canBet && wallet ? (
                     <input

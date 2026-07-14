@@ -52,8 +52,11 @@ function findOutcome(m: Market, label: "yes" | "no"): Outcome | undefined {
 /** Chance % of an outcome (LMSR prob, else Laplace-smoothed pool share). */
 function chanceOf(m: Market, o: Outcome | undefined): number {
   if (!o) return 50;
-  if (o.lmsrProbability != null && o.lmsrProbability > 0)
-    return o.lmsrProbability * 100;
+  const lmsr = (m.outcomes ?? []).map((x) => Number(x.lmsrProbability) || 0);
+  if (lmsr.length && lmsr.every((p) => p > 0)) {
+    const sum = lmsr.reduce((a, b) => a + b, 0);
+    return ((Number(o.lmsrProbability) || 0) / sum) * 100;
+  }
   const prior = 1000;
   const n = m.outcomes.length || 1;
   const totalPool = Number(m.totalPool);
@@ -61,15 +64,13 @@ function chanceOf(m: Market, o: Outcome | undefined): number {
   return (smoothedAmount / (totalPool + prior)) * 100;
 }
 
-function outcomeOdds(m: Market, o: Outcome, pct: number): number {
+
+function outcomeOdds(m: Market, o: Outcome): number | null {
   const totalPool = Number(m.totalPool);
   const outcomePool = Number(o.totalBetAmount) || 0;
   const edge = Number(m.houseEdgePct) || 0;
-  const odds =
-    totalPool > 0 && outcomePool > 0
-      ? (totalPool * (1 - edge / 100)) / outcomePool
-      : 100 / Math.max(pct, 1);
-  return Math.min(99, odds);
+  if (totalPool <= 0 || outcomePool <= 0) return null;
+  return Math.min(99, (totalPool * (1 - edge / 100)) / outcomePool);
 }
 
 interface GroupedMarketCardProps {
@@ -114,9 +115,9 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
       o: Outcome | undefined,
       label: string,
       color: string,
-      pct: number,
     ) => {
       const disabled = !o || o.isEliminated || m.status !== "open";
+      const odds = o ? outcomeOdds(m, o) : null;
       return (
         <button
           disabled={disabled}
@@ -167,7 +168,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           </span>
           {o && (
             <span style={{ fontSize: "0.55rem", fontWeight: 700, opacity: 0.8 }}>
-              {outcomeOdds(m, o, label === "Yes" ? pct : 100 - pct).toFixed(2)}x
+              {odds ? `${odds.toFixed(2)}x` : "—"}
             </span>
           )}
         </button>
@@ -373,8 +374,8 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                     </span>
                   </div>
 
-                  {betButton(m, yes, "Yes", YES_COLOR, pct)}
-                  {betButton(m, no, "No", NO_COLOR, pct)}
+                  {betButton(m, yes, "Yes", YES_COLOR)}
+                  {betButton(m, no, "No", NO_COLOR)}
                 </div>
               );
             })}

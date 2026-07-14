@@ -246,7 +246,7 @@ function WinnerMarketGroup({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                    {odds ? `${odds.toFixed(2)}x` : "—"}
                   </div>
                 </div>
                 {eliminated ? (
@@ -280,12 +280,21 @@ export function isWCMarket(m: Market): boolean {
 // ── Probability helpers ───────────────────────────────────────────────────────
 
 export function calcProb(market: Market, outcomeId: string): number {
-  const o = market.outcomes?.find((x) => x.id === outcomeId);
+  const outcomes = market.outcomes ?? [];
+  const o = outcomes.find((x) => x.id === outcomeId);
   if (!o) return 0;
-  const n = market.outcomes.length || 1;
+  const n = outcomes.length || 1;
   const prior = 1000;
-  const tPool = Number(market.totalPool);
-  if ((o.lmsrProbability ?? 0) > 0) return o.lmsrProbability!;
+  const tPool = Number(market.totalPool) || 0;
+  // Use LMSR probabilities only when EVERY outcome has one. With a lopsided
+  // pool the LMSR saturates (winner stored as 1.000000, loser as 0.000000),
+  // and mixing an LMSR value for one outcome with the pool-based fallback for
+  // another produces percentages that don't sum to 100.
+  const lmsr = outcomes.map((x) => Number(x.lmsrProbability) || 0);
+  if (lmsr.every((p) => p > 0)) {
+    const sum = lmsr.reduce((a, b) => a + b, 0);
+    return (Number(o.lmsrProbability) || 0) / sum;
+  }
   return (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
 }
 
@@ -380,7 +389,7 @@ function GroupMarketSection({
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                    {odds ? `${odds.toFixed(2)}x` : "—"}
                   </div>
                 </div>
                 {eliminated ? (
@@ -492,7 +501,7 @@ function PropMarketSection({
               <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#A78BFA" }}>{Math.round(prob * 100)}%</span>
                 <span style={{ fontSize: 12, fontWeight: 900, color: "#fbbf24" }}>
-                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                  {odds ? `${odds.toFixed(2)}x` : "—"}
                 </span>
               </span>
             </button>
@@ -586,7 +595,7 @@ function MatchMarketCard({
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                  {odds ? `${odds.toFixed(2)}x` : "—"}
                 </div>
             </button>
           );

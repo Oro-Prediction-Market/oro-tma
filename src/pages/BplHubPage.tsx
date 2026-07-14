@@ -214,7 +214,7 @@ function BplMatchCard({
               <div style={{ fontSize: 14, fontWeight: 900, color: ACCENT }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted, #888)", fontWeight: 600, marginTop: 2 }}>{shortClubName(outcome.label)}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                  {odds ? `${odds.toFixed(2)}x` : "—"}
                 </div>
             </button>
           );
@@ -299,7 +299,7 @@ function BplSeasonMarket({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {(odds ?? 1 / Math.max(prob, 0.01)).toFixed(2)}x
+                    {odds ? `${odds.toFixed(2)}x` : "—"}
                   </div>
                 </div>
                 {!locked && (

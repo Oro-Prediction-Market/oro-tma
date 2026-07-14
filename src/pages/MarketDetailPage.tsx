@@ -22,6 +22,7 @@ import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { calcProb } from "./WorldCupHubPage";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -1104,22 +1105,10 @@ export const MarketDetailPage: FC = () => {
             })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {m.outcomes.map((outcome, idx) => {
-                const totalBets = Number(m.totalPool);
-                // Priority:
-                // 1. lmsrProbability  — live WS-updated value (most accurate, naturally smoothed)
-                // 2. Laplace-smoothed pool ratio — avoids misleading 100%/0% at thin liquidity
-                // 3. equal weight     — fallback before any bets
-                const prior = 1000; // virtual BTN spread evenly across outcomes
-                const n = m.outcomes.length || 1;
-                const pct =
-                  outcome.lmsrProbability != null && outcome.lmsrProbability > 0
-                    ? outcome.lmsrProbability * 100
-                    : (() => {
-                        const smoothedAmount =
-                          Number(outcome.totalBetAmount) + prior / n;
-                        const smoothedTotal = totalBets + prior;
-                        return (smoothedAmount / smoothedTotal) * 100;
-                      })();
+                // calcProb uses LMSR only when every outcome has a value
+                // (mixed LMSR/pool sources don't sum to 100), else the
+                // Laplace-smoothed pool ratio.
+                const pct = calcProb(m, outcome.id) * 100;
 
                 // Intelligence delta: show expert vs crowd gap (only when hasBet & both values exist)
                 const rawPct =
@@ -1308,13 +1297,14 @@ export const MarketDetailPage: FC = () => {
                             }}
                           >
                             <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{(() => {
+                              const totalBets = Number(m.totalPool) || 0;
                               const outcomePool = Number(outcome.totalBetAmount) || 0;
                               const edge = Number(m.houseEdgePct) || 0;
-                              const odds = totalBets > 0 && outcomePool > 0
-                                ? (totalBets * (1 - edge / 100)) / outcomePool
-                                : 100 / Math.max(pct, 1);
-                              return Math.min(99, odds).toFixed(2);
-                            })()}x</span>
+                              // No fabricated multiplier before the first bet
+                              if (totalBets <= 0 || outcomePool <= 0) return "—";
+                              const odds = (totalBets * (1 - edge / 100)) / outcomePool;
+                              return `${Math.min(99, odds).toFixed(2)}x`;
+                            })()}</span>
                             <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
                           </div>
                           {eliminated ? (

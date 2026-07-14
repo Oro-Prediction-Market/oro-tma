@@ -484,13 +484,8 @@ const MarketCard = memo(function MarketCard({
 
   const sentiment = (() => {
     const n = market.outcomes.length || 1;
-    const prior = 1000;
     const raw = market.outcomes.map((o) => {
-      const pct =
-        o.lmsrProbability != null && o.lmsrProbability > 0
-          ? o.lmsrProbability * 100
-          : ((Number(o.totalBetAmount) + prior / n) / (totalPool + prior)) *
-            100;
+      const pct = calcProb(market, o.id) * 100;
       return { ...o, pct: isNaN(pct) ? 100 / n : pct };
     });
     const sorted = [...raw].sort((a, b) => b.pct - a.pct);
@@ -1919,12 +1914,8 @@ export const TmaFeedPage: FC = () => {
               {trendingMarkets.map((m) => {
                 if (!m.outcomes?.length) return null;
                 const n = m.outcomes.length || 1;
-                const prior = 1000;
-                const tPool = Number(m.totalPool);
                 const prob = (o: (typeof m.outcomes)[0]) =>
-                  o.lmsrProbability != null && o.lmsrProbability > 0
-                    ? o.lmsrProbability
-                    : (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
+                  calcProb(m, o.id);
                 const top = m.outcomes.reduce(
                   (a, b) => (prob(b) > prob(a) ? b : a),
                   m.outcomes[0],
