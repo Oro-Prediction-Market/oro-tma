@@ -4,84 +4,92 @@ import { ArrowLeft } from "lucide-react";
 
 const TERMS_SECTIONS = [
   {
-    heading: "1. Agreement and Acceptance",
-    body: "These Terms and Conditions (Terms) govern access to and use of Oro Prediction Market services, including the website, web application, Telegram Mini App, wallet features, prediction market participation, and related services (collectively, Platform). By creating an account, accessing, or using the Platform, you acknowledge and agree to be bound by these Terms and by any additional published policies that apply to specific features. If you do not agree, you must not use the Platform.",
+    heading: "Acceptance of Terms",
+    body: 'By creating an Account, clicking "I Agree," or otherwise accessing or using ORO, you confirm that you have read, understood, and agree to be bound by this Agreement in its entirety. If you do not agree to the Agreement, you must not create an Account or otherwise use ORO. If you are using ORO on behalf of an organization, you represent that you have authority to bind that organization, and "you" refers to both you individually and the organization.',
   },
   {
-    heading: "2. Eligibility and Regulatory Compliance",
-    body: "You represent and warrant that you have the Dk Bank account, have legal capacity to enter binding agreements, your use of the Platform is lawful in your jurisdiction, and all information provided to 21Tech is accurate, current, and complete. 21Tech may require identity and account verification at any time. Access may be refused, restricted, suspended, or terminated where legal, compliance, fraud, AML, sanctions, or risk concerns arise.",
+    heading: "1. Introduction",
+    body: 'ORO is a collective intelligence and consensus forecasting platform operated by 21 Tech Gelephu Pte. Limited ("ORO," "we," "us," or "the Company"), a company incorporated in Gelephu Mindfulness City Authority (GMCA) and operating under the regulatory framework of the GMCA. ORO enables users to express probabilistic views on future events through structured prediction markets, and aggregates those views into consensus forecasts intended to surface distributed human knowledge. These Terms of Use, together with the Privacy Policy, Community Standards, Prediction Market Rules, Responsible Participation Policy, and any other policy referenced herein (collectively, the "Policies"), form a single binding agreement (the "Agreement") between ORO and each person who accesses or uses ORO (a "User" or "you").',
   },
   {
-    heading: "3. Jurisdiction and Applicable Law",
-    body: "These Terms are governed by the laws of the Kingdom of Bhutan. The Platform is intended for use in compliance with Bhutan law and all applicable financial, consumer, tax, AML/CFT, and digital services requirements. Users remain responsible for complying with any local laws applicable to them.",
+    heading: "2. Definitions",
+    body: 'Account: the registered ORO profile through which a User accesses the Platform. Market: a structured question on ORO with defined possible Outcomes on which Users may take positions. Outcome: a possible resolution value of a Market, as defined in the Market\'s published rules. Wallet: the in-Platform ledger reflecting a User\'s balance of BTN and/or supported Digital Assets. BTN: the initial native unit of value supported for transactions on ORO. Digital Assets: BTN, stablecoins, or other blockchain-based assets ORO supports from time to time. Platform: the ORO website, mobile applications, APIs, and related services. GMCA: the Gelephu Mindfulness City Authority, the regulatory authority under which ORO operates. Collective Intelligence: the aggregation of individual User predictions into consensus forecasts. Prediction Market: a Market structured so that prices or aggregated positions reflect the collective probability Users assign to an Outcome.',
   },
   {
-    heading: "4. Account Registration, Security, and Identity Integrity",
-    body: "You are responsible for all activities under your account. You must protect credentials and authentication devices, not share account access with others, and immediately report suspected unauthorized access. You must not create multiple accounts to circumvent restrictions, limits, promotions, or responsible gaming controls. 21Tech may apply risk controls including device checks, behavior monitoring, step-up verification, account holds, and transaction review.",
+    heading: "3. Eligibility",
+    body: "You must be at least 18 years old, or the age of legal majority in your jurisdiction if higher, to create an Account. You must have the legal capacity to enter into a binding agreement, and your use of ORO must be lawful under the laws applicable to you, including any laws governing prediction markets, gambling, or derivatives trading in your jurisdiction. You must not be a resident of, or accessing ORO from, any jurisdiction where prediction markets of the type ORO offers are prohibited, nor be subject to sanctions administered by the United Nations, GMCA, or any other authority applicable to ORO. ORO may restrict, suspend, or deny access to any person or jurisdiction at its discretion, including to comply with legal or regulatory requirements, and may request evidence of eligibility at any time.",
   },
   {
-    heading: "5. Wallet and Payments",
-    body: "The Platform provides an internal wallet for predictions, winnings, and supported balance operations. Wallet balances are not bank deposits and do not earn interest unless expressly stated. Top ups and cash outs are processed through supported partners including DK Bank integrations where available, subject to provider availability, security and compliance checks, additional user verification, and legal and regulatory review.",
+    heading: "4. Account Registration & Identity Verification (KYC)",
+    body: 'You agree to provide accurate, current, and complete information during registration and to keep it up to date. ORO may require identity verification ("KYC"), source-of-funds information, and ongoing due diligence, consistent with our AML/CFT & KYC Policy, before permitting deposits, withdrawals, or participation in certain Markets. You are solely responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your Account — notify ORO immediately of any unauthorized use. One natural person or legal entity may hold only one Account, except where ORO expressly authorizes otherwise.',
   },
   {
-    heading: "6. Market Participation and Outcomes",
-    body: "Market rules are displayed in-app and may include entry fees, participation windows, resolution criteria, and payout structures. By placing a prediction, you accept that specific market's published rules at entry time. Entries submitted after closure, invalid entries, or entries violating policy may be rejected. Where a market is cancelled or cannot proceed, 21Tech may apply the market's published treatment (including refund where applicable). Oro operates a parimutuel pool model, so the odds multiplier shown next to each outcome is dynamic, not fixed. It reflects how the pool is currently divided: the more participants agree with you and back the same outcome, the larger that outcome's share of the pool becomes, the lower its multiplier falls, and the smaller your potential payout. Backing an outcome that fewer others agree with carries a higher multiplier and a larger potential payout. Because the pool keeps changing until the market closes, the multiplier displayed when you place a prediction is only an estimate — your actual payout is determined by the final pool composition at resolution, less the applicable platform fee. Oro does not guarantee any specific return.",
+    heading: "5. Platform Services",
+    body: 'ORO provides access to prediction markets, consensus forecasting tools, research insights, and related features (the "Services"). ORO may add, modify, suspend, or discontinue any Service, in whole or in part, at any time, with notice where reasonably practicable. Availability of specific Markets, assets, or features may vary by jurisdiction based on applicable law.',
   },
   {
-    heading: "7. Market Resolution and Dispute Windows",
-    body: "Oro uses transparent resolution mechanisms including external data sources (e.g., api.ter.bt for exchange rates) and community dispute windows. In the event of discrepancy between client display and authoritative backend records, authoritative backend records prevail, subject to legal review and audit correction procedures.",
+    heading: "6. Prediction Markets — How They Work",
+    body: "Each Market specifies its question, possible Outcomes, resolution source(s), and resolution timeline at the time the Market is created, in accordance with the Prediction Market Rules. By taking a position in a Market, you accept that Market's specific rules as binding, in addition to this Agreement. Prices or odds within a Market reflect the aggregated positions of participating Users and are not guarantees, forecasts, or advice from ORO. ORO may set position limits, margin requirements, or other risk controls on any Market at its discretion.",
   },
   {
-    heading: "8. Fees, Taxes, and Withholding",
-    body: "Applicable fees, charges, and limits are displayed in-app and may be updated with notice consistent with law. Tax treatment may depend on winnings amount, user profile, and applicable law. 21Tech may withhold tax amounts where required by Bhutan law, report taxable payouts where legally required, and request tax-relevant information from users before payout.",
+    heading: "7. Market Integrity & Prohibited Conduct",
+    body: 'Users must not engage in, attempt, or facilitate: (a) market manipulation, including wash trading or coordinated positioning intended to distort a Market\'s price; (b) collusion between accounts; (c) use of material non-public information to gain an unfair advantage ("insider abuse"); (d) operation of undisclosed multiple accounts; (e) unauthorized automated trading, scraping, or bot activity; (f) fraud, identity misrepresentation, or circumvention of KYC controls; or (g) any activity unlawful in the applicable jurisdiction. ORO may investigate suspected violations, freeze affected positions or Wallet balances pending investigation, void or reprice affected Market positions, and suspend or terminate Accounts. ORO\'s determination of a violation, made reasonably and in accordance with its published policies, is final for purposes of internal Platform enforcement, without prejudice to a User\'s rights under Dispute Resolution.',
   },
   {
-    heading: "9. Responsible Gaming and Player Protection",
-    body: "21Tech may enforce spending limits, entry-frequency controls, cooling-off periods, temporary or permanent self-exclusion, and mandatory compliance interventions. Platform-level protection controls prevail over user-selected settings where conflict exists.",
+    heading: "8. Market Resolution & Settlement",
+    body: "Markets resolve according to the resolution source(s) and methodology disclosed at Market creation, as further detailed in the Prediction Market Rules. Where a Market's resolution source is ambiguous, unavailable, or disputed, ORO will apply the Invalid Market and Appeals procedures. Settlement of Wallet balances following resolution will occur within the timeframe published for the relevant Market, subject to applicable KYC and withdrawal controls.",
   },
   {
-    heading: "10. Prohibited Conduct",
-    body: "You must not provide false identity or payment information, commit or attempt fraud, collusion, abuse, or manipulation, use bots, scripts, reverse engineering, or unauthorized automation, interfere with security or platform stability, or use the Platform for money laundering, terrorist financing, sanctions evasion, or unlawful activity. Violation may result in immediate restriction, suspension, termination, fund hold, cancellation of benefits, and reporting to competent authorities.",
+    heading: "9. Fees & Wallets",
+    body: "ORO may charge fees for Market creation, trading, withdrawals, or other Services. Current fees are published on the Platform and may change with reasonable prior notice. ORO initially supports BTN as its native transactional unit; support for additional Digital Assets or stablecoins will be governed by the Digital Asset Policy and does not require amendment of these Terms to take effect. Users are responsible for any taxes arising from their use of ORO.",
   },
   {
-    heading: "11. Promotions, Bonuses, and Campaign Terms",
-    body: "Promotional offers may be subject to separate campaign terms. 21Tech may revoke or recover promotional credits or winnings obtained through abuse, duplicate accounts, prohibited conduct, or error.",
+    heading: "10. Responsible Participation",
+    body: "ORO provides voluntary tools including spending limits, cooling-off periods, and self-exclusion, as described in the Responsible Participation Policy. Users are encouraged to participate only with funds they can afford to risk and to treat Market participation as inherently uncertain. Users who believe they may be experiencing harm from their participation are encouraged to use self-exclusion tools and seek independent support; ORO's provision of these tools does not constitute medical or professional advice.",
   },
   {
-    heading: "12. Suspension, Restriction, Termination, and Dormancy",
-    body: "21Tech may suspend, restrict, or terminate any account at its discretion where required for legal compliance, security, fraud prevention, operational integrity, or material Terms breach. Dormant accounts may be subject to maintenance actions as disclosed in policy and permitted by law.",
+    heading: "11. Risk Disclosure",
+    body: "Participation in prediction markets involves risk of total loss of funds committed to a position. Past accuracy of consensus forecasts on ORO does not guarantee future accuracy. ORO does not provide investment, financial, legal, or tax advice — nothing on the Platform, including aggregated forecasts or AI-generated insights, should be treated as a recommendation to take any action. Digital Assets are volatile and subject to risks including price fluctuation, regulatory change, and technical failure; ORO is not responsible for losses arising from these risks.",
+  },
+  {
+    heading: "12. AI & Collective Intelligence",
+    body: "ORO may use artificial intelligence and machine learning tools to support market integrity monitoring, research, analytics, and consensus-forecast generation. AI-generated outputs are provided for informational purposes only and do not replace independent human judgment; ORO does not warrant the accuracy of AI-generated content. ORO applies bias-mitigation and human-oversight measures to AI systems materially affecting Users.",
   },
   {
     heading: "13. Intellectual Property",
-    body: "All Platform software, branding, interfaces, content, and marks are owned by or licensed to 21Tech and protected by applicable law. No rights are granted other than a limited, revocable, non-transferable license for lawful personal use.",
+    body: "All software, algorithms, interfaces, trademarks, and content comprising the Platform are owned by ORO or its licensors and protected by applicable intellectual property laws. ORO grants Users a limited, non-exclusive, non-transferable, revocable license to access and use the Platform for its intended purpose, subject to this Agreement. Users retain ownership of content they submit to the Platform (e.g., Market proposals, comments) but grant ORO a worldwide, royalty-free license to use, display, and process that content in connection with operating the Platform.",
   },
   {
-    heading: "14. Data Use and Privacy",
-    body: "Personal data is processed according to the Oro Privacy Policy, which forms part of these Terms.",
+    heading: "14. Privacy",
+    body: "ORO processes personal information in accordance with the Privacy Policy, which forms part of this Agreement. Aggregated and anonymized platform data may be used for research, academic collaboration, and AI model improvement, in accordance with the Research & Data Governance Policy and applicable data protection law.",
   },
   {
-    heading: "15. Service Availability and Force Majeure",
-    body: "21Tech may modify, suspend, or discontinue services at any time for maintenance, security, legal compliance, or business reasons. 21Tech is not liable for delay or failure caused by events beyond reasonable control.",
+    heading: "15. Suspension & Termination",
+    body: "ORO may suspend or terminate an Account, with or without notice, where a User breaches this Agreement, engages in Prohibited Conduct, or where required by law or GMCA directive. Users may close their Account at any time, subject to settlement of open Market positions and any outstanding obligations. Sections of this Agreement that by their nature should survive termination — including Intellectual Property, Disclaimers, Limitation of Liability, and Governing Law — will survive.",
   },
   {
     heading: "16. Disclaimers",
-    body: 'To the maximum extent permitted by law, Platform services are provided on an "as available" and "as is" basis. No guarantee is made of uninterrupted service, error-free operation, or guaranteed winnings. No advice provided through the Platform constitutes legal, financial, or tax advice.',
+    body: 'THE PLATFORM AND SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT, EXCEPT AS REQUIRED BY LAW. ORO does not guarantee that the Platform will be uninterrupted, secure, or error-free, or that any Market will resolve in a particular manner. ORO does not guarantee the accuracy, completeness, or timeliness of third-party data sources used for Market resolution.',
   },
   {
-    heading: "17. Limitation of Liability",
-    body: "To the fullest extent permitted by Bhutan law, 21Tech and affiliated parties are not liable for indirect, incidental, consequential, exemplary, or punitive damages. For direct damages, aggregate liability is limited to the total net fees paid by the user to 21Tech in the 12 months preceding the event giving rise to claim.",
+    heading: "17. Limitation of Liability & Indemnification",
+    body: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, ORO WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, DATA, OR GOODWILL, ARISING FROM YOUR USE OF THE PLATFORM. ORO's aggregate liability arising from this Agreement will not exceed the greater of (a) the fees you paid to ORO in the twelve (12) months preceding the claim, or (b) the GMCA-equivalent minimum amount specified by applicable law, except where such limitation is unenforceable under mandatory law. You agree to indemnify and hold ORO harmless from claims, losses, or expenses (including reasonable legal fees) arising from your breach of this Agreement, your violation of law, or your Market participation.",
   },
   {
-    heading: "18. Dispute Resolution",
-    body: "When a market is resolved, a dispute window (default 60 minutes) opens during which any participant with an active position may raise an objection. Raising an objection requires a fixed Nu 10 bond. If the admin agrees with the objection and overturns the resolution, the bond is returned plus a reward share. If the admin upholds their original decision, the bond is forfeited. After the dispute window closes with no successful objections, the resolution is finalized and payouts are distributed. For general platform complaints, contact oro@21.tech.bt with full facts and supporting records.",
+    heading: "18. Governing Law & Dispute Resolution",
+    body: "This Agreement is governed by the laws and regulations applicable within the Gelephu Mindfulness City Authority, without regard to conflict-of-law principles, subject to any mandatory consumer-protection laws of your jurisdiction that cannot be contractually waived. Before initiating formal proceedings, the parties agree to attempt a good-faith resolution through ORO's internal support and appeals process for a period of 30 days. Unresolved disputes will be submitted to the dispute resolution mechanism designated under GMCA regulations, seated in Gelephu, Bhutan, conducted in English. Nothing in this section limits either party's right to seek injunctive relief in a court of competent jurisdiction for misuse of intellectual property or unauthorized access to the Platform.",
   },
   {
     heading: "19. Amendments",
-    body: "21Tech may amend these Terms at any time. Updated Terms become effective on publication. Continued use after effective date constitutes acceptance.",
+    body: "ORO may amend this Agreement from time to time. Material changes will be notified via the Platform or email at least 14 days before taking effect, except where a shorter period is required by law or regulatory directive. Continued use of the Platform after an amendment takes effect constitutes acceptance of the revised Agreement. If you do not agree, you must stop using the Platform and may close your Account.",
   },
   {
-    heading: "20. Severability and Entire Agreement",
-    body: "If any provision is held invalid or unenforceable, remaining provisions remain in full force. These Terms, together with incorporated policies, form the entire agreement between you and 21Tech regarding Platform use.",
+    heading: "20. General Provisions",
+    body: "Severability: if any provision of this Agreement is found unenforceable, the remaining provisions remain in full force. Assignment: Users may not assign or transfer their Account or rights under this Agreement without ORO's prior written consent; ORO may assign this Agreement in connection with a merger, acquisition, or sale of assets. Entire Agreement: this Agreement, together with the Policies it incorporates, constitutes the entire agreement between the parties regarding use of the Platform. No Waiver: ORO's failure to enforce any provision is not a waiver of its right to do so later. Force Majeure: ORO is not liable for delays or failures caused by events beyond its reasonable control.",
+  },
+  {
+    heading: "21. Contact",
+    body: "Legal notices: oro@21.tech.bt | General support: support@21.tech.bt | Registered address: 21 Tech Gelephu Pte. Limited.",
   },
 ];
 
@@ -204,7 +212,7 @@ export const TermsPage = ({ onBack }: { onBack?: () => void }) => {
             marginTop: 4,
           }}
         >
-          Last updated May 2026
+          Version 2.0 · Last updated July 2026
         </p>
 
         {/* Tab switcher */}
