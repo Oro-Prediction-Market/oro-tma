@@ -65,12 +65,16 @@ function chanceOf(m: Market, o: Outcome | undefined): number {
 }
 
 
-function outcomeOdds(m: Market, o: Outcome): number | null {
-  const totalPool = Number(m.totalPool);
+
+function outcomeOdds(m: Market, o: Outcome, stake = 100): number | null {
+  const totalPool = Number(m.totalPool) || 0;
   const outcomePool = Number(o.totalBetAmount) || 0;
   const edge = Number(m.houseEdgePct) || 0;
-  if (totalPool <= 0 || outcomePool <= 0) return null;
-  return Math.min(99, (totalPool * (1 - edge / 100)) / outcomePool);
+  if (totalPool <= 0) return null;
+  return Math.min(
+    99,
+    ((totalPool + stake) * (1 - edge / 100)) / (outcomePool + stake),
+  );
 }
 
 interface GroupedMarketCardProps {

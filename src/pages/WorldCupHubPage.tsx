@@ -298,15 +298,18 @@ export function calcProb(market: Market, outcomeId: string): number {
   return (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
 }
 
-// Parimutuel payout multiplier — same math as the bet modal's estimated payout
-export function calcOdds(market: Market, outcomeId: string): number | null {
+export function calcOdds(
+  market: Market,
+  outcomeId: string,
+  stake = 100,
+): number | null {
   const o = market.outcomes?.find((x) => x.id === outcomeId);
   if (!o) return null;
   const totalPool = Number(market.totalPool) || 0;
   const outcomePool = Number(o.totalBetAmount) || 0;
   const houseEdge = Number(market.houseEdgePct) || 0;
-  if (totalPool <= 0 || outcomePool <= 0) return null;
-  return (totalPool * (1 - houseEdge / 100)) / outcomePool;
+  if (totalPool <= 0) return null;
+  return ((totalPool + stake) * (1 - houseEdge / 100)) / (outcomePool + stake);
 }
 
 

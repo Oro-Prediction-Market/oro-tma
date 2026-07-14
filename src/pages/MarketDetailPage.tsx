@@ -22,7 +22,7 @@ import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { calcProb } from "./WorldCupHubPage";
+import { calcProb, calcOdds } from "./WorldCupHubPage";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -1297,13 +1297,8 @@ export const MarketDetailPage: FC = () => {
                             }}
                           >
                             <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{(() => {
-                              const totalBets = Number(m.totalPool) || 0;
-                              const outcomePool = Number(outcome.totalBetAmount) || 0;
-                              const edge = Number(m.houseEdgePct) || 0;
-                              // No fabricated multiplier before the first bet
-                              if (totalBets <= 0 || outcomePool <= 0) return "—";
-                              const odds = (totalBets * (1 - edge / 100)) / outcomePool;
-                              return `${Math.min(99, odds).toFixed(2)}x`;
+                              const odds = calcOdds(m, outcome.id);
+                              return odds ? `${Math.min(99, odds).toFixed(2)}x` : "—";
                             })()}</span>
                             <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
                           </div>
