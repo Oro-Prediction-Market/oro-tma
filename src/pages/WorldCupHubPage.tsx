@@ -99,6 +99,53 @@ export function parseMatchTeams(title: string): { team1: string; team2: string }
   return { team1: "Team A", team2: "Team B" };
 }
 
+// Pull "X vs Y" out of a string where the teams may sit mid-sentence
+// ("Total goals scored in France vs Spain"). Team names are the capitalized
+// word run touching "vs" on each side, so leading filler ("Score prediction
+// for…") and trailing filler ("… match go to extra time?") fall away.
+function extractVsTeams(text: string): { team1: string; team2: string } | null {
+  const parts = text.split(/\s+vs\.?\s+/i);
+  if (parts.length < 2) return null;
+  const capWord = /^[A-ZÀ-Þ][\wÀ-ÿ'’.-]*$/;
+  const strip = (raw: string) => raw.replace(/[^\wÀ-ÿ'’.\s-]/g, "");
+  const leftWords = parts[0].trim().split(/\s+/);
+  const t1: string[] = [];
+  for (let i = leftWords.length - 1; i >= 0 && t1.length < 3; i--) {
+    const w = strip(leftWords[i]);
+    if (capWord.test(w)) t1.unshift(w);
+    else break;
+  }
+  const rightWords = parts[1].trim().split(/\s+/);
+  const t2: string[] = [];
+  for (const raw of rightWords) {
+    const w = strip(raw);
+    if (!capWord.test(w) || t2.length >= 3) break;
+    t2.push(w);
+    if (/[:?.,!]$/.test(raw)) break; // punctuation ends the team name
+  }
+  if (!t1.length || !t2.length) return null;
+  return { team1: t1.join(" "), team2: t2.join(" ") };
+}
+
+// Which fixture a prop market belongs to. Admin-set metadata.matchLabel wins;
+// otherwise best-effort parse of the title. The key is order-insensitive so
+// "Spain vs France" and "France vs Spain" land in the same bucket.
+export function propMatchInfo(
+  m: Market,
+): { key: string; team1: string; team2: string } | null {
+  const metaLabel = (m.metadata?.matchLabel as string | undefined)?.trim();
+  const teams = extractVsTeams(metaLabel || m.title);
+  if (teams) {
+    const key = [teams.team1.toLowerCase(), teams.team2.toLowerCase()]
+      .sort()
+      .join(" vs ");
+    return { key, ...teams };
+  }
+  // A matchLabel without "vs" still groups its props together verbatim
+  if (metaLabel) return { key: metaLabel.toLowerCase(), team1: metaLabel, team2: "" };
+  return null;
+}
+
 function useClosesAt(closesAt: string | null | undefined): string {
   const [label, setLabel] = React.useState("");
   React.useEffect(() => {
@@ -670,6 +717,26 @@ export function WorldCupHubPage() {
   Object.values(byGroup).forEach((arr) => arr.sort(wcStatsOrder));
   const propMarkets = [...groupPropMarkets, ...playerMarkets].sort(wcStatsOrder);
 
+  // Bucket props by fixture so all "France vs Spain" props render under one
+  // match header. Props with no detectable match keep the old flat layout.
+  const propGroups: {
+    key: string;
+    team1: string;
+    team2: string;
+    markets: Market[];
+  }[] = [];
+  const looseProps: Market[] = [];
+  propMarkets.forEach((m) => {
+    const info = propMatchInfo(m);
+    if (!info) {
+      looseProps.push(m);
+      return;
+    }
+    const g = propGroups.find((x) => x.key === info.key);
+    if (g) g.markets.push(m);
+    else propGroups.push({ ...info, markets: [m] });
+  });
+
   // ── Pool & volume stats (header) ──────────────────────────────────
   // Aggregate across every WC market regardless of status so the figures
   // reflect total tournament volume, not just what's currently bettable.
@@ -975,14 +1042,44 @@ export function WorldCupHubPage() {
                 >
                   Player &amp; Team Props
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  {propMarkets.map((market) => (
-                    <PropMarketSection
-                      key={market.id}
-                      market={market}
-                      onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
-                    />
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {propGroups.map(({ key, team1, team2, markets: gMarkets }, gi) => (
+                    <div key={key} style={gi > 0 ? { borderTop: "1px solid rgba(167,139,250,0.18)", paddingTop: 20 } : undefined}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, rgba(167,139,250,0.35))" }} />
+                        {getWCFlag(team1) && (
+                          <img src={getWCFlag(team1)} alt={team1} style={{ width: 20, height: 20, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                        )}
+                        <span style={{ fontSize: 12, fontWeight: 900, color: "#A78BFA", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
+                          {team2 ? `${team1} vs ${team2}` : team1}
+                        </span>
+                        {team2 && getWCFlag(team2) && (
+                          <img src={getWCFlag(team2)} alt={team2} style={{ width: 20, height: 20, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                        )}
+                        <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, rgba(167,139,250,0.35))" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 18, paddingLeft: 10, borderLeft: "2px solid rgba(167,139,250,0.18)" }}>
+                        {gMarkets.map((market) => (
+                          <PropMarketSection
+                            key={market.id}
+                            market={market}
+                            onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
+                  {looseProps.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 18, ...(propGroups.length > 0 ? { borderTop: "1px solid rgba(167,139,250,0.18)", paddingTop: 20 } : {}) }}>
+                      {looseProps.map((market) => (
+                        <PropMarketSection
+                          key={market.id}
+                          market={market}
+                          onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               )}
