@@ -2473,11 +2473,10 @@ export const TmaFeedPage: FC = () => {
                 <div
                   style={{
                     display: "flex",
-                    animation: `wcMarquee ${Math.max(12, ufcItems.length * 2)}s linear infinite`,
                     width: "max-content",
                   }}
                 >
-                  {[...ufcItems, ...ufcItems].map((item, i) => (
+                  {ufcItems.map((item, i) => (
                     <div
                       key={i}
                       title={item.label}
