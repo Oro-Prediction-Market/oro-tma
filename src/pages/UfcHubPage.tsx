@@ -253,7 +253,7 @@ function UfcFightCard({
       
       {/* Background fighters */}
       {getUfcAvatar(market, 0) && (
-         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 1, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }} />
+         <div style={{ position: "absolute", top: 34, left: "-8%", width: "62%", height: "52%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 1, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }} />
       )}
       {getUfcAvatar(market, 1) && (
          <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 1, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }} />
