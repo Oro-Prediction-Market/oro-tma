@@ -232,10 +232,10 @@ function UfcFightCard({
       
       {/* Background fighters */}
       {getUfcAvatar(market, 0) && (
-         <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "65%", height: "75%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "68%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
       )}
       {getUfcAvatar(market, 1) && (
-         <div style={{ position: "absolute", top: "-10%", right: "-10%", width: "65%", height: "75%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "68%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
       )}
       
       {/* Gradient overlay to make text readable */}
@@ -270,7 +270,7 @@ function UfcFightCard({
       </div>
 
       {/* Main Content */}
-      <div style={{ position: "relative", zIndex: 10, paddingTop: 110, paddingLeft: 14, paddingRight: 14, paddingBottom: 14 }}>
+      <div style={{ position: "relative", zIndex: 10, paddingTop: 84, paddingLeft: 14, paddingRight: 14, paddingBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 8 }}>
            {renderSide(fa, 0, RED, RED_DIM, pctA)}
 
