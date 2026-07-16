@@ -175,7 +175,7 @@ function UfcFightCard({
         </div>
 
         {/* Fighter Name */}
-        <div style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", color: "#fff", textTransform: "uppercase", letterSpacing: "-0.5px", textShadow: "0 2px 8px rgba(0,0,0,0.8)", textAlign: left ? "left" : "right", width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: left ? 0 : 12 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, fontStyle: "italic", color: "#fff", textTransform: "uppercase", letterSpacing: "-0.5px", textShadow: "0 2px 8px rgba(0,0,0,0.8)", textAlign: left ? "left" : "right", width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: left ? 0 : 12 }}>
           {name}
         </div>
 
@@ -186,7 +186,7 @@ function UfcFightCard({
 
         {/* Win % */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 3 }}>
-          <span style={{ fontSize: 28, fontWeight: 900, color: color, textShadow: "0 2px 8px rgba(0,0,0,0.6)", lineHeight: 1 }}>{pct}%</span>
+          <span style={{ fontSize: 24, fontWeight: 900, color: color, textShadow: "0 2px 8px rgba(0,0,0,0.6)", lineHeight: 1 }}>{pct}%</span>
           <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>win</span>
         </div>
 
@@ -232,10 +232,10 @@ function UfcFightCard({
       
       {/* Background fighters */}
       {getUfcAvatar(market, 0) && (
-         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "68%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
       )}
       {getUfcAvatar(market, 1) && (
-         <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "68%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
       )}
       
       {/* Gradient overlay to make text readable */}
@@ -270,7 +270,7 @@ function UfcFightCard({
       </div>
 
       {/* Main Content */}
-      <div style={{ position: "relative", zIndex: 10, paddingTop: 84, paddingLeft: 14, paddingRight: 14, paddingBottom: 12 }}>
+      <div style={{ position: "relative", zIndex: 10, paddingTop: 64, paddingLeft: 12, paddingRight: 12, paddingBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 8 }}>
            {renderSide(fa, 0, RED, RED_DIM, pctA)}
 
@@ -280,14 +280,14 @@ function UfcFightCard({
                  {/* Slanted red glow */}
                  <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%) rotate(15deg)", width: 3, height: 44, background: "rgba(255,50,50,0.8)", boxShadow: "0 0 16px 6px rgba(255,0,0,0.6)" }} />
                  {/* VS text */}
-                 <span style={{ position: "relative", display: "inline-block", padding: "6px", lineHeight: 1.2, fontSize: 28, fontWeight: 900, transform: "skewX(-15deg)", background: "linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-1px", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>
+                 <span style={{ position: "relative", display: "inline-block", padding: "5px", lineHeight: 1.2, fontSize: 24, fontWeight: 900, transform: "skewX(-15deg)", background: "linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-1px", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>
                    VS
                  </span>
               </div>
 
               {/* Octagon + Fist */}
-              <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                 <svg width="40" height="40" viewBox="0 0 100 100">
+              <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                 <svg width="34" height="34" viewBox="0 0 100 100">
                    {/* Octagon outline, flat corners like the UFC cage */}
                    <polygon points="31,6 69,6 94,31 94,69 69,94 31,94 6,69 6,31" fill="rgba(0,0,0,0.55)" stroke="#ffffff" strokeWidth="4.5" strokeLinejoin="miter" />
                    {/* Oncoming fist 👊 — Twemoji artwork (CC-BY 4.0) as monochrome vector */}
