@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMarkets, type Market } from "@shared/api/client";
 import { Clock, CalendarDays } from "lucide-react";
@@ -7,6 +7,7 @@ import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { isWCMarket, calcProb, calcOdds } from "./WorldCupHubPage";
 import { isDrawOutcome } from "./BplHubPage";
+import { useMarketSocket } from "@/hooks/useMarketSocket";
 
 // ── Helpers (mirrored from PWA — keep in sync) ────────────────────────────────
 
@@ -145,10 +146,30 @@ function UfcFightCard({
   const resolving = market.status === "resolving";
   const locked = resolving || market.status === "closed";
   const settleEta = useClosesAt(resolving ? market.disputeDeadlineAt : null);
-  const totalPool = Number(market.totalPool ?? 0) ||
-    (market.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
 
-  const fighters = (market.outcomes ?? []).filter((o) => !isDrawOutcome(o.label ?? ""));
+  const liveData = useMarketSocket(locked ? undefined : market.id);
+  const m = useMemo<Market>(() => {
+    if (!liveData) return market;
+    return {
+      ...market,
+      totalPool: String(liveData.totalPool),
+      outcomes: (market.outcomes ?? []).map((o) => {
+        const live = liveData.outcomes.find((lo) => lo.id === o.id);
+        if (!live) return o;
+        return {
+          ...o,
+          totalBetAmount: String(live.totalBetAmount),
+          lmsrProbability: live.lmsrProbability ?? o.lmsrProbability,
+          currentOdds: String(live.currentOdds),
+        } as typeof o;
+      }),
+    };
+  }, [market, liveData]);
+
+  const totalPool = Number(m.totalPool ?? 0) ||
+    (m.outcomes ?? []).reduce((s, o) => s + Number(o.totalBetAmount ?? 0), 0);
+
+  const fighters = (m.outcomes ?? []).filter((o) => !isDrawOutcome(o.label ?? ""));
   const [fa, fb] = fighters;
   if (!fa || !fb) return null;
 
@@ -158,7 +179,7 @@ function UfcFightCard({
       ? (idx === 0 ? titleNames.fighter1 : titleNames.fighter2)
       : label;
 
-  const pctA = Math.round(calcProb(market, fa.id) * 100);
+  const pctA = Math.round(calcProb(m, fa.id) * 100);
   const pctB = 100 - pctA;
 
   const eventLabel = (market.title.match(/^\s*UFC\s+([^:–—-]{1,14})\s*[:–—-]/i)?.[1] ?? "FIGHT NIGHT").toUpperCase();
@@ -474,7 +495,7 @@ export function UfcHubPage() {
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [timeFilter, setTimeFilter] = useState<"all" | "today" | "tomorrow">("all");
 
-  useEffect(() => {
+  const loadMarkets = () =>
     getMarkets()
       .then((d) =>
         setMarkets(
@@ -489,6 +510,16 @@ export function UfcHubPage() {
       )
       .catch(console.error)
       .finally(() => setLoading(false));
+
+  useEffect(() => {
+    loadMarkets();
+    // Live pool/percentage updates: the app-root SSE stream rebroadcasts
+    // backend "market:updated" pushes as this window event
+    const onMarketChanged = () => loadMarkets();
+    window.addEventListener("oro:market-changed", onMarketChanged);
+    return () =>
+      window.removeEventListener("oro:market-changed", onMarketChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ufcMarkets = markets.filter(isUfcMarket);
@@ -676,7 +707,7 @@ export function UfcHubPage() {
             onClose={() => setActiveBet(null)}
             market={activeMarket}
             outcomeId={activeBet.outcomeId}
-            onSuccess={() => setActiveBet(null)}
+            onSuccess={() => { setActiveBet(null); loadMarkets(); }}
             onFailure={(e: string) => console.error(e)}
             onGoToWallet={() => navigate("/wallet")}
           />
