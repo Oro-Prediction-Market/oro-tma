@@ -170,34 +170,34 @@ function UfcFightCard({
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: left ? "flex-start" : "flex-end", zIndex: 10, minWidth: 0 }}>
         {/* Letter Box */}
-        <div style={{ width: 24, height: 24, borderRadius: 4, background: color, color: "#fff", fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6, boxShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
+        <div style={{ width: 20, height: 20, borderRadius: 4, background: color, color: "#fff", fontSize: 13, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 5, boxShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>
           {name.trim().charAt(0).toUpperCase()}
         </div>
-        
+
         {/* Fighter Name */}
-        <div style={{ fontSize: 22, fontWeight: 900, fontStyle: "italic", color: "#fff", textTransform: "uppercase", letterSpacing: "-0.5px", textShadow: "0 2px 8px rgba(0,0,0,0.8)", textAlign: left ? "left" : "right", width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: left ? 0 : 12 }}>
+        <div style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", color: "#fff", textTransform: "uppercase", letterSpacing: "-0.5px", textShadow: "0 2px 8px rgba(0,0,0,0.8)", textAlign: left ? "left" : "right", width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingRight: left ? 0 : 12 }}>
           {name}
         </div>
-        
+
         {/* Pool */}
-        <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginTop: 2, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginTop: 2, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
           <span style={{ color: GOLD, fontWeight: 800 }}>Nu</span> {Number(outcome.totalBetAmount ?? 0).toLocaleString()} pool
         </div>
-        
+
         {/* Win % */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-          <span style={{ fontSize: 36, fontWeight: 900, color: color, textShadow: "0 2px 8px rgba(0,0,0,0.6)", lineHeight: 1 }}>{pct}%</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>win</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 3 }}>
+          <span style={{ fontSize: 28, fontWeight: 900, color: color, textShadow: "0 2px 8px rgba(0,0,0,0.6)", lineHeight: 1 }}>{pct}%</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>win</span>
         </div>
-        
+
         {/* Predict Button */}
         <button
           disabled={locked}
           onClick={(e) => { e.stopPropagation(); onBet(market.id, outcome.id); }}
           style={{
             width: "100%",
-            marginTop: 14,
-            padding: "10px 0",
+            marginTop: 10,
+            padding: "8px 0",
             background: `linear-gradient(180deg, ${color} 0%, ${colorDim} 100%)`,
             border: "none",
             borderRadius: 8,
@@ -270,24 +270,24 @@ function UfcFightCard({
       </div>
 
       {/* Main Content */}
-      <div style={{ position: "relative", zIndex: 10, paddingTop: 160, paddingLeft: 16, paddingRight: 16, paddingBottom: 16 }}>
+      <div style={{ position: "relative", zIndex: 10, paddingTop: 110, paddingLeft: 14, paddingRight: 14, paddingBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 8 }}>
            {renderSide(fa, 0, RED, RED_DIM, pctA)}
-           
+
            {/* Center VS */}
-           <div style={{ width: 60, display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 40, flexShrink: 0 }}>
+           <div style={{ width: 48, display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 30, flexShrink: 0 }}>
               <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
                  {/* Slanted red glow */}
-                 <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%) rotate(15deg)", width: 4, height: 60, background: "rgba(255,50,50,0.8)", boxShadow: "0 0 20px 8px rgba(255,0,0,0.6)" }} />
+                 <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%) rotate(15deg)", width: 3, height: 44, background: "rgba(255,50,50,0.8)", boxShadow: "0 0 16px 6px rgba(255,0,0,0.6)" }} />
                  {/* VS text */}
-                 <span style={{ position: "relative", display: "inline-block", padding: "8px", lineHeight: 1.2, fontSize: 36, fontWeight: 900, transform: "skewX(-15deg)", background: "linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-1px", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>
+                 <span style={{ position: "relative", display: "inline-block", padding: "6px", lineHeight: 1.2, fontSize: 28, fontWeight: 900, transform: "skewX(-15deg)", background: "linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-1px", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}>
                    VS
                  </span>
               </div>
-              
+
               {/* Octagon + Fist */}
-              <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                 <svg width="52" height="52" viewBox="0 0 100 100">
+              <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                 <svg width="40" height="40" viewBox="0 0 100 100">
                    {/* Octagon outline, flat corners like the UFC cage */}
                    <polygon points="31,6 69,6 94,31 94,69 69,94 31,94 6,69 6,31" fill="rgba(0,0,0,0.55)" stroke="#ffffff" strokeWidth="4.5" strokeLinejoin="miter" />
                    {/* Oncoming fist 👊 — Twemoji artwork (CC-BY 4.0) as monochrome vector */}
