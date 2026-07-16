@@ -253,10 +253,10 @@ function UfcFightCard({
       
       {/* Background fighters */}
       {getUfcAvatar(market, 0) && (
-         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, left: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 0)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 1, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }} />
       )}
       {getUfcAvatar(market, 1) && (
-         <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 0.8, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", filter: "blur(3px)" }} />
+         <div style={{ position: "absolute", top: 0, right: "-8%", width: "62%", height: "58%", backgroundImage: `url(${getUfcAvatar(market, 1)})`, backgroundSize: "contain", backgroundPosition: "top center", backgroundRepeat: "no-repeat", opacity: 1, maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)" }} />
       )}
       
       {/* Gradient overlay to make text readable */}
