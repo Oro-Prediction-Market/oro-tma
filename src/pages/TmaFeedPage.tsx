@@ -296,7 +296,11 @@ function OpenPicksStrip({
             : isResolving || isBetClosed
               ? "#f59e0b"
               : "#94a3b8";
-          const statusLabel = isOpen ? "LIVE" : isResolving ? "RESOLVING" : "CLOSED";
+          const statusLabel = isOpen
+            ? "LIVE"
+            : isResolving
+              ? "RESOLVING"
+              : "CLOSED";
 
           return (
             <button
@@ -312,9 +316,10 @@ function OpenPicksStrip({
                 borderRadius: 16,
                 background: "var(--bg-card)",
                 border: `1px solid ${statusColor}28`,
-                boxShadow: isResolving || isBetClosed
-                  ? `0 0 0 1.5px rgba(245,158,11,0.25), 0 4px 14px rgba(0,0,0,0.2)`
-                  : `0 4px 14px rgba(0,0,0,0.15)`,
+                boxShadow:
+                  isResolving || isBetClosed
+                    ? `0 0 0 1.5px rgba(245,158,11,0.25), 0 4px 14px rgba(0,0,0,0.2)`
+                    : `0 4px 14px rgba(0,0,0,0.15)`,
                 cursor: "pointer",
                 textAlign: "left",
                 display: "flex",
@@ -734,7 +739,8 @@ const MarketCard = memo(function MarketCard({
             // Per-outcome avatar: WC flag > explicit imageUrl > market images
             const wcFlag = isWCMarket(market) ? getWCFlag(s.label) : "";
             const avatarUrl = !imgError
-              ? (s as any).imageUrl || wcFlag ||
+              ? (s as any).imageUrl ||
+                wcFlag ||
                 (idx === 0
                   ? market.imageUrl
                   : idx === 1
@@ -830,7 +836,14 @@ const MarketCard = memo(function MarketCard({
                       src={wcFlag}
                       alt={s.label}
                       onError={() => setImgError(true)}
-                      style={{ flexShrink: 0, width: 36, height: 36, objectFit: "cover", display: "block", borderRadius: 6 }}
+                      style={{
+                        flexShrink: 0,
+                        width: 36,
+                        height: 36,
+                        objectFit: "cover",
+                        display: "block",
+                        borderRadius: 6,
+                      }}
                     />
                   ) : avatarUrl ? (
                     <div
@@ -848,7 +861,13 @@ const MarketCard = memo(function MarketCard({
                         src={avatarUrl}
                         alt=""
                         onError={() => setImgError(true)}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "center top",
+                          display: "block",
+                        }}
                       />
                     </div>
                   ) : (
@@ -865,7 +884,13 @@ const MarketCard = memo(function MarketCard({
                         justifyContent: "center",
                       }}
                     >
-                      <span style={{ fontSize: 14, fontWeight: 900, color: s.color }}>
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 900,
+                          color: s.color,
+                        }}
+                      >
                         {s.label.charAt(0)}
                       </span>
                     </div>
@@ -918,15 +943,33 @@ const MarketCard = memo(function MarketCard({
                       lineHeight: 1.15,
                     }}
                   >
-                    <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{(() => {
-                      const outcomePool = Number(s.totalBetAmount) || 0;
-                      const edge = Number(market.houseEdgePct) || 0;
-                      const odds = totalPool > 0 && outcomePool > 0
-                        ? (totalPool * (1 - edge / 100)) / outcomePool
-                        : 100 / Math.max(s.pct, 1);
-                      return Math.min(99, odds).toFixed(2);
-                    })()}x</span>
-                    <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{s.pct.toFixed(0)}%</span>
+                    <span
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 900,
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {(() => {
+                        const outcomePool = Number(s.totalBetAmount) || 0;
+                        const edge = Number(market.houseEdgePct) || 0;
+                        const odds =
+                          totalPool > 0 && outcomePool > 0
+                            ? (totalPool * (1 - edge / 100)) / outcomePool
+                            : 100 / Math.max(s.pct, 1);
+                        return Math.min(99, odds).toFixed(2);
+                      })()}
+                      x
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        opacity: 0.75,
+                      }}
+                    >
+                      {s.pct.toFixed(0)}%
+                    </span>
                   </div>
                 </div>
               </button>
@@ -979,11 +1022,12 @@ const MarketCard = memo(function MarketCard({
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: isResolving || isClosed
-                ? "#f59e0b"
-                : isUpcoming
-                  ? "#3b82f6"
-                  : "#22c55e",
+              background:
+                isResolving || isClosed
+                  ? "#f59e0b"
+                  : isUpcoming
+                    ? "#3b82f6"
+                    : "#22c55e",
               display: "inline-block",
               flexShrink: 0,
             }}
@@ -1175,7 +1219,10 @@ export const TmaFeedPage: FC = () => {
       sid = crypto.randomUUID();
       sessionStorage.setItem("oro_feed_sid", sid);
     }
-    const ping = () => feedHeartbeat(sid!).then(({ count }) => setOnlineCount(count)).catch(() => {});
+    const ping = () =>
+      feedHeartbeat(sid!)
+        .then(({ count }) => setOnlineCount(count))
+        .catch(() => {});
     ping();
     const id = setInterval(ping, 30_000);
     return () => clearInterval(id);
@@ -1357,7 +1404,9 @@ export const TmaFeedPage: FC = () => {
   // WC and BPL markets live in their own hubs — the banners are their entry points
   const nonWCMarkets = markets.filter((m) => !isWCMarket(m) && !isBplMarket(m));
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
-  const resolvingMarkets = nonWCMarkets.filter((m) => m.status === "resolving" || m.status === "closed");
+  const resolvingMarkets = nonWCMarkets.filter(
+    (m) => m.status === "resolving" || m.status === "closed",
+  );
   const upcomingMarkets = nonWCMarkets.filter((m) => m.status === "upcoming");
   const activeMarket = activeBet
     ? markets.find((m) => m.id === activeBet.marketId)
@@ -1390,7 +1439,6 @@ export const TmaFeedPage: FC = () => {
           selectedSubcategory.toLowerCase(),
       );
     }
-
 
     // Search Filter
     if (!searchQuery.trim()) return filtered;
@@ -1430,11 +1478,10 @@ export const TmaFeedPage: FC = () => {
         ];
 
   const filteredOpen = filterByQuery(openMarkets).sort((a, b) => {
-    // TER then BTC markets appear first in the economy category
     const autoA = ["ter", "btc"].includes(a.externalSource ?? "");
     const autoB = ["ter", "btc"].includes(b.externalSource ?? "");
-    if (autoA && !autoB) return -1;
-    if (autoB && !autoA) return 1;
+    if (autoA && !autoB) return 1;
+    if (autoB && !autoA) return -1;
     if (autoA && autoB) {
       if (a.externalSource !== b.externalSource) {
         if (a.externalSource === "ter") return -1;
@@ -1495,7 +1542,7 @@ export const TmaFeedPage: FC = () => {
           prob: calcProb(m, outcome.id),
           hasData: Number(m.totalPool) > 0,
         }))
-        .filter((item) => item.flag)
+        .filter((item) => item.flag),
     );
 
   const wcWinnerItems =
@@ -1574,10 +1621,37 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── Online viewers badge — always visible when count is known ── */}
         {onlineCount !== null && onlineCount > 0 && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 20, padding: "3px 10px" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 6px #22c55e" }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#22c55e" }}>{onlineCount} online</span>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: 8,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                background: "rgba(34,197,94,0.12)",
+                border: "1px solid rgba(34,197,94,0.25)",
+                borderRadius: 20,
+                padding: "3px 10px",
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  display: "inline-block",
+                  boxShadow: "0 0 6px #22c55e",
+                }}
+              />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#22c55e" }}>
+                {onlineCount} online
+              </span>
             </div>
           </div>
         )}
@@ -1876,7 +1950,6 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── Trending strip ── */}
         {trendingMarkets.length > 0 && !searchQuery.trim() && (
-
           <div style={{ marginBottom: 20 }}>
             <div
               style={{
@@ -1914,8 +1987,7 @@ export const TmaFeedPage: FC = () => {
               {trendingMarkets.map((m) => {
                 if (!m.outcomes?.length) return null;
                 const n = m.outcomes.length || 1;
-                const prob = (o: (typeof m.outcomes)[0]) =>
-                  calcProb(m, o.id);
+                const prob = (o: (typeof m.outcomes)[0]) => calcProb(m, o.id);
                 const top = m.outcomes.reduce(
                   (a, b) => (prob(b) > prob(a) ? b : a),
                   m.outcomes[0],
@@ -2089,121 +2161,224 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── World Cup Banner Card ── */}
         {!searchQuery.trim() && (
-          <div style={{
-            marginBottom: 16,
-            borderRadius: 18,
-            padding: 2,
-            background: "radial-gradient(circle at top left, #22c55e 0%, transparent 55%), radial-gradient(circle at bottom left, #7f1d1d 0%, transparent 55%), radial-gradient(circle at top right, #ef4444 0%, transparent 55%), radial-gradient(circle at bottom right, #7c3aed 0%, transparent 55%)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-          }}>
           <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate("/world-cup")}
-            onKeyDown={(e) => e.key === "Enter" && navigate("/world-cup")}
             style={{
-              marginBottom: 0,
-              borderRadius: 16,
-              overflow: "hidden",
-              cursor: "pointer",
-              position: "relative",
-              backgroundImage: "url('/background.svg')",
-              backgroundSize: "cover",
-              backgroundPosition: "right bottom",
-              outline: "none",
+              marginBottom: 16,
+              borderRadius: 18,
+              padding: 2,
+              background:
+                "radial-gradient(circle at top left, #22c55e 0%, transparent 55%), radial-gradient(circle at bottom left, #7f1d1d 0%, transparent 55%), radial-gradient(circle at top right, #ef4444 0%, transparent 55%), radial-gradient(circle at bottom right, #7c3aed 0%, transparent 55%)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
             }}
           >
-            {/* Spinning football — bottom-left corner decoration */}
-            <img
-              src="/football.svg"
-              alt=""
-              aria-hidden="true"
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate("/world-cup")}
+              onKeyDown={(e) => e.key === "Enter" && navigate("/world-cup")}
               style={{
-                position: "absolute", top: "50%", left: -56,
-                marginTop: -70,
-                width: 112, height: 112,
-                opacity: 0.7,
-                animation: "wcSpin 6s linear infinite",
-                pointerEvents: "none",
-                zIndex: 0,
+                marginBottom: 0,
+                borderRadius: 16,
+                overflow: "hidden",
+                cursor: "pointer",
+                position: "relative",
+                backgroundImage: "url('/background.svg')",
+                backgroundSize: "cover",
+                backgroundPosition: "right bottom",
+                outline: "none",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
               }}
-            />
+            >
+              {/* Spinning football — bottom-left corner decoration */}
+              <img
+                src="/football.svg"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: -56,
+                  marginTop: -70,
+                  width: 112,
+                  height: 112,
+                  opacity: 0.7,
+                  animation: "wcSpin 6s linear infinite",
+                  pointerEvents: "none",
+                  zIndex: 0,
+                }}
+              />
 
-            {/* ── Main row: title left + trophy right ── */}
-            <div style={{ display: "flex", alignItems: "stretch", minHeight: 136, position: "relative", zIndex: 1 }}>
-              {/* Left: text */}
-              <div style={{ flex: 1, padding: "20px 0 12px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <div style={{ fontSize: 34, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: "-0.02em" }}>
-                  FIFA
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-                  World Cup
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#84cc16", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-                  Prediction
-                </div>
-              </div>
-              {/* Right: trophy */}
-              <div style={{ width: 148, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                <img
-                  src="/worldcup.svg"
-                  alt="FIFA World Cup 2026"
-                  style={{ width: 148, height: 136, objectFit: "contain", display: "block" }}
-                />
-              </div>
-            </div>
-
-            {/* ── Bottom: animated flags strip + "View more" ── */}
-            <div style={{
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              padding: "6px 12px 6px 4px",
-              position: "relative",
-              zIndex: 1,
-              gap: 8,
-            }}>
-              {/* Scrolling flags */}
-              <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-                <div style={{
-                  position: "absolute", left: 0, top: 0, bottom: 0, width: 20,
-                  background: "linear-gradient(to right, rgba(0,0,0,0.5), transparent)", zIndex: 1, pointerEvents: "none",
-                }} />
-                <div style={{
+              {/* ── Main row: title left + trophy right ── */}
+              <div
+                style={{
                   display: "flex",
-                  animation: `wcMarquee ${Math.max(12, wcWinnerItems.length * 2)}s linear infinite`,
-                  width: "max-content",
-                }}>
-                  {[...wcWinnerItems, ...wcWinnerItems].map((item, i) => (
-                    <div key={i} style={{
-                      display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "2px 10px", gap: 1,
-                      borderRight: "1px solid rgba(255,255,255,0.08)",
-                    }}>
-                      {item.flag
-                        ? <img src={item.flag} alt="" loading="lazy" decoding="async" width={26} height={26} style={{ width: 26, height: 26, borderRadius: 3, objectFit: "cover" }} />
-                        : null
-                      }
-                      <span style={{
-                        fontSize: 10, fontWeight: 800,
-                        color: item.hasData ? "#ffffff" : "rgba(255,255,255,0.4)",
-                      }}>
-                        {item.hasData ? `${Math.round(item.prob * 100)}%` : "—"}
-                      </span>
-                    </div>
-                  ))}
+                  alignItems: "stretch",
+                  minHeight: 136,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                {/* Left: text */}
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "20px 0 12px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 34,
+                      fontWeight: 900,
+                      color: "#fff",
+                      lineHeight: 1,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    FIFA
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 900,
+                      color: "#fff",
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    World Cup
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 900,
+                      color: "#84cc16",
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    Prediction
+                  </div>
+                </div>
+                {/* Right: trophy */}
+                <div
+                  style={{
+                    width: 148,
+                    display: "flex",
+                    alignItems: "flex-end",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src="/worldcup.svg"
+                    alt="FIFA World Cup 2026"
+                    style={{
+                      width: 148,
+                      height: 136,
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
                 </div>
               </div>
-              {/* View more */}
-              <span style={{
-                fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
-                whiteSpace: "nowrap", flexShrink: 0,
-              }}>
-                Click Here »
-              </span>
+
+              {/* ── Bottom: animated flags strip + "View more" ── */}
+              <div
+                style={{
+                  background: "rgba(0,0,0,0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "6px 12px 6px 4px",
+                  position: "relative",
+                  zIndex: 1,
+                  gap: 8,
+                }}
+              >
+                {/* Scrolling flags */}
+                <div
+                  style={{ flex: 1, overflow: "hidden", position: "relative" }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 20,
+                      background:
+                        "linear-gradient(to right, rgba(0,0,0,0.5), transparent)",
+                      zIndex: 1,
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      animation: `wcMarquee ${Math.max(12, wcWinnerItems.length * 2)}s linear infinite`,
+                      width: "max-content",
+                    }}
+                  >
+                    {[...wcWinnerItems, ...wcWinnerItems].map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          padding: "2px 10px",
+                          gap: 1,
+                          borderRight: "1px solid rgba(255,255,255,0.08)",
+                        }}
+                      >
+                        {item.flag ? (
+                          <img
+                            src={item.flag}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            width={26}
+                            height={26}
+                            style={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: 3,
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : null}
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: item.hasData
+                              ? "#ffffff"
+                              : "rgba(255,255,255,0.4)",
+                          }}
+                        >
+                          {item.hasData
+                            ? `${Math.round(item.prob * 100)}%`
+                            : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* View more */}
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "rgba(255,255,255,0.75)",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  Click Here »
+                </span>
+              </div>
             </div>
-          </div>
           </div>
         )}
 
@@ -2233,59 +2408,128 @@ export const TmaFeedPage: FC = () => {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "linear-gradient(90deg, rgba(5,12,28,0.78) 0%, rgba(5,12,28,0.4) 55%, rgba(5,12,28,0.08) 100%)",
+                background:
+                  "linear-gradient(90deg, rgba(5,12,28,0.78) 0%, rgba(5,12,28,0.4) 55%, rgba(5,12,28,0.08) 100%)",
                 pointerEvents: "none",
                 zIndex: 0,
               }}
             />
             {/* ── Main row: title left, trophy photo showing right ── */}
-            <div style={{ display: "flex", alignItems: "stretch", minHeight: 136, position: "relative", zIndex: 1 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                minHeight: 136,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
               {/* Left: text */}
-              <div style={{ flex: 1, padding: "20px 0 12px 16px", display: "flex", flexDirection: "column", justifyContent: "center", textShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
-                <div style={{ fontSize: 34, fontWeight: 900, color: "#7dd3fc", lineHeight: 1, letterSpacing: "-0.02em" }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: "20px 0 12px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  textShadow: "0 2px 10px rgba(0,0,0,0.7)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 900,
+                    color: "#7dd3fc",
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   BoB
                 </div>
-                <div style={{ fontSize: 19, fontWeight: 900, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.02em" }}>
+                <div
+                  style={{
+                    fontSize: 19,
+                    fontWeight: 900,
+                    color: "#fff",
+                    lineHeight: 1.15,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   Bhutan Premier League
                 </div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "#f87171", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    color: "#f87171",
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   Prediction
                 </div>
               </div>
             </div>
 
             {/* ── Bottom: animated club strip + "View more" ── */}
-            <div style={{
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              padding: "6px 12px 6px 4px",
-              position: "relative",
-              zIndex: 1,
-              gap: 8,
-            }}>
+            <div
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                padding: "6px 12px 6px 4px",
+                position: "relative",
+                zIndex: 1,
+                gap: 8,
+              }}
+            >
               {/* Scrolling clubs */}
-              <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-                <div style={{
-                  position: "absolute", left: 0, top: 0, bottom: 0, width: 20,
-                  background: "linear-gradient(to right, rgba(0,0,0,0.5), transparent)", zIndex: 1, pointerEvents: "none",
-                }} />
-                <div style={{
-                  display: "flex",
-                  animation: `wcMarquee ${Math.max(12, bplItems.length * 2)}s linear infinite`,
-                  width: "max-content",
-                }}>
+              <div
+                style={{ flex: 1, overflow: "hidden", position: "relative" }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 20,
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.5), transparent)",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    animation: `wcMarquee ${Math.max(12, bplItems.length * 2)}s linear infinite`,
+                    width: "max-content",
+                  }}
+                >
                   {[...bplItems, ...bplItems].map((item, i) => (
-                    <div key={i} title={item.label} style={{
-                      display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "2px 10px", gap: 1,
-                      borderRight: "1px solid rgba(255,255,255,0.08)",
-                    }}>
+                    <div
+                      key={i}
+                      title={item.label}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        padding: "2px 10px",
+                        gap: 1,
+                        borderRight: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
                       <Crest src={item.crest} label={item.label} size={26} />
-                      <span style={{
-                        fontSize: 10, fontWeight: 800,
-                        color: item.hasData ? "#ffffff" : "rgba(255,255,255,0.4)",
-                      }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: item.hasData
+                            ? "#ffffff"
+                            : "rgba(255,255,255,0.4)",
+                        }}
+                      >
                         {item.hasData ? `${Math.round(item.prob * 100)}%` : "—"}
                       </span>
                     </div>
@@ -2293,16 +2537,20 @@ export const TmaFeedPage: FC = () => {
                 </div>
               </div>
               {/* View more */}
-              <span style={{
-                fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.75)",
-                whiteSpace: "nowrap", flexShrink: 0,
-              }}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.75)",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
                 Click Here »
               </span>
             </div>
           </div>
         )}
-
 
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
