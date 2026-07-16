@@ -28,6 +28,13 @@ import {
   BPL_CLUBS,
   Crest,
 } from "./BplHubPage";
+import {
+  isUfcMarket,
+  getUfcAvatar,
+  shortFighterName,
+  UFC_FIGHTERS,
+  FighterAvatar,
+} from "./UfcHubPage";
 
 // Live Activity Ticker
 
@@ -1402,7 +1409,9 @@ export const TmaFeedPage: FC = () => {
     );
 
   // WC and BPL markets live in their own hubs — the banners are their entry points
-  const nonWCMarkets = markets.filter((m) => !isWCMarket(m) && !isBplMarket(m));
+  const nonWCMarkets = markets.filter(
+    (m) => !isWCMarket(m) && !isBplMarket(m) && !isUfcMarket(m),
+  );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
   const resolvingMarkets = nonWCMarkets.filter(
     (m) => m.status === "resolving" || m.status === "closed",
@@ -1573,6 +1582,33 @@ export const TmaFeedPage: FC = () => {
       : BPL_CLUBS.map((c) => ({
           crest: null as string | null,
           label: c.short,
+          prob: 0,
+          hasData: false,
+        }));
+
+  // UFC banner strip — live fight outcomes, headline-fighter fallback
+  const ufcMarketItems = markets
+    .filter(
+      (m) => m.status === "open" && isUfcMarket(m) && /\bvs\b/i.test(m.title),
+    )
+    .flatMap((m) => {
+      const fighterOutcomes = (m.outcomes ?? []).filter(
+        (o) => (o.label ?? "").toLowerCase().trim() !== "draw",
+      );
+      return fighterOutcomes.map((outcome, idx) => ({
+        crest: getUfcAvatar(m, idx),
+        label: shortFighterName(outcome.label),
+        prob: calcProb(m, outcome.id),
+        hasData: Number(m.totalPool) > 0,
+      }));
+    });
+
+  const ufcItems =
+    ufcMarketItems.length > 0
+      ? ufcMarketItems
+      : UFC_FIGHTERS.map((f) => ({
+          crest: null as string | null,
+          label: f.short,
           prob: 0,
           hasData: false,
         }));
@@ -2378,6 +2414,114 @@ export const TmaFeedPage: FC = () => {
                   Click Here »
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── UFC Banner Card ── */}
+        {!searchQuery.trim() && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/ufc")}
+            onKeyDown={(e) => e.key === "Enter" && navigate("/ufc")}
+            style={{
+              marginBottom: 16,
+              borderRadius: 16,
+              overflow: "hidden",
+              cursor: "pointer",
+              position: "relative",
+              backgroundImage: "url('/ufc-banner.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center 25%",
+              outline: "none",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Cover art carries the branding — spacer sets the banner height */}
+            <div style={{ minHeight: 136, position: "relative", zIndex: 1 }} />
+
+            {/* ── Bottom: animated fighter strip + "View more" ── */}
+            <div
+              style={{
+                background: "rgba(0,0,0,0.5)",
+                display: "flex",
+                alignItems: "center",
+                padding: "6px 12px 6px 4px",
+                position: "relative",
+                zIndex: 1,
+                gap: 8,
+              }}
+            >
+              {/* Scrolling fighters */}
+              <div
+                style={{ flex: 1, overflow: "hidden", position: "relative" }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 20,
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.5), transparent)",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    animation: `wcMarquee ${Math.max(12, ufcItems.length * 2)}s linear infinite`,
+                    width: "max-content",
+                  }}
+                >
+                  {[...ufcItems, ...ufcItems].map((item, i) => (
+                    <div
+                      key={i}
+                      title={item.label}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        padding: "2px 10px",
+                        gap: 1,
+                        borderRight: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <FighterAvatar
+                        src={item.crest}
+                        label={item.label}
+                        size={26}
+                      />
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: item.hasData
+                            ? "#ffffff"
+                            : "rgba(255,255,255,0.4)",
+                        }}
+                      >
+                        {item.hasData ? `${Math.round(item.prob * 100)}%` : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* View more */}
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.75)",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                Click Here »
+              </span>
             </div>
           </div>
         )}

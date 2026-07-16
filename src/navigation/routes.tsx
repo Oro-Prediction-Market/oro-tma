@@ -4,6 +4,7 @@ import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
 import { BplHubPage } from "@/pages/BplHubPage";
+import { UfcHubPage } from "@/pages/UfcHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
@@ -77,6 +78,7 @@ export const routes: Route[] = [
   { path: "/", Component: TmaFeedPage },
   { path: "/world-cup", Component: WorldCupHubPage, title: "World Cup Hub" },
   { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
+  { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
   { path: "/markets", Component: MarketsPage },
   { path: "/market/:id", Component: MarketDetailPage },
   { path: "/ton-bet/:id", Component: TONBetPage, title: "Trade with TON" },
