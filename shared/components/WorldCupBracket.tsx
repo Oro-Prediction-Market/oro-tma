@@ -6,7 +6,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Check } from "lucide-react";
+import { CalendarDays, Check, Users } from "lucide-react";
 import type { Market } from "@shared/api/client";
 import {
   WC_KNOCKOUT,
@@ -72,6 +72,144 @@ function fmtDate(iso: string | null | undefined): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// "Mon, Jul 20 • 1:00 AM" — the Final card's showpiece date format.
+function fmtFinalDate(iso: string | null | undefined): string {
+  if (!iso) return "TBD";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "TBD";
+  const day = d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${day} • ${time}`;
+}
+
+const GOLD = "#fbbf24";
+
+// Full-width team row for the Final card — red for the top seed's slot, blue
+// for the bottom. Same tap-to-bet / winner / your-pick semantics as TeamRow.
+function FinalTeamRow({
+  name,
+  flag,
+  tint,
+  onClick,
+  won = false,
+  pct = null,
+  odds = null,
+  isPick = false,
+}: {
+  name: string;
+  flag: string;
+  tint: "red" | "blue";
+  onClick?: () => void;
+  won?: boolean;
+  pct?: number | null;
+  odds?: number | null;
+  isPick?: boolean;
+}) {
+  const tappable = !!onClick;
+  const grad =
+    tint === "red"
+      ? "linear-gradient(90deg, rgba(153,27,27,0.85) 0%, rgba(76,15,26,0.55) 100%)"
+      : "linear-gradient(90deg, rgba(30,58,138,0.85) 0%, rgba(17,26,64,0.55) 100%)";
+  const edge =
+    tint === "red" ? "rgba(248,113,113,0.4)" : "rgba(96,165,250,0.4)";
+  return (
+    <button
+      type="button"
+      disabled={!tappable}
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        width: "100%",
+        padding: "12px 12px",
+        background: grad,
+        border: won
+          ? "1px solid rgba(34,197,94,0.65)"
+          : isPick
+            ? "1px solid rgba(167,139,250,0.75)"
+            : `1px solid ${edge}`,
+        borderRadius: 13,
+        cursor: tappable ? "pointer" : "default",
+        textAlign: "left",
+      }}
+    >
+      {flag ? (
+        <img
+          src={flag}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            objectFit: "cover",
+            boxShadow: "0 0 10px rgba(0,0,0,0.45)",
+            flexShrink: 0,
+          }}
+        />
+      ) : (
+        <span
+          style={{ fontSize: 26, width: 40, textAlign: "center", flexShrink: 0, opacity: 0.5 }}
+        >
+          🛡️
+        </span>
+      )}
+      <span
+        style={{
+          flex: 1,
+          fontSize: 18,
+          fontWeight: 800,
+          color: name === "TBD" ? "rgba(255,255,255,0.55)" : "#fff",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {name}
+      </span>
+      {won ? (
+        <Check
+          size={18}
+          strokeWidth={3}
+          color="#22c55e"
+          style={{ flexShrink: 0 }}
+          aria-label="Winner"
+        />
+      ) : (
+        pct != null && (
+          <span
+            style={{
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 1,
+            }}
+          >
+            <span style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>
+              {Math.round(pct)}%
+            </span>
+            {odds != null && (
+              <span style={{ fontSize: 10, fontWeight: 800, color: GOLD }}>
+                {Math.min(99, odds).toFixed(2)}x
+              </span>
+            )}
+          </span>
+        )
+      )}
+    </button>
+  );
 }
 
 function TeamRow({
@@ -359,7 +497,9 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
     });
   }
 
-  const renderSlot = (slot: BracketSlot) => {
+  // Everything a slot card needs to render, shared by the generic slot card
+  // and the bespoke Final card so both stay in lockstep on betting behaviour.
+  const slotView = (slot: BracketSlot) => {
     const market = findMarketForSlot(slot, markets);
     const settled =
       !!market && (market.status === "resolved" || market.status === "settled");
@@ -417,6 +557,44 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
       odds1 = null;
       odds2 = null;
     }
+
+    return {
+      market,
+      settled,
+      locked,
+      winnerId,
+      team1,
+      team2,
+      out1,
+      out2,
+      pct1,
+      pct2,
+      odds1,
+      odds2,
+      dateIso,
+      canBet,
+      pool,
+    };
+  };
+
+  const renderSlot = (slot: BracketSlot) => {
+    const {
+      market,
+      settled,
+      locked,
+      winnerId,
+      team1,
+      team2,
+      out1,
+      out2,
+      pct1,
+      pct2,
+      odds1,
+      odds2,
+      dateIso,
+      canBet,
+      pool,
+    } = slotView(slot);
 
     return (
       <div
@@ -489,6 +667,169 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
             Nu {pool.toLocaleString()} pool
           </div>
         )}
+      </div>
+    );
+  };
+
+  // The Final gets a showpiece card: gold frame, trophy header, red/blue team
+  // banners with a VS diamond, and a Total Pool footer. Betting semantics are
+  // identical to renderSlot — tap a team banner to back it.
+  const renderFinal = (slot: BracketSlot) => {
+    const v = slotView(slot);
+    const { market } = v;
+    return (
+      <div
+        key={slot.id}
+        ref={(el) => {
+          if (el) cardRefs.current.set(slot.id, el);
+          else cardRefs.current.delete(slot.id);
+        }}
+        style={{
+          width: "100%",
+          borderRadius: 18,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(167,139,250,0.3)",
+            background: "linear-gradient(180deg, #141a30 0%, #0b101f 100%)",
+            padding: "12px 12px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          {/* Date */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--text-main, #fff)",
+              minWidth: 0,
+            }}
+          >
+            <CalendarDays size={13} color={ACCENT} style={{ flexShrink: 0 }} />
+            <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {fmtFinalDate(v.dateIso)}
+            </span>
+            {v.settled ? (
+              <span style={{ color: "#22c55e", flexShrink: 0 }}>• Decided</span>
+            ) : (
+              v.locked && (
+                <span style={{ color: GOLD, flexShrink: 0 }}>• Locked</span>
+              )
+            )}
+          </div>
+          <FinalTeamRow
+            name={v.team1}
+            flag={v.team1 === "TBD" ? "" : getFlag(v.team1)}
+            tint="red"
+            onClick={
+              v.canBet && v.out1 ? () => onBet(market!.id, v.out1!) : undefined
+            }
+            won={!!v.winnerId && v.winnerId === v.out1}
+            pct={v.pct1}
+            odds={v.odds1}
+            isPick={!!v.out1 && !!pickedOutcomeIds?.has(v.out1)}
+          />
+          {/* VS diamond on a gold hairline */}
+          <div style={{ position: "relative", height: 10, margin: "-4px 0" }}>
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "50%",
+                height: 1,
+                background:
+                  "linear-gradient(90deg, transparent, rgba(251,191,36,0.55), transparent)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%) rotate(45deg)",
+                width: 26,
+                height: 26,
+                background: "#0b101f",
+                border: "1px solid rgba(251,191,36,0.8)",
+                borderRadius: 5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 2,
+              }}
+            >
+              <span
+                style={{
+                  transform: "rotate(-45deg)",
+                  fontSize: 9,
+                  fontWeight: 900,
+                  color: GOLD,
+                }}
+              >
+                VS
+              </span>
+            </div>
+          </div>
+          <FinalTeamRow
+            name={v.team2}
+            flag={v.team2 === "TBD" ? "" : getFlag(v.team2)}
+            tint="blue"
+            onClick={
+              v.canBet && v.out2 ? () => onBet(market!.id, v.out2!) : undefined
+            }
+            won={!!v.winnerId && v.winnerId === v.out2}
+            pct={v.pct2}
+            odds={v.odds2}
+            isPick={!!v.out2 && !!pickedOutcomeIds?.has(v.out2)}
+          />
+          {/* Total pool footer */}
+          {market && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: 9,
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--text-muted, #94a3b8)",
+                }}
+              >
+                <Users size={13} color={ACCENT} /> Total Pool
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: GOLD }}>
+                Nu {v.pool.toLocaleString()}{" "}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text-muted, #94a3b8)",
+                  }}
+                >
+                  pool
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -626,29 +967,94 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
           // so the leftmost visible round packs its cards tightly (BLOCK_H) and
           // every expanded column shares the same total height (= bodyHeight).
           const cellHeight = BLOCK_H * Math.pow(2, ri - collapsedCount);
+          const isFinal = round.key === "final";
+          const colW = isMobile ? mobileColW : isFinal ? 280 : COL_W;
           return (
             <div
               key={round.key}
               className="wc-bracket-round"
-              style={{ flexShrink: 0, width: isMobile ? mobileColW : COL_W }}
+              style={{ flexShrink: 0, width: colW }}
             >
-              {/* Round header */}
-              <div
-                key="header"
-                style={{
-                  height: HEADER_H,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: ACCENT,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  textAlign: "center",
-                  marginBottom: HEADER_MB,
-                  width: isMobile ? "100%" : COL_W,
-                }}
-              >
-                {round.label}
-              </div>
+              {/* Round header — the Final gets the trophy treatment */}
+              {isFinal ? (
+                <div
+                  key="header"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 4,
+                    marginBottom: HEADER_MB,
+                  }}
+                >
+                  <img
+                    src="/cup.png"
+                    alt=""
+                    decoding="async"
+                    style={{
+                      height: 64,
+                      width: "auto",
+                      filter: "drop-shadow(0 0 14px rgba(251,191,36,0.35))",
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      width: "100%",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        maxWidth: 56,
+                        height: 1,
+                        background:
+                          "linear-gradient(90deg, transparent, rgba(251,191,36,0.7))",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 900,
+                        color: GOLD,
+                        letterSpacing: "0.4em",
+                        textIndent: "0.4em",
+                      }}
+                    >
+                      FINAL
+                    </span>
+                    <span
+                      style={{
+                        flex: 1,
+                        maxWidth: 56,
+                        height: 1,
+                        background:
+                          "linear-gradient(90deg, rgba(251,191,36,0.7), transparent)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key="header"
+                  style={{
+                    height: HEADER_H,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: ACCENT,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    textAlign: "center",
+                    marginBottom: HEADER_MB,
+                    width: isMobile ? "100%" : COL_W,
+                  }}
+                >
+                  {round.label}
+                </div>
+              )}
               {/* Slots */}
               <div key="cols" style={{ display: "flex", flexDirection: "column" }}>
                 {round.slots.map((slot) => (
@@ -656,12 +1062,13 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
                     key={slot.id}
                     className="wc-h-anim"
                     style={{
-                      height: cellHeight,
+                      height: isFinal ? "auto" : cellHeight,
+                      minHeight: isFinal ? cellHeight : undefined,
                       display: "flex",
                       alignItems: "center",
                     }}
                   >
-                    {renderSlot(slot)}
+                    {isFinal ? renderFinal(slot) : renderSlot(slot)}
                   </div>
                 ))}
               </div>
