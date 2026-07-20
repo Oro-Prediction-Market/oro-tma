@@ -773,20 +773,9 @@ export function WorldCupHubPage() {
     if (Number(o.totalBetAmount || 0) > Number(favorite?.totalBetAmount || 0)) favorite = o;
   }
 
-  // TEMP: static header stats until real data is wired up.
-  // Set either constant to null to fall back to the live computed value.
-  const STATIC_TITLE_FAVORITE: string | null = "France";
-  const STATIC_BIGGEST_POOL: string | null = "Nu 198K";
-
   const headerStats = [
-    {
-      label: "Title favorite",
-      val: STATIC_TITLE_FAVORITE ?? favorite?.label ?? "—",
-    },
-    {
-      label: "Biggest pool",
-      val: STATIC_BIGGEST_POOL ?? `Nu ${fmtNu(biggestPool)}`,
-    },
+    { label: "Title favorite", val: favorite?.label ?? "—" },
+    { label: "Biggest pool", val: `Nu ${fmtNu(biggestPool)}` },
     { label: "Active markets", val: String(activeMarkets) },
   ];
 

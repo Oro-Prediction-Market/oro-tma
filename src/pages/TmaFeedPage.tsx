@@ -1514,6 +1514,8 @@ export const TmaFeedPage: FC = () => {
 
   const trendingMarkets = filteredOpen.slice(0, 5);
 
+  // World Cup banner strip data — the banner itself is disabled below via
+  // `WC_BANNER_ENABLED`, but this stays live so the JSX still typechecks.
   const wcEntryMarkets = markets.filter(isWCMarket);
 
   const WC_DEFAULT_NATIONS = [
@@ -2163,7 +2165,8 @@ export const TmaFeedPage: FC = () => {
         )}
 
         {/* ── World Cup Banner Card ── */}
-        {!searchQuery.trim() && (
+        {/* Hidden for now — remove `false &&` to bring it back */}
+        {false && !searchQuery.trim() && (
           <div
             style={{
               marginBottom: 16,
