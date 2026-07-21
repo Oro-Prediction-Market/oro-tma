@@ -5,6 +5,8 @@ import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
 import { BplHubPage } from "@/pages/BplHubPage";
 import { UfcHubPage } from "@/pages/UfcHubPage";
+// EPL hidden until the 2026/27 season starts — uncomment to re-enable
+// import { EplHubPage } from "@/pages/EplHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
@@ -79,6 +81,8 @@ export const routes: Route[] = [
   { path: "/world-cup", Component: WorldCupHubPage, title: "World Cup Hub" },
   { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
   { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
+  // EPL hidden until the 2026/27 season starts — uncomment to re-enable
+  // { path: "/epl", Component: EplHubPage, title: "EPL Hub" },
   { path: "/markets", Component: MarketsPage },
   { path: "/market/:id", Component: MarketDetailPage },
   { path: "/ton-bet/:id", Component: TONBetPage, title: "Trade with TON" },

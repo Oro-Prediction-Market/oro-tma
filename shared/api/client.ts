@@ -448,6 +448,8 @@ export interface Market {
   metadata: Record<string, any> | null;
   evidenceNote: string | null;
   signalMeta: SignalMeta | null;
+  /** Admin-pinned featured flag — hub feature slots prefer this market. */
+  isFeatured: boolean;
   createdAt: string;
   outcomes: Outcome[];
 }
@@ -912,4 +914,60 @@ export function getBtcPrice(): Promise<BtcPrice> {
  */
 export function getBtcPriceHistory(): Promise<BtcPrice[]> {
   return request<BtcPrice[]>("/btc/price/history");
+}
+
+// ─── EPL live data (standings + player stats, from apifootball.com) ───────────
+
+export interface EplStandingRow {
+  position: number;
+  teamName: string;
+  teamBadge: string;
+  played: number;
+  won: number;
+  draw: number;
+  lost: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  points: number;
+}
+
+export interface EplStandings {
+  updatedAt: string;
+  table: EplStandingRow[];
+}
+
+export interface EplStatEntry {
+  player: string;
+  club: string;
+  clubBadge: string;
+  face: string; // primary player photo (FPL); "" when unavailable
+  faceBackup: string; // secondary player photo (TheSportsDB); "" when none
+  value: number;
+}
+
+export interface EplStats {
+  updatedAt: string;
+  goals: EplStatEntry[];
+  assists: EplStatEntry[];
+  yellow: EplStatEntry[];
+  red: EplStatEntry[];
+}
+
+export function getEplStandings(): Promise<EplStandings> {
+  return request<EplStandings>("/epl/standings");
+}
+
+export function getEplStats(): Promise<EplStats> {
+  return request<EplStats>("/epl/stats");
+}
+
+export interface EplSeason {
+  started: boolean;
+  seasonStart: string | null;
+  maxPlayed: number;
+}
+
+export function getEplSeason(): Promise<EplSeason> {
+  return request<EplSeason>("/epl/season");
 }

@@ -29,6 +29,7 @@ import {
   Crest,
 } from "./BplHubPage";
 import { isUfcMarket } from "./UfcHubPage";
+import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
 
 // Live Activity Ticker
 
@@ -1402,9 +1403,10 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  // WC and BPL markets live in their own hubs — the banners are their entry points
+  // WC, BPL, UFC and EPL markets live in their own hubs — the banners are their entry points
   const nonWCMarkets = markets.filter(
-    (m) => !isWCMarket(m) && !isBplMarket(m) && !isUfcMarket(m),
+    (m) =>
+      !isWCMarket(m) && !isBplMarket(m) && !isUfcMarket(m) && !isEplMarket(m),
   );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
   const resolvingMarkets = nonWCMarkets.filter(
@@ -1612,6 +1614,11 @@ export const TmaFeedPage: FC = () => {
         @keyframes wcSpin {
           0%   { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes eplSheen {
+          0%   { transform: translateX(-130%) skewX(-18deg); }
+          60%  { transform: translateX(420%) skewX(-18deg); }
+          100% { transform: translateX(420%) skewX(-18deg); }
         }
       `}</style>
       <div
@@ -2428,6 +2435,215 @@ export const TmaFeedPage: FC = () => {
                   fontSize: 12,
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.75)",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                Click Here »
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── English Premier League Banner Card ── */}
+        {/* EPL hidden until the 2026/27 season starts — remove `false &&` to re-enable */}
+        {false && !searchQuery.trim() && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate("/epl")}
+            onKeyDown={(e) => e.key === "Enter" && navigate("/epl")}
+            style={{
+              marginBottom: 16,
+              borderRadius: 16,
+              overflow: "hidden",
+              cursor: "pointer",
+              position: "relative",
+              background:
+                "radial-gradient(ellipse at 82% 6%, rgba(247,37,133,0.45) 0%, transparent 46%), radial-gradient(ellipse at 6% 96%, rgba(0,255,133,0.24) 0%, transparent 50%), radial-gradient(ellipse at 50% 128%, rgba(123,31,212,0.55) 0%, transparent 62%), linear-gradient(125deg, #16082e 0%, #3d1080 33%, #7b1fd4 66%, #c31d9c 100%)",
+              outline: "none",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.08)",
+            }}
+          >
+            {/* Diagonal broadcast-style slashes */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-20%",
+                right: "12%",
+                width: 60,
+                height: "140%",
+                background:
+                  "linear-gradient(90deg, rgba(0,255,133,0.16), rgba(0,255,133,0))",
+                transform: "skewX(-18deg)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "-20%",
+                right: "0%",
+                width: 32,
+                height: "140%",
+                background:
+                  "linear-gradient(90deg, rgba(233,0,82,0.28), rgba(233,0,82,0))",
+                transform: "skewX(-18deg)",
+                pointerEvents: "none",
+              }}
+            />
+            {/* Moving light sheen */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: 0,
+                width: "34%",
+                background:
+                  "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.13) 50%, transparent 100%)",
+                animation: "eplSheen 3.8s ease-in-out infinite",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* ── Main: pill + logo + shimmer wordmark ── */}
+            <div
+              style={{
+                minHeight: 136,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                gap: 8,
+                padding: "16px 16px 10px",
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              {/* Season pill */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "rgba(0,255,133,0.12)",
+                  border: "1px solid rgba(0,255,133,0.45)",
+                  borderRadius: 20,
+                  padding: "3px 10px",
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#00ff85",
+                    animation: "wcPulse 1.6s ease-in-out infinite",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 800,
+                    color: "#00ff85",
+                    letterSpacing: "0.12em",
+                  }}
+                >
+                  2026/27 SEASON
+                </span>
+              </div>
+              <img
+                src="/premier-league-logo.svg"
+                alt="Premier League"
+                style={{
+                  width: "54%",
+                  maxWidth: 210,
+                  height: "auto",
+                  filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.55))",
+                }}
+              />
+              {/* Shimmering wordmark */}
+              <div
+                style={{
+                  fontSize: 17,
+                  fontWeight: 900,
+                  fontStyle: "italic",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  background:
+                    "linear-gradient(90deg, #00ff85 0%, #ffffff 50%, #00ff85 100%)",
+                  backgroundSize: "200% auto",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  animation: "wcShimmer 3s linear infinite",
+                }}
+              >
+                Prediction Hub
+              </div>
+            </div>
+
+            {/* ── Bottom: scrolling club ticker + CTA ── */}
+            <div
+              style={{
+                background: "rgba(0,0,0,0.55)",
+                borderTop: "1px solid rgba(0,255,133,0.25)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px 8px 0",
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 24,
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.55), transparent)",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    width: "max-content",
+                    animation: "wcMarquee 32s linear infinite",
+                  }}
+                >
+                  {[...EPL_CLUBS, ...EPL_CLUBS].map((club, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "0 10px",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: "rgba(255,255,255,0.65)",
+                        letterSpacing: "0.08em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {club.short.toUpperCase()}
+                      <span style={{ color: "#00ff85", fontSize: 8 }}>◆</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#00ff85",
                   whiteSpace: "nowrap",
                   flexShrink: 0,
                 }}
