@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMarkets, type Market } from "@shared/api/client";
+import { getMarkets, type Market, type Outcome } from "@shared/api/client";
 import {
   Clock,
   Swords,
@@ -388,6 +388,17 @@ function getSideImage(market: Market, idx: number): string | null {
   return null;
 }
 
+function outcomeImage(market: Market, outcome: Outcome): string | null {
+  if (outcome.imageUrl) return outcome.imageUrl;
+  const sides = (market.outcomes ?? []).filter(
+    (o) => !isDrawOutcome(o.label ?? ""),
+  );
+  const i = sides.findIndex((o) => o.id === outcome.id);
+  if (i === 0) return market.imageUrl;
+  if (i === 1) return market.imageUrlAlt;
+  return null;
+}
+
 function shortTeamName(label: string): string {
   const trimmed = label.trim();
   if (trimmed.length <= 14) return trimmed;
@@ -714,12 +725,12 @@ function EsportsMatchCard({
         <TeamAvatar
           src={getSideImage(market, idx)}
           label={name}
-          size={38}
+          size={31}
           color={color}
         />
         <div
           style={{
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: 800,
             color: EWC.text,
             textTransform: "uppercase",
@@ -729,7 +740,7 @@ function EsportsMatchCard({
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            marginTop: 9,
+            marginTop: 7,
           }}
         >
           {name}
@@ -744,7 +755,7 @@ function EsportsMatchCard({
         >
           <span
             style={{
-              fontSize: 28,
+              fontSize: 23,
               fontWeight: 900,
               color,
               lineHeight: 1,
@@ -769,8 +780,8 @@ function EsportsMatchCard({
           }}
           style={{
             width: "100%",
-            marginTop: 11,
-            padding: "10px 0",
+            marginTop: 9,
+            padding: "8px 0",
             border: "none",
             clipPath: notch(8),
             color: idx === 0 ? "#1a1400" : "#00160c",
@@ -794,7 +805,7 @@ function EsportsMatchCard({
       categoryKey={categoryKey}
       onClick={() => navigate(`/market/${market.id}`)}
     >
-      <div style={{ padding: "14px 13px 12px" }}>
+      <div style={{ padding: "10px 11px 9px" }}>
         <div
           style={{
             display: "flex",
@@ -811,8 +822,8 @@ function EsportsMatchCard({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 7,
-              paddingTop: 9,
+              gap: 5,
+              paddingTop: 7,
             }}
           >
             <Label color={EWC.textSecondary} size={11}>
@@ -822,7 +833,7 @@ function EsportsMatchCard({
               style={{
                 width: 1,
                 flex: 1,
-                minHeight: 62,
+                minHeight: 46,
                 background: `linear-gradient(180deg, ${EWC.border} 0%, transparent 100%)`,
               }}
             />
@@ -839,7 +850,7 @@ function EsportsMatchCard({
           alignItems: "center",
           justifyContent: "space-between",
           gap: 10,
-          padding: "9px 12px",
+          padding: "7px 10px",
           background: EWC.panel,
         }}
       >
@@ -876,21 +887,23 @@ function EsportsEventMarket({
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
   const locked = market.status === "resolving" || market.status === "closed";
   const totalPool = Number(market.totalPool ?? 0);
   const outcomes = market.outcomes ?? [];
-  // Field markets can run long — show the strongest few, then a tail count
+  // Field markets can run long — show the strongest few until expanded
+  const COLLAPSED_COUNT = 4;
   const ranked = [...outcomes].sort(
     (a, b) => calcProb(market, b.id) - calcProb(market, a.id),
   );
-  const shown = ranked.slice(0, 4);
-  const hidden = ranked.length - shown.length;
+  const shown = expanded ? ranked : ranked.slice(0, COLLAPSED_COUNT);
+  const hidden = ranked.length - COLLAPSED_COUNT;
 
   return (
     <CardShell market={market} categoryKey={categoryKey}>
       <div
         onClick={() => navigate(`/market/${market.id}`)}
-        style={{ padding: "12px 12px 4px", cursor: "pointer" }}
+        style={{ padding: "10px 10px 3px", cursor: "pointer" }}
       >
         <div
           style={{
@@ -910,7 +923,7 @@ function EsportsEventMarket({
         </div>
       </div>
 
-      <div style={{ padding: "4px 12px 12px" }}>
+      <div style={{ padding: "3px 10px 10px" }}>
         {shown.map((outcome, idx) => {
           const pct = Math.round(calcProb(market, outcome.id) * 100);
           const odds = calcOdds(market, outcome.id);
@@ -922,15 +935,15 @@ function EsportsEventMarket({
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "9px 0",
+                padding: "7px 0",
                 borderTop: idx === 0 ? "none" : `1px solid ${EWC.border}`,
                 cursor: "pointer",
               }}
             >
               <TeamAvatar
-                src={getSideImage(market, idx)}
+                src={outcomeImage(market, outcome)}
                 label={outcome.label}
-                size={30}
+                size={26}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
@@ -1005,15 +1018,30 @@ function EsportsEventMarket({
         })}
         {hidden > 0 && (
           <div
-            onClick={() => navigate(`/market/${market.id}`)}
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded((v) => !v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }
+            }}
             style={{
               borderTop: `1px solid ${EWC.border}`,
               paddingTop: 9,
               cursor: "pointer",
               textAlign: "center",
+              outline: "none",
             }}
           >
-            <Label color={EWC.gold}>+{hidden} more outcomes »</Label>
+            <Label color={EWC.gold}>
+              {expanded ? "Show less «" : `+${hidden} more outcomes »`}
+            </Label>
           </div>
         )}
       </div>
@@ -1265,7 +1293,7 @@ export function EsportsHubPage() {
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 12,
+        gap: 10,
       }}
     >
       {items.map(renderCard)}
@@ -1388,7 +1416,7 @@ export function EsportsHubPage() {
           </div>
         ) : selected === "all" ? (
           // Grouped by discipline so every category is browsable at a glance
-          <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {liveCategories.map((c) => {
               const items = tagged.filter((t) => t.categoryKey === c.key);
               const pool = items.reduce(

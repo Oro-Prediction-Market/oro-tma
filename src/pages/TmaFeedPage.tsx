@@ -1209,6 +1209,15 @@ export const TmaFeedPage: FC = () => {
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  // Hub banners follow their own category — those markets live in the hubs, so
+  // filtering to Gaming should leave the esports banner as the entry point
+  const activeCategory = selectedCategory.toLowerCase();
+  const showEsportsBanner =
+    !searchQuery.trim() &&
+    (activeCategory === "all" || activeCategory === "gaming");
+  const showSportsBanners =
+    !searchQuery.trim() &&
+    (activeCategory === "all" || activeCategory === "sports");
   const [selectedSubcategory, setSelectedSubcategory] = useState("All");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Full pending bet objects — used for the picks strip + "YOUR PICK" badge
@@ -2403,14 +2412,14 @@ export const TmaFeedPage: FC = () => {
         )}
 
         {/* ── Esports Banner Card ── */}
-        {!searchQuery.trim() && (
+        {showEsportsBanner && (
           <div style={{ marginBottom: 16 }}>
             <EsportsBanner onClick={() => navigate("/esports")} />
           </div>
         )}
 
         {/* ── UFC Banner Card ── */}
-        {!searchQuery.trim() && (
+        {showSportsBanners && (
           <div
             role="button"
             tabIndex={0}
@@ -2670,7 +2679,7 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── BoB Bhutan Premier League Banner Card ── */}
         {/* Hidden for now — remove `false &&` to bring it back */}
-        {false && !searchQuery.trim() && (
+        {false && showSportsBanners && (
           <div
             role="button"
             tabIndex={0}

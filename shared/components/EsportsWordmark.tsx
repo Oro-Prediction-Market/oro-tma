@@ -7,8 +7,11 @@ const RAMP =
   "linear-gradient(96deg, #ff3600 -8%, #ffa23a 26%, #e8c47a 52%, #d1b26e 74%, #b8974f 100%)";
 const SHADE =
   "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 38%, rgba(0,0,0,0.30) 100%)";
+// Quantico (Google Fonts, loaded in index.html) — squared techno caps. Its
+// heaviest weight is 700, so the lockup asks for 700 rather than 900.
 const DISPLAY_FONT =
-  '"Arial Black", "Arial Bold", "Helvetica Neue", Impact, system-ui, sans-serif';
+  '"Quantico", "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif';
+const DISPLAY_WEIGHT = 700;
 const GOLD = "#be9e59";
 
 interface EsportsWordmarkProps {
@@ -40,7 +43,7 @@ export function EsportsWordmark({
           margin: 0,
           fontFamily: DISPLAY_FONT,
           fontSize: size,
-          fontWeight: 900,
+          fontWeight: DISPLAY_WEIGHT,
           lineHeight: 0.92,
           textTransform: "uppercase",
           letterSpacing: "-0.005em",
@@ -98,7 +101,7 @@ export function EsportsWordmark({
           <span
             style={{
               fontFamily: DISPLAY_FONT,
-              fontWeight: 900,
+              fontWeight: DISPLAY_WEIGHT,
               fontSize: "1em",
               color: "#ffffff",
               textTransform: "uppercase",
