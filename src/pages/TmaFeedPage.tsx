@@ -29,6 +29,8 @@ import {
   Crest,
 } from "./BplHubPage";
 import { isUfcMarket } from "./UfcHubPage";
+import { isEsportsMarket } from "./EsportsHubPage";
+import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
 
 // Live Activity Ticker
@@ -1403,10 +1405,15 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  // WC, BPL, UFC and EPL markets live in their own hubs — the banners are their entry points
+  // WC, BPL, UFC, EPL and esports markets live in their own hubs — the banners
+  // are their entry points
   const nonWCMarkets = markets.filter(
     (m) =>
-      !isWCMarket(m) && !isBplMarket(m) && !isUfcMarket(m) && !isEplMarket(m),
+      !isWCMarket(m) &&
+      !isBplMarket(m) &&
+      !isUfcMarket(m) &&
+      !isEplMarket(m) &&
+      !isEsportsMarket(m),
   );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
   const resolvingMarkets = nonWCMarkets.filter(
@@ -2392,6 +2399,13 @@ export const TmaFeedPage: FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Esports Banner Card ── */}
+        {!searchQuery.trim() && (
+          <div style={{ marginBottom: 16 }}>
+            <EsportsBanner onClick={() => navigate("/esports")} />
           </div>
         )}
 

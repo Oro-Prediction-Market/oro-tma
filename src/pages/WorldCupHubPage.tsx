@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, BarChart3, Clock, CalendarDays, Network } from "lucide-react";
 import { WorldCupBracket } from "@shared/components/WorldCupBracket";
+import { looksEsports } from "@shared/helpers/esportsKeywords";
 import { getMarkets, getMyBets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
@@ -271,10 +272,11 @@ function WinnerMarketGroup({
 }
 
 export function isWCMarket(m: Market): boolean {
-  return (
-    !!m.subcategory?.startsWith("wc-") ||
-    m.title.toLowerCase().includes("world cup")
-  );
+  if (m.subcategory?.startsWith("wc-")) return true;
+  // "Esports World Cup" / "Free Fire World Cup" are different events entirely —
+  // they belong to the /esports hub, not the FIFA World Cup hub
+  if (looksEsports(m.title, m.description)) return false;
+  return m.title.toLowerCase().includes("world cup");
 }
 
 // ── Probability helpers ───────────────────────────────────────────────────────

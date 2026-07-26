@@ -33,6 +33,9 @@ const CLUB_KEYWORDS = [
 
 export function isBplMarket(m: Market): boolean {
   if (m.category === "political") return false;
+  // A market filed under Gaming belongs to /esports, even if it still carries a
+  // leftover BPL settlement URL from the admin form's sports presets
+  if (m.category === "gaming") return false;
   if (isWCMarket(m)) return false;
   // covers bpl-match / bpl-winner / bpl-topscorer and legacy "Premier League (BPL)"
   if (m.subcategory?.toLowerCase().includes("bpl")) return true;

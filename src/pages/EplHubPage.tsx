@@ -59,6 +59,7 @@ const OTHER_COMPETITIONS = [
 
 export function isEplMarket(m: Market): boolean {
   if (m.category === "political") return false;
+  if (m.category === "gaming") return false; // Gaming markets live in /esports
   if (isWCMarket(m)) return false;
   // BPL owns "Bhutan Premier League" titles, bpl-* subcategories and local clubs
   if (isBplMarket(m)) return false;

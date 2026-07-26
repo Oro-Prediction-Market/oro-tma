@@ -35,6 +35,7 @@ export const UFC_FIGHTERS = [
 
 export function isUfcMarket(m: Market): boolean {
   if (m.category === "political") return false;
+  if (m.category === "gaming") return false; // Gaming markets live in /esports
   if (isWCMarket(m)) return false;
   const sub = (m.subcategory ?? "").toLowerCase();
   // covers ufc-fight / ufc-event / mma tags set in the admin form
