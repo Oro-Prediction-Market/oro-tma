@@ -1,4 +1,5 @@
 import React from "react";
+import { DISPLAY_FONT, DISPLAY_WEIGHT } from "./EsportsUi";
 
 // The "ESPORTS / WORLD CUP" display lockup: heavy blocky caps with a red→gold
 // ramp, a top-lit vertical shade, a dark keyline and a solid extrude under the
@@ -7,11 +8,6 @@ const RAMP =
   "linear-gradient(96deg, #ff3600 -8%, #ffa23a 26%, #e8c47a 52%, #d1b26e 74%, #b8974f 100%)";
 const SHADE =
   "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 38%, rgba(0,0,0,0.30) 100%)";
-// Quantico (Google Fonts, loaded in index.html) — squared techno caps. Its
-// heaviest weight is 700, so the lockup asks for 700 rather than 900.
-const DISPLAY_FONT =
-  '"Quantico", "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif';
-const DISPLAY_WEIGHT = 700;
 const GOLD = "#be9e59";
 
 interface EsportsWordmarkProps {

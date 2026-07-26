@@ -28,6 +28,7 @@ import {
   EWC,
   NotchTile,
   notch,
+  DISPLAY_FONT,
 } from "@shared/components/EsportsUi";
 
 // ── Categories ────────────────────────────────────────────────────────────────
@@ -595,6 +596,31 @@ function StatusPill({ market }: { market: Market }) {
   );
 }
 
+/** An eliminated outcome: no new bets, and existing bets lose at resolution. */
+function OutBadge({ fullWidth = false }: { fullWidth?: boolean }) {
+  return (
+    <div
+      title="Eliminated — no new bets accepted"
+      style={{
+        width: fullWidth ? "100%" : undefined,
+        textAlign: "center",
+        border: "1px solid rgba(229,72,77,0.40)",
+        background: "rgba(229,72,77,0.12)",
+        clipPath: notch(7),
+        padding: fullWidth ? "9px 0" : "7px 11px",
+        color: EWC.danger,
+        fontSize: 10,
+        fontWeight: 900,
+        textTransform: "uppercase",
+        letterSpacing: EWC.trackTiny,
+        flexShrink: 0,
+      }}
+    >
+      Out
+    </div>
+  );
+}
+
 /** Two-tone share bar — gold side vs green side. */
 function ProbBar({ pctA }: { pctA: number }) {
   return (
@@ -720,6 +746,7 @@ function EsportsMatchCard({
           flexDirection: "column",
           alignItems: left ? "flex-start" : "flex-end",
           minWidth: 0,
+          opacity: outcome.isEliminated ? 0.55 : 1,
         }}
       >
         <TeamAvatar
@@ -771,6 +798,11 @@ function EsportsMatchCard({
             Nu {Number(outcome.totalBetAmount ?? 0).toLocaleString()}
           </Label>
         </div>
+        {outcome.isEliminated ? (
+          <div style={{ width: "100%", marginTop: 9 }}>
+            <OutBadge fullWidth />
+          </div>
+        ) : (
         <button
           className={idx === 0 ? "ewc-btn-gold" : "ewc-btn-green"}
           disabled={locked}
@@ -795,6 +827,7 @@ function EsportsMatchCard({
         >
           Predict
         </button>
+        )}
       </div>
     );
   };
@@ -856,8 +889,9 @@ function EsportsMatchCard({
       >
         <span
           style={{
+            fontFamily: DISPLAY_FONT,
             fontSize: 10,
-            fontWeight: 600,
+            fontWeight: 400,
             color: EWC.textMuted,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -893,9 +927,13 @@ function EsportsEventMarket({
   const outcomes = market.outcomes ?? [];
   // Field markets can run long — show the strongest few until expanded
   const COLLAPSED_COUNT = 4;
-  const ranked = [...outcomes].sort(
-    (a, b) => calcProb(market, b.id) - calcProb(market, a.id),
-  );
+  // Eliminated outcomes sink to the bottom; the rest rank by probability
+  const ranked = [...outcomes].sort((a, b) => {
+    const ea = Number(!!a.isEliminated);
+    const eb = Number(!!b.isEliminated);
+    if (ea !== eb) return ea - eb;
+    return calcProb(market, b.id) - calcProb(market, a.id);
+  });
   const shown = expanded ? ranked : ranked.slice(0, COLLAPSED_COUNT);
   const hidden = ranked.length - COLLAPSED_COUNT;
 
@@ -907,11 +945,12 @@ function EsportsEventMarket({
       >
         <div
           style={{
+            fontFamily: DISPLAY_FONT,
             fontSize: 13,
-            fontWeight: 800,
+            fontWeight: 700,
             color: EWC.text,
             letterSpacing: EWC.trackSmall,
-            lineHeight: 1.35,
+            lineHeight: 1.4,
           }}
         >
           {market.title}
@@ -927,6 +966,7 @@ function EsportsEventMarket({
         {shown.map((outcome, idx) => {
           const pct = Math.round(calcProb(market, outcome.id) * 100);
           const odds = calcOdds(market, outcome.id);
+          const eliminated = !!outcome.isEliminated;
           return (
             <div
               key={outcome.id}
@@ -938,6 +978,7 @@ function EsportsEventMarket({
                 padding: "7px 0",
                 borderTop: idx === 0 ? "none" : `1px solid ${EWC.border}`,
                 cursor: "pointer",
+                opacity: eliminated ? 0.55 : 1,
               }}
             >
               <TeamAvatar
@@ -954,6 +995,7 @@ function EsportsEventMarket({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    textDecoration: eliminated ? "line-through" : "none",
                   }}
                 >
                   {outcome.label}
@@ -970,7 +1012,7 @@ function EsportsEventMarket({
                     style={{
                       width: `${pct}%`,
                       height: "100%",
-                      background: EWC.gold,
+                      background: eliminated ? EWC.textMuted : EWC.gold,
                     }}
                   />
                 </div>
@@ -980,7 +1022,7 @@ function EsportsEventMarket({
                   style={{
                     fontSize: 14,
                     fontWeight: 900,
-                    color: EWC.gold,
+                    color: eliminated ? EWC.textMuted : EWC.gold,
                     lineHeight: 1,
                   }}
                 >
@@ -990,7 +1032,10 @@ function EsportsEventMarket({
                   <Label size={8}>{odds ? `${odds.toFixed(2)}x` : "—"}</Label>
                 </div>
               </div>
-              {!locked && (
+              {eliminated ? (
+                <OutBadge />
+              ) : (
+                !locked && (
                 <button
                   className="ewc-btn-gold"
                   onClick={(e) => {
@@ -1012,6 +1057,7 @@ function EsportsEventMarket({
                 >
                   Predict
                 </button>
+                )
               )}
             </div>
           );

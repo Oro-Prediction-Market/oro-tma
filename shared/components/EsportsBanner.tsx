@@ -55,49 +55,60 @@ function BracketSide({
   side: "left" | "right";
 }) {
   const inner = side === "left" ? "left" : "right";
-  const seg = (
-    key: string,
-    css: React.CSSProperties,
-  ): React.ReactElement => (
-    <div
-      key={key}
-      style={{ position: "absolute", background: BORDER, ...css }}
-    />
+  const seg = (key: string, css: React.CSSProperties): React.ReactElement => (
+    <div key={key} style={{ position: "absolute", background: BORDER, ...css }} />
   );
+  // --stub / --mid / --leg come from .ewc-bracket-rail, which the media query
+  // rewrites, so the whole bracket scales without duplicating the markup
+  const joint = "calc(var(--stub) + var(--mid))";
 
   const rail = (
-    <div style={{ position: "relative", width: 28, flexShrink: 0 }}>
+    <div className="ewc-bracket-rail" style={{ position: "relative", flexShrink: 0 }}>
       {/* stub off each tile */}
       {[12.5, 37.5, 62.5, 87.5].map((top) =>
-        seg(`s${top}`, { [inner]: 0, top: `${top}%`, width: 9, height: 1 }),
+        seg(`s${top}`, {
+          [inner]: 0,
+          top: `${top}%`,
+          width: "var(--stub)",
+          height: 1,
+        }),
       )}
       {/* pair them into two semis */}
       {[
         [12.5, 37.5],
         [62.5, 87.5],
       ].map(([a, b]) =>
-        seg(`v${a}`, { [inner]: 9, top: `${a}%`, height: `${b - a}%`, width: 1 }),
+        seg(`v${a}`, {
+          [inner]: "var(--stub)",
+          top: `${a}%`,
+          height: `${b - a}%`,
+          width: 1,
+        }),
       )}
       {[25, 75].map((top) =>
-        seg(`m${top}`, { [inner]: 9, top: `${top}%`, width: 9, height: 1 }),
+        seg(`m${top}`, {
+          [inner]: "var(--stub)",
+          top: `${top}%`,
+          width: "var(--mid)",
+          height: 1,
+        }),
       )}
       {/* semis into the final, last leg in gold */}
-      {seg("final", { [inner]: 18, top: "25%", height: "50%", width: 1 })}
+      {seg("final", { [inner]: joint, top: "25%", height: "50%", width: 1 })}
       {seg("gold", {
-        [inner]: 18,
+        [inner]: joint,
         top: "50%",
-        width: 10,
+        width: "var(--leg)",
         height: 1,
         background: GOLD,
       })}
       <div
+        className="ewc-bracket-node"
         style={{
           position: "absolute",
-          [inner]: 16,
+          [inner]: `calc(${joint} - var(--node) / 2)`,
           top: "50%",
           transform: "translateY(-50%)",
-          width: 5,
-          height: 5,
           borderRadius: "50%",
           background: GOLD,
         }}
@@ -117,10 +128,15 @@ function BracketSide({
       {items.map(({ label, Icon }) => (
         <div
           key={label}
-          style={{ display: "flex", alignItems: "center", padding: "3px 0" }}
+          className="ewc-bracket-cell"
+          style={{ display: "flex", alignItems: "center" }}
         >
           <div style={{ width: "100%" }}>
-            <NotchTile padding="8px 9px">
+            <NotchTile
+              radius={7}
+              className="ewc-bracket-tile"
+              innerClassName="ewc-bracket-tile-inner"
+            >
               <div
                 title={label}
                 aria-label={label}
@@ -130,7 +146,7 @@ function BracketSide({
                   justifyContent: "center",
                 }}
               >
-                <Icon size={16} color={GOLD_BRIGHT} />
+                <Icon color={GOLD_BRIGHT} />
               </div>
             </NotchTile>
           </div>
@@ -140,15 +156,7 @@ function BracketSide({
   );
 
   return (
-    <div
-      className="ewc-banner-side"
-      style={{
-        display: "flex",
-        alignItems: "stretch",
-        width: 82,
-        flexShrink: 0,
-      }}
-    >
+    <div className="ewc-bracket-side" style={{ display: "flex", alignItems: "stretch" }}>
       {side === "left" ? (
         <>
           {column}
@@ -179,7 +187,7 @@ export function EsportsBanner({
 }: EsportsBannerProps) {
   return (
     <div
-      className={className}
+      className={["ewc-banner", className].filter(Boolean).join(" ")}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -194,7 +202,6 @@ export function EsportsBanner({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        minHeight: 320,
         height: "100%",
         cursor: onClick ? "pointer" : "default",
         userSelect: "none",
@@ -205,10 +212,25 @@ export function EsportsBanner({
       {/* The side brackets need width; narrower than that, the footer rail
           carries all eight disciplines on its own */}
       <style>{`
+        .ewc-banner { min-height: 320px; }
+        .ewc-banner-body { padding: 16px 18px 12px; gap: 10px; }
+        .ewc-bracket-side { width: 84px; flex-shrink: 0; }
+        .ewc-bracket-rail { --stub: 9px; --mid: 9px; --leg: 10px; --node: 5px; width: 28px; }
+        .ewc-bracket-node { width: var(--node); height: var(--node); }
+        .ewc-bracket-cell { padding: 3px 0; }
+        .ewc-bracket-tile-inner { padding: 8px 9px; }
+        .ewc-bracket-tile svg { width: 16px; height: 16px; }
         .ewc-banner-ficon { padding: 0 4px; }
+        /* Phones (incl. the Telegram mini app): keep the bracket, shrink it */
         @media (max-width: 599px) {
-          .ewc-banner-side { display: none !important; }
-          /* Reclaim room so "Play now" stays whole on a phone */
+          .ewc-banner { min-height: 272px; }
+          .ewc-banner-body { padding: 12px 10px 10px; gap: 7px; }
+          .ewc-bracket-side { width: 52px; }
+          .ewc-bracket-rail { --stub: 5px; --mid: 5px; --leg: 7px; --node: 4px; width: 18px; }
+          .ewc-bracket-cell { padding: 2px 0; }
+          .ewc-bracket-tile-inner { padding: 5px 3px; }
+          .ewc-bracket-tile svg { width: 13px; height: 13px; }
+          /* Reclaim room so "Play now" stays whole */
           .ewc-banner-ficon { padding: 0 2px; }
           .ewc-banner-divider { display: none; }
         }
@@ -220,14 +242,13 @@ export function EsportsBanner({
       <CornerMark v="bottom" h="right" />
 
       <div
+        className="ewc-banner-body"
         style={{
           position: "relative",
           flex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          padding: "16px 18px 12px",
-          gap: 10,
         }}
       >
         {/* Top tab */}
@@ -272,7 +293,7 @@ export function EsportsBanner({
               justifyContent: "center",
             }}
           >
-            <TrophyStage />
+            <TrophyStage height="clamp(80px, 19vw, 150px)" />
             <EsportsWordmark as="h2" showSub={false} style={{ marginTop: 2 }} />
             <div
               style={{

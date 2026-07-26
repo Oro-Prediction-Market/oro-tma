@@ -35,6 +35,14 @@ export const EWC = {
   trackSmall: "0.06em",
 } as const;
 
+/**
+ * Quantico (Google Fonts, loaded in index.html) — the squared techno face used
+ * for the ESPORTS lockup and for market titles. Its heaviest weight is 700.
+ */
+export const DISPLAY_FONT =
+  '"Quantico", "Arial Black", "Helvetica Neue", Impact, system-ui, sans-serif';
+export const DISPLAY_WEIGHT = 700;
+
 /** Angular panel shape — corners cut top-left and bottom-right. */
 export const notch = (r = 9) =>
   `polygon(${r}px 0, 100% 0, 100% calc(100% - ${r}px), calc(100% - ${r}px) 100%, 0 100%, 0 ${r}px)`;
@@ -47,28 +55,33 @@ export const NOTCH = notch();
  */
 export function NotchTile({
   children,
-  padding = "8px 10px",
+  padding,
   radius = 9,
   accent = false,
   fill,
   line,
   className,
+  innerClassName,
   style,
   onClick,
   title,
 }: {
   children: React.ReactNode;
+  /** Omit together with `innerClassName` to let CSS own the padding. */
   padding?: string;
   radius?: number;
   accent?: boolean;
   fill?: string;
   line?: string;
   className?: string;
+  /** Class on the inner panel, for styling that inline styles can't express. */
+  innerClassName?: string;
   style?: React.CSSProperties;
   onClick?: (e: React.MouseEvent) => void;
   title?: string;
 }) {
   const clip = notch(radius);
+  const pad = padding ?? (innerClassName ? undefined : "8px 10px");
   return (
     <div
       className={className}
@@ -82,6 +95,7 @@ export function NotchTile({
       }}
     >
       <div
+        className={innerClassName}
         style={{
           background:
             fill ??
@@ -89,7 +103,7 @@ export function NotchTile({
               ? EWC.goldButton
               : `linear-gradient(180deg, ${EWC.panel} 0%, #0c0b08 100%)`),
           clipPath: clip,
-          padding,
+          padding: pad,
         }}
       >
         {children}
