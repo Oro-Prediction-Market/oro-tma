@@ -390,7 +390,13 @@ export function TeamAvatar({
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        style={{ ...shape, objectFit: "cover", background: EWC.control }}
+        style={{
+          ...shape,
+          objectFit: "contain",
+          padding: Math.round(size * 0.1),
+          boxSizing: "border-box",
+          background: EWC.control,
+        }}
       />
     );
   }
