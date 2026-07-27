@@ -25,6 +25,8 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { calcProb, calcOdds } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
+import { isUfcMarket } from "./UfcHubPage";
+import { UfcMarketDetail } from "@/components/UfcMarketDetail";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -421,6 +423,33 @@ export const MarketDetailPage: FC = () => {
   })();
 
   const isOpen = m.status === "open";
+
+  // UFC markets get the dedicated /ufc-styled detail view
+  if (isUfcMarket(m)) {
+    return (
+      <Page back={true}>
+        <UfcMarketDetail
+          market={m}
+          onBetPlaced={() => {
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          isResolving={isResolving}
+          proposedOutcome={proposedOutcome}
+          disputeTimeLeft={disputeTimeLeft}
+          disputeReason={disputeReason}
+          setDisputeReason={setDisputeReason}
+          handleSubmitDispute={handleSubmitDispute}
+          disputeSubmitting={disputeSubmitting}
+          disputeError={disputeError}
+          disputeSuccess={disputeSuccess}
+        />
+      </Page>
+    );
+  }
 
   // Esports markets get the dedicated /esports-styled detail view
   if (isEsportsMarket(m)) {

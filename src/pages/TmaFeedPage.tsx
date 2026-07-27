@@ -31,6 +31,7 @@ import {
 import { isUfcMarket } from "./UfcHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsBanner } from "@shared/components/EsportsBanner";
+import { UfcBanner } from "@shared/components/UfcBanner";
 import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
 
 // Live Activity Ticker
@@ -2420,51 +2421,8 @@ export const TmaFeedPage: FC = () => {
 
         {/* ── UFC Banner Card ── */}
         {showSportsBanners && (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate("/ufc")}
-            onKeyDown={(e) => e.key === "Enter" && navigate("/ufc")}
-            style={{
-              marginBottom: 16,
-              borderRadius: 16,
-              overflow: "hidden",
-              cursor: "pointer",
-              position: "relative",
-              backgroundImage: "url('/ufc-banner.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center 25%",
-              outline: "none",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            }}
-          >
-            {/* Cover art carries the branding — spacer sets the banner height */}
-            <div style={{ minHeight: 136, position: "relative", zIndex: 1 }} />
-
-            {/* ── Bottom: "View more" bar ── */}
-            <div
-              style={{
-                background: "rgba(0,0,0,0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                padding: "10px 12px",
-                position: "relative",
-                zIndex: 1,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "rgba(255,255,255,0.75)",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                Click Here »
-              </span>
-            </div>
+          <div style={{ marginBottom: 16 }}>
+            <UfcBanner onClick={() => navigate("/ufc")} />
           </div>
         )}
 
