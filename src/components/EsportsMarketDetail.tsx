@@ -136,6 +136,11 @@ export function EsportsMarketDetail({
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
 
+  // Open the detail view at the top, not at the feed's scroll position
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [market.id]);
+
   const cat = categoryMeta(esportsCategoryOf(market));
   const CatIcon = cat.Icon;
 
