@@ -378,7 +378,7 @@ export function categoryMeta(key: EsportsCategoryKey): EsportsCategory {
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
-function getSideImage(market: Market, idx: number): string | null {
+export function getSideImage(market: Market, idx: number): string | null {
   const sides = (market.outcomes ?? []).filter(
     (o) => !isDrawOutcome(o.label ?? ""),
   );
@@ -389,7 +389,7 @@ function getSideImage(market: Market, idx: number): string | null {
   return null;
 }
 
-function outcomeImage(market: Market, outcome: Outcome): string | null {
+export function outcomeImage(market: Market, outcome: Outcome): string | null {
   if (outcome.imageUrl) return outcome.imageUrl;
   const sides = (market.outcomes ?? []).filter(
     (o) => !isDrawOutcome(o.label ?? ""),
@@ -400,14 +400,14 @@ function outcomeImage(market: Market, outcome: Outcome): string | null {
   return null;
 }
 
-function shortTeamName(label: string): string {
+export function shortTeamName(label: string): string {
   const trimmed = label.trim();
   if (trimmed.length <= 14) return trimmed;
   const parts = trimmed.split(/\s+/);
   return parts.length > 1 ? parts[parts.length - 1] : trimmed;
 }
 
-function parseVsNames(title: string): { a: string; b: string } {
+export function parseVsNames(title: string): { a: string; b: string } {
   const m = title.match(
     /^(?:.*?[:\-–—]\s*)?(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:?]|\s*\(|\s+(?:who|which|will)\b|$)/i,
   );
@@ -1203,7 +1203,7 @@ export function EsportsMasthead({
 
 type ActiveBet = { marketId: string; outcomeId: string };
 
-function isMatchMarket(m: Market): boolean {
+export function isMatchMarket(m: Market): boolean {
   const sides = (m.outcomes ?? []).filter((o) => !isDrawOutcome(o.label ?? ""));
   if (sides.length !== 2) return false;
   const isBinary = sides.every((o) => /^(yes|no)$/i.test((o.label ?? "").trim()));
@@ -1326,25 +1326,35 @@ export function EsportsHubPage() {
         onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
       />
     ) : (
-      <EsportsEventMarket
-        key={market.id}
-        market={market}
-        categoryKey={categoryKey}
-        onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
-      />
+      // Field/tournament markets are the headline — span the whole row
+      <div key={market.id} style={{ gridColumn: "1 / -1" }}>
+        <EsportsEventMarket
+          market={market}
+          categoryKey={categoryKey}
+          onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+        />
+      </div>
     );
 
-  const grid = (items: typeof tagged) => (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 10,
-      }}
-    >
-      {items.map(renderCard)}
-    </div>
-  );
+  const grid = (items: typeof tagged) => {
+    // Headline field/tournament markets first, matches after (stable otherwise)
+    const ordered = [...items].sort(
+      (a, b) =>
+        Number(isMatchMarket(a.market)) - Number(isMatchMarket(b.market)),
+    );
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gap: 10,
+          alignItems: "start",
+        }}
+      >
+        {ordered.map(renderCard)}
+      </div>
+    );
+  };
 
   return (
     <Page>

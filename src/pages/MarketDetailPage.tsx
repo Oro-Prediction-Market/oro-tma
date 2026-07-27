@@ -23,6 +23,8 @@ import { useTrack } from "@shared/hooks/useTrack";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { calcProb, calcOdds } from "./WorldCupHubPage";
+import { isEsportsMarket } from "./EsportsHubPage";
+import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -419,6 +421,33 @@ export const MarketDetailPage: FC = () => {
   })();
 
   const isOpen = m.status === "open";
+
+  // Esports markets get the dedicated /esports-styled detail view
+  if (isEsportsMarket(m)) {
+    return (
+      <Page back={true}>
+        <EsportsMarketDetail
+          market={m}
+          onBetPlaced={() => {
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          isResolving={isResolving}
+          proposedOutcome={proposedOutcome}
+          disputeTimeLeft={disputeTimeLeft}
+          disputeReason={disputeReason}
+          setDisputeReason={setDisputeReason}
+          handleSubmitDispute={handleSubmitDispute}
+          disputeSubmitting={disputeSubmitting}
+          disputeError={disputeError}
+          disputeSuccess={disputeSuccess}
+        />
+      </Page>
+    );
+  }
 
   return (
     <Page back={true}>
