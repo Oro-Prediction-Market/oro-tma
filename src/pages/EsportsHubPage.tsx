@@ -1194,6 +1194,13 @@ export function EsportsHubPage() {
     (s, { market }) => s + Number(market.totalPool ?? 0),
     0,
   );
+  // Pool volume per category — the tiebreaker when two chips have equal counts.
+  const poolByCat = useMemo(() => {
+    const p = new Map<EsportsCategoryKey, number>();
+    for (const { categoryKey, market } of tagged)
+      p.set(categoryKey, (p.get(categoryKey) ?? 0) + Number(market.totalPool ?? 0));
+    return p;
+  }, [tagged]);
   // Admin-defined categories (subcategories with no preset), busiest first
   const adminCategories = useMemo(
     () =>
@@ -1212,13 +1219,26 @@ export function EsportsHubPage() {
     [counts, adminCategories],
   );
 
-  // "Other" only earns a chip when something actually landed there
-  const chips = [
-    ...ESPORTS_CATEGORIES.filter(
-      (c) => c.key !== "other" || (counts.get("other") ?? 0) > 0,
-    ),
-    ...adminCategories,
-  ];
+  // "Other" only earns a chip when something actually landed there.
+  // Busiest categories lead — sorted by market count, then pool volume. Ties
+  // (e.g. every empty category) keep their ESPORTS_CATEGORIES order via stable
+  // sort, so the row stays predictable.
+  const chips = useMemo(() => {
+    const base = [
+      ...ESPORTS_CATEGORIES.filter(
+        (c) => c.key !== "other" || (counts.get("other") ?? 0) > 0,
+      ),
+      ...adminCategories,
+    ];
+    return [...base].sort((a, b) => {
+      const ca = counts.get(a.key) ?? 0;
+      const cb = counts.get(b.key) ?? 0;
+      if (cb !== ca) return cb - ca;
+      const pa = poolByCat.get(a.key) ?? 0;
+      const pb = poolByCat.get(b.key) ?? 0;
+      return pb - pa;
+    });
+  }, [counts, poolByCat, adminCategories]);
 
   const visible =
     selected === "all"
