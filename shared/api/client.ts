@@ -971,3 +971,49 @@ export interface EplSeason {
 export function getEplSeason(): Promise<EplSeason> {
   return request<EplSeason>("/epl/season");
 }
+
+// ── UEFA Champions League (same shapes as EPL) ────────────────────────────────
+export type UclStandingRow = EplStandingRow;
+export type UclStandings = EplStandings;
+export type UclStatEntry = EplStatEntry;
+export type UclStats = EplStats;
+export type UclSeason = EplSeason;
+
+export function getUclStandings(): Promise<UclStandings> {
+  return request<UclStandings>("/ucl/standings");
+}
+
+export function getUclStats(): Promise<UclStats> {
+  return request<UclStats>("/ucl/stats");
+}
+
+export function getUclSeason(): Promise<UclSeason> {
+  return request<UclSeason>("/ucl/season");
+}
+
+export interface UclBracketTeam {
+  name: string;
+  short: string;
+  crest: string;
+}
+export interface UclBracketMatch {
+  a: UclBracketTeam | null;
+  b: UclBracketTeam | null;
+  winner: "a" | "b" | null;
+}
+export interface UclBracketRound {
+  key: string;
+  label: string;
+  matches: UclBracketMatch[];
+}
+export interface UclBracket {
+  updatedAt: string;
+  season: string | null;
+  hasData: boolean;
+  decided: boolean;
+  rounds: UclBracketRound[];
+}
+
+export function getUclBracket(): Promise<UclBracket> {
+  return request<UclBracket>("/ucl/bracket");
+}

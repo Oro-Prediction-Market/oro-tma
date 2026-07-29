@@ -27,6 +27,10 @@ import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
 import { isUfcMarket } from "./UfcHubPage";
 import { UfcMarketDetail } from "@/components/UfcMarketDetail";
+import { isEplMarket } from "./EplHubPage";
+import { EplMarketDetail } from "@/components/EplMarketDetail";
+import { isUclMarket } from "./UclHubPage";
+import { UclMarketDetail } from "@/components/UclMarketDetail";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -456,6 +460,60 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <EsportsMarketDetail
+          market={m}
+          onBetPlaced={() => {
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          isResolving={isResolving}
+          proposedOutcome={proposedOutcome}
+          disputeTimeLeft={disputeTimeLeft}
+          disputeReason={disputeReason}
+          setDisputeReason={setDisputeReason}
+          handleSubmitDispute={handleSubmitDispute}
+          disputeSubmitting={disputeSubmitting}
+          disputeError={disputeError}
+          disputeSuccess={disputeSuccess}
+        />
+      </Page>
+    );
+  }
+
+  // Champions League markets get the dedicated /ucl-styled detail view
+  if (isUclMarket(m)) {
+    return (
+      <Page back={true}>
+        <UclMarketDetail
+          market={m}
+          onBetPlaced={() => {
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          isResolving={isResolving}
+          proposedOutcome={proposedOutcome}
+          disputeTimeLeft={disputeTimeLeft}
+          disputeReason={disputeReason}
+          setDisputeReason={setDisputeReason}
+          handleSubmitDispute={handleSubmitDispute}
+          disputeSubmitting={disputeSubmitting}
+          disputeError={disputeError}
+          disputeSuccess={disputeSuccess}
+        />
+      </Page>
+    );
+  }
+
+  // EPL markets get the dedicated /epl-styled detail view
+  if (isEplMarket(m)) {
+    return (
+      <Page back={true}>
+        <EplMarketDetail
           market={m}
           onBetPlaced={() => {
             if (!id) return;

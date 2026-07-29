@@ -32,7 +32,9 @@ import { isUfcMarket } from "./UfcHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { UfcBanner } from "@shared/components/UfcBanner";
+import { UclBanner } from "@shared/components/UclBanner";
 import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
+import { isUclMarket } from "./UclHubPage";
 
 // Live Activity Ticker
 
@@ -1415,14 +1417,15 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  // WC, BPL, UFC, EPL and esports markets live in their own hubs — the banners
-  // are their entry points
+  // WC, BPL, UFC, EPL, UCL and esports markets live in their own hubs — the
+  // banners are their entry points
   const nonWCMarkets = markets.filter(
     (m) =>
       !isWCMarket(m) &&
       !isBplMarket(m) &&
       !isUfcMarket(m) &&
       !isEplMarket(m) &&
+      !isUclMarket(m) &&
       !isEsportsMarket(m),
   );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
@@ -2423,6 +2426,14 @@ export const TmaFeedPage: FC = () => {
         {showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <UfcBanner onClick={() => navigate("/ufc")} />
+          </div>
+        )}
+
+        {/* ── UEFA Champions League Banner Card ── */}
+        {/* UCL hidden until the 2026/27 season starts — remove `false &&` to re-enable */}
+        {false && showSportsBanners && (
+          <div style={{ marginBottom: 16 }}>
+            <UclBanner onClick={() => navigate("/ucl")} />
           </div>
         )}
 
