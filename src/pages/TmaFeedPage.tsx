@@ -36,6 +36,358 @@ import { UclBanner } from "@shared/components/UclBanner";
 import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
 import { isUclMarket } from "./UclHubPage";
 
+// ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
+function trendingTimeLeft(m: Market): string {
+  const raw = m.bettingClosesAt ?? m.closesAt;
+  if (!raw) return "";
+  const ms = new Date(raw).getTime() - Date.now();
+  if (ms <= 0) return "Closing";
+  const d = Math.floor(ms / 86400000);
+  if (d >= 1) return `${d}d`;
+  const h = Math.floor(ms / 3600000);
+  if (h >= 1) return `${h}h`;
+  return `${Math.max(1, Math.floor(ms / 60000))}m`;
+}
+
+// A deliberately different look from the feed cards below: accent-tinted, a big
+// headline probability, and compact — so "trending" reads as a highlight strip.
+function TrendingMiniCard({
+  m,
+  onOpen,
+}: {
+  m: Market;
+  onOpen: (id: string) => void;
+}) {
+  const n = m.outcomes?.length || 1;
+  const prob = (o: (typeof m.outcomes)[0]) => calcProb(m, o.id);
+  const top = (m.outcomes ?? []).reduce(
+    (a, b) => (prob(b) > prob(a) ? b : a),
+    m.outcomes?.[0],
+  );
+  const rawPct = top ? prob(top) * 100 : 0;
+  const topPct = isNaN(rawPct) ? Math.round(100 / n) : Math.round(rawPct);
+  const vis = getCategoryVisual(m.category);
+  const timeLeft = trendingTimeLeft(m);
+  return (
+    <button
+      onClick={() => onOpen(m.id)}
+      style={{
+        width: "100%",
+        height: "100%",
+        textAlign: "left",
+        cursor: "pointer",
+        padding: 0,
+        background: "transparent",
+        border: "none",
+      }}
+    >
+      <div
+        style={{
+          height: "100%",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 10,
+          borderRadius: 14,
+          padding: "11px 12px",
+          background: "var(--bg-card)",
+          border: "1px solid var(--glass-border)",
+        }}
+      >
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 8.5,
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: vis.accentColor,
+                background: `${vis.accentColor}1a`,
+                padding: "3px 7px",
+                borderRadius: 99,
+                maxWidth: 110,
+                display: "inline-block",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                verticalAlign: "middle",
+              }}
+            >
+              {m.category || "market"}
+            </span>
+          </div>
+          <div
+            style={{
+              fontSize: 12.5,
+              fontWeight: 800,
+              color: "var(--text-main)",
+              lineHeight: 1.28,
+              fontFamily: "var(--font-display)",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              minHeight: 32,
+            }}
+          >
+            {m.title}
+          </div>
+        </div>
+        <div>
+          {top && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 5,
+                marginBottom: 5,
+              }}
+            >
+              <span
+                style={{ fontSize: 18, fontWeight: 900, color: "#22c55e", lineHeight: 1 }}
+              >
+                {topPct}%
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: "var(--text-subtle)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {top.label}
+              </span>
+            </div>
+          )}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 9.5,
+              color: "var(--text-subtle)",
+              fontWeight: 600,
+            }}
+          >
+            <span>Nu {Number(m.totalPool).toLocaleString()}</span>
+            {timeLeft && <span>{timeLeft} left</span>}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+const TRENDING_CARD_W = 165;
+const TRENDING_GAP = 12;
+// A market is "featured" (trending) only once its pool is at least this (Nu).
+// No fallback — if nothing qualifies, the strip is empty.
+const TRENDING_MIN_POOL = 1000;
+const TRENDING_MAX = 10;
+
+function TrendingCarousel({
+  markets,
+  onOpen,
+}: {
+  markets: Market[];
+  onOpen: (id: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [index, setIndex] = useState(0);
+  const lastTouch = useRef(0);
+  // The TMA is always a narrow phone width, so show ~2 cards across with a peek.
+  const perView = 2;
+  const slideWidth = "45%";
+
+  // Drag-to-scroll: Telegram's webview swallows native horizontal swipes (and a
+  // desktop mouse can't drag a scroll container), so we drive scrollLeft
+  // ourselves from pointer moves. `dragged` guards the card tap after a drag.
+  const drag = useRef({ down: false, startX: 0, startScroll: 0 });
+  const dragged = useRef(false);
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    drag.current = { down: true, startX: e.clientX, startScroll: el.scrollLeft };
+    dragged.current = false;
+    lastTouch.current = Date.now();
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const el = scrollRef.current;
+    if (!el || !drag.current.down) return;
+    const dx = e.clientX - drag.current.startX;
+    if (Math.abs(dx) > 4) {
+      dragged.current = true;
+      el.scrollLeft = drag.current.startScroll - dx;
+      lastTouch.current = Date.now();
+    }
+  };
+  const endDrag = () => {
+    drag.current.down = false;
+  };
+
+  // Measure the real rendered card width so scroll math works at any width.
+  const getStep = () => {
+    const first = scrollRef.current?.firstElementChild as HTMLElement | null;
+    return first
+      ? first.offsetWidth + TRENDING_GAP
+      : TRENDING_CARD_W + TRENDING_GAP;
+  };
+
+  const scrollToCard = (i: number) => {
+    scrollRef.current?.scrollTo({ left: i * getStep(), behavior: "smooth" });
+    lastTouch.current = Date.now();
+  };
+
+  // Infinite one-directional loop: render enough copies of the list that a full
+  // copy can always scroll past the viewport (even when the cards already fit),
+  // then reset seamlessly. Auto-advance one card every 3.5s (paused for 6s after
+  // the user interacts).
+  const looping = markets.length > 1;
+  const copies = looping
+    ? Math.max(2, Math.ceil(perView / markets.length) + 1)
+    : 1;
+  const loopMarkets = Array.from({ length: copies }, () => markets).flat();
+  useEffect(() => {
+    if (!looping) return;
+    let raf = 0;
+    let last = performance.now();
+    // scrollLeft truncates to an integer when read back, so accumulating a
+    // sub-pixel per-frame delta directly on it would round to zero and never
+    // move. Keep a float `pos` accumulator and write it to scrollLeft instead.
+    let pos = scrollRef.current?.scrollLeft ?? 0;
+    const SPEED = 45; // px per second — a gentle but clearly visible glide
+    const tick = (now: number) => {
+      const el = scrollRef.current;
+      const dt = Math.min(now - last, 64); // clamp if the tab was backgrounded
+      last = now;
+      if (el) {
+        // Resume 1.5s after the user last interacted, so it eases back gently.
+        if (Date.now() - lastTouch.current > 1500) {
+          // If the user dragged/scrolled, resync before accumulating.
+          if (Math.abs(el.scrollLeft - Math.round(pos)) > 2) pos = el.scrollLeft;
+          pos += (SPEED * dt) / 1000;
+          const setWidth = getStep() * markets.length;
+          if (setWidth > 0 && pos >= setWidth) pos -= setWidth;
+          el.scrollLeft = pos;
+        } else {
+          pos = el.scrollLeft; // stay synced while paused / being dragged
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [looping, perView, markets.length]);
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = getStep();
+    // Once we've scrolled a full copy of the list, jump back by that width with
+    // no animation — the second copy is identical, so the loop looks seamless.
+    const setWidth = step * markets.length;
+    if (looping && setWidth > 0 && el.scrollLeft >= setWidth) {
+      el.scrollLeft -= setWidth;
+    }
+    const i = step > 0 ? Math.round(el.scrollLeft / step) % markets.length : 0;
+    if (i !== index) setIndex(i);
+  };
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 800,
+          color: "var(--text-main)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          marginBottom: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#ff6f01ff" stroke="none">
+          <path d="M12 2c0 6-6 8-6 14a6 6 0 0 0 12 0c0-6-6-8-6-14z" />
+        </svg>
+        Trending
+      </div>
+
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onTouchStart={() => (lastTouch.current = Date.now())}
+        onTouchMove={() => (lastTouch.current = Date.now())}
+        style={{
+          display: "flex",
+          gap: TRENDING_GAP,
+          overflowX: "auto",
+          scrollSnapType: "none",
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
+          cursor: "grab",
+          touchAction: "pan-y",
+          userSelect: "none",
+          paddingBottom: 2,
+        }}
+      >
+        {loopMarkets.map((m, i) => (
+          <div
+            key={`${m.id}-${i}`}
+            style={{
+              flex: `0 0 ${slideWidth}`,
+              minWidth: 0,
+              scrollSnapAlign: "start",
+            }}
+          >
+            <TrendingMiniCard
+              m={m}
+              onOpen={(id) => {
+                if (!dragged.current) onOpen(id);
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {looping && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 6,
+            marginTop: 10,
+          }}
+        >
+          {markets.map((m, i) => (
+            <span
+              key={m.id}
+              onClick={() => scrollToCard(i)}
+              style={{
+                width: i === index ? 18 : 6,
+                height: 6,
+                borderRadius: 99,
+                cursor: "pointer",
+                background: i === index ? "var(--accent, #3b82f6)" : "var(--glass-border)",
+                transition: "width 0.25s ease, background 0.25s ease",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Live Activity Ticker
 
 interface FormattedEvent {
@@ -600,18 +952,22 @@ const MarketCard = memo(function MarketCard({
                 </span>
               )}
             </div>
-            {/* Title */}
-            <div
+            {/* Title — tappable → open market detail */}
+            <Link
+              to={`/market/${market.id}`}
               style={{
+                display: "block",
+                textDecoration: "none",
                 fontSize: 15,
                 fontWeight: 700,
                 lineHeight: 1.35,
                 color: "var(--text-main)",
                 fontFamily: "var(--font-display)",
+                cursor: "pointer",
               }}
             >
               {market.title}
-            </div>
+            </Link>
           </div>
         );
       })()}
@@ -1534,7 +1890,40 @@ export const TmaFeedPage: FC = () => {
   const visibleCards = allCards.slice(0, visibleCount);
   const hasMore = visibleCount < allCards.length;
 
-  const trendingMarkets = filteredOpen.slice(0, 5);
+  // Featured = TER/BTC (always, regardless of pool) plus any market whose pool
+  // has crossed TRENDING_MIN_POOL. When more than TRENDING_MAX qualify, priority
+  // is: TER/BTC first, then markets with no subcategory (e.g. Ballon d'Or), then
+  // the rest — biggest pool first within each tier.
+  //
+  // Trending is drawn from ALL open markets, NOT the hub-filtered `filteredOpen`.
+  // Most high-pool markets live in a hub (UFC/esports/UCL/WC/BPL), and tapping a
+  // trending card opens that market's detail page regardless of its hub — so a
+  // hot UFC or esports market should still be able to trend.
+  const isPriceMarket = (m: Market) =>
+    m.externalSource === "ter" || m.externalSource === "btc";
+  const trendingRank = (m: Market) =>
+    isPriceMarket(m) ? 0 : m.subcategory && m.subcategory.trim() ? 2 : 1;
+  const trendingMarkets = markets
+    .filter(
+      (m) =>
+        m.status === "open" &&
+        (m.outcomes?.length ?? 0) > 0 &&
+        // Drop TER/BTC rounds that locked with no bets (nothing to watch)
+        !(
+          isPriceMarket(m) &&
+          Number(m.totalPool) === 0 &&
+          m.bettingClosesAt &&
+          new Date(m.bettingClosesAt).getTime() <= Date.now()
+        ) &&
+        (isPriceMarket(m) || Number(m.totalPool) >= TRENDING_MIN_POOL),
+    )
+    .slice()
+    .sort(
+      (a, b) =>
+        trendingRank(a) - trendingRank(b) ||
+        Number(b.totalPool) - Number(a.totalPool),
+    )
+    .slice(0, TRENDING_MAX);
 
   // World Cup banner strip data — the banner itself is disabled below via
   // `WC_BANNER_ENABLED`, but this stays live so the JSX still typechecks.
@@ -1980,118 +2369,12 @@ export const TmaFeedPage: FC = () => {
           </div>
         )}
 
-        {/* ── Trending strip ── */}
+        {/* ── Trending carousel ── */}
         {trendingMarkets.length > 0 && !searchQuery.trim() && (
-          <div style={{ marginBottom: 20 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                color: "var(--text-main)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginBottom: 10,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="#ff6f01ff"
-                stroke="none"
-              >
-                <path d="M12 2c0 6-6 8-6 14a6 6 0 0 0 12 0c0-6-6-8-6-14z" />
-              </svg>
-              Trending
-            </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                overflowX: "auto",
-                paddingBottom: 4,
-                scrollbarWidth: "none",
-              }}
-            >
-              {trendingMarkets.map((m) => {
-                if (!m.outcomes?.length) return null;
-                const n = m.outcomes.length || 1;
-                const prob = (o: (typeof m.outcomes)[0]) => calcProb(m, o.id);
-                const top = m.outcomes.reduce(
-                  (a, b) => (prob(b) > prob(a) ? b : a),
-                  m.outcomes[0],
-                );
-                const rawPct = prob(top) * 100;
-                const topPct = isNaN(rawPct)
-                  ? Math.round(100 / n)
-                  : Math.round(rawPct);
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() =>
-                      setActiveBet({ marketId: m.id, outcomeId: top.id })
-                    }
-                    style={{
-                      flexShrink: 0,
-                      width: 140,
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--glass-border)",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      boxShadow: "var(--shadow-sm)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "var(--text-main)",
-                        lineHeight: 1.3,
-                        marginBottom: 6,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {m.title}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: "#22c55e",
-                        }}
-                      >
-                        {top.label} {topPct}%
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 9,
-                          color: "var(--text-subtle)",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Nu {Number(m.totalPool).toLocaleString()}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <TrendingCarousel
+            markets={trendingMarkets}
+            onOpen={(id) => navigate(`/market/${id}`)}
+          />
         )}
 
         {/* No results */}
