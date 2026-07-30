@@ -31,6 +31,7 @@ import { isEplMarket } from "./EplHubPage";
 import { EplMarketDetail } from "@/components/EplMarketDetail";
 import { isUclMarket } from "./UclHubPage";
 import { UclMarketDetail } from "@/components/UclMarketDetail";
+import { PriceMarketDetail } from "@/components/PriceMarketDetail";
 import {
   UnderdogBanner,
   getUnderdogLabel,
@@ -228,6 +229,11 @@ export const MarketDetailPage: FC = () => {
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Open the detail view at the top, not at the feed's scroll position
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
   const [, setDisputes] = useState<Dispute[]>([]);
   const [disputeReqs, setDisputeReqs] = useState<DisputeRequirements | null>(
     null,
@@ -427,6 +433,38 @@ export const MarketDetailPage: FC = () => {
   })();
 
   const isOpen = m.status === "open";
+
+  // TER / BTC price markets get the dedicated trading-styled detail view with
+  // the live chart, price-to-beat and Higher/Lower.
+  if (m.externalSource === "ter" || m.externalSource === "btc") {
+    return (
+      <Page back={true}>
+        <PriceMarketDetail
+          market={m}
+          userPickedOutcomeId={userBets[0]?.outcomeId}
+          hasWon={hasWon}
+          wonTotalPayout={wonTotalPayout}
+          userHasBets={userBets.length > 0}
+          onBetPlaced={() => {
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          isResolving={isResolving}
+          proposedOutcome={proposedOutcome}
+          disputeTimeLeft={disputeTimeLeft}
+          disputeReason={disputeReason}
+          setDisputeReason={setDisputeReason}
+          handleSubmitDispute={handleSubmitDispute}
+          disputeSubmitting={disputeSubmitting}
+          disputeError={disputeError}
+          disputeSuccess={disputeSuccess}
+        />
+      </Page>
+    );
+  }
 
   // UFC markets get the dedicated /ufc-styled detail view
   if (isUfcMarket(m)) {
