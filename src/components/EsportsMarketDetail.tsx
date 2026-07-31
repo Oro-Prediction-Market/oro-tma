@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, Clock, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
 import type { Market, Outcome } from "@shared/api/client";
+import { isEsportsFinal } from "@shared/helpers/esportsKeywords";
 import {
   EWC,
   notch,
@@ -143,6 +144,7 @@ export function EsportsMarketDetail({
 
   const cat = categoryMeta(esportsCategoryOf(market));
   const CatIcon = cat.Icon;
+  const isFinal = isEsportsFinal(market.title);
 
   const locked =
     market.status === "closed" ||
@@ -279,14 +281,37 @@ export function EsportsMarketDetail({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 8,
                   color: EWC.goldBright,
                 }}
               >
-                <CatIcon size={13} />
-                <Label color={EWC.goldBright} size={10}>
-                  {cat.label}
-                </Label>
+                <span
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <CatIcon size={13} />
+                  <Label color={EWC.goldBright} size={10}>
+                    {cat.label}
+                  </Label>
+                </span>
+                {isFinal && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      border: `1px solid ${EWC.goldLine}`,
+                      background: EWC.glass,
+                      clipPath: notch(6),
+                      padding: "3px 8px",
+                      color: EWC.goldBright,
+                    }}
+                  >
+                    <Trophy size={11} />
+                    <Label color={EWC.goldBright} size={9}>
+                      Grand Final
+                    </Label>
+                  </span>
+                )}
               </span>
               <span
                 style={{

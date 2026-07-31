@@ -22,7 +22,11 @@ import { isBplMarket, isDrawOutcome } from "./BplHubPage";
 import { isUfcMarket } from "./UfcHubPage";
 import { isEplMarket } from "./EplHubPage";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
-import { hasToken, looksEsports } from "@shared/helpers/esportsKeywords";
+import {
+  hasToken,
+  looksEsports,
+  isEsportsFinal,
+} from "@shared/helpers/esportsKeywords";
 import { EsportsWordmark } from "@shared/components/EsportsWordmark";
 import {
   EWC,
@@ -649,6 +653,7 @@ function EsportsMatchCard({
 
   const pctA = Math.round(calcProb(m, sa.id) * 100);
   const pctB = 100 - pctA;
+  const isFinal = isEsportsFinal(market.title);
 
   const renderSide = (
     outcome: typeof sa,
@@ -804,21 +809,35 @@ function EsportsMatchCard({
           justifyContent: "space-between",
           gap: 10,
           padding: "7px 10px",
-          background: EWC.panel,
+          background: isFinal ? EWC.glass : EWC.panel,
+          borderTop: isFinal ? `1px solid ${EWC.goldLine}` : "none",
         }}
       >
         <span
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            minWidth: 0,
             fontFamily: DISPLAY_FONT,
             fontSize: 10,
-            fontWeight: 400,
-            color: EWC.textMuted,
+            fontWeight: isFinal ? 700 : 400,
+            color: isFinal ? EWC.goldBright : EWC.textMuted,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {market.title}
+          {isFinal && <Trophy size={11} style={{ flexShrink: 0 }} />}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {market.title}
+          </span>
         </span>
         <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
           <Label>pool </Label>

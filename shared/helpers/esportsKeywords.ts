@@ -69,3 +69,19 @@ export function looksEsports(...parts: (string | null | undefined)[]): boolean {
   if (ESPORTS_WORD_RE.test(hay)) return true;
   return ESPORTS_ONLY_KEYWORDS.some((k) => hasToken(hay, k));
 }
+
+/**
+ * True when a market's stage marks the tournament's championship decider — the
+ * "Grand Final" / "Final". Deliberately excludes the semi-finals, quarter-finals
+ * and the third-place match: those also read as "final-ish" but are not the
+ * trophy match, and must not get the showpiece treatment. Fed the market title
+ * (which carries the stage, e.g. "MSC 2026: FINAL"), optionally + description.
+ */
+export function isEsportsFinal(...parts: (string | null | undefined)[]): boolean {
+  const hay = parts.filter(Boolean).join(" ").toLowerCase();
+  if (!hay) return false;
+  // Semi-/quarter-finals contain "final" but are not THE final.
+  if (/\b(?:semi|quarter)[-\s]?finals?\b/.test(hay)) return false;
+  if (/\bgrand finals?\b/.test(hay)) return true;
+  return /\bfinals?\b/.test(hay);
+}
