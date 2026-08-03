@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
 import type { Market, Outcome } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
+import {
+  DisputeContestFields,
+  type DisputeContestControls,
+} from "@/components/DisputeContestFields";
 import { calcProb, calcOdds } from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import { getEplCrest, shortEplName, EplCrest } from "@/pages/EplHubPage";
@@ -74,6 +78,7 @@ export interface EplMarketDetailProps {
   disputeSubmitting: boolean;
   disputeError: string | null;
   disputeSuccess: boolean;
+  disputeContest?: DisputeContestControls;
 }
 
 export function EplMarketDetail({
@@ -88,6 +93,7 @@ export function EplMarketDetail({
   disputeSubmitting,
   disputeError,
   disputeSuccess,
+  disputeContest,
 }: EplMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -449,6 +455,11 @@ export function EplMarketDetail({
               </div>
             ) : (
               <div style={{ marginTop: 12 }}>
+                {disputeContest && (
+                  <div style={{ marginBottom: 12 }}>
+                    <DisputeContestFields {...disputeContest} accent="#a855f7" />
+                  </div>
+                )}
                 <textarea
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}

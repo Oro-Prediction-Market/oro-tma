@@ -7,15 +7,18 @@ import {
   getMyBets,
   getDisputes,
   submitDispute,
-  getDisputeRequirements,
+  getDisputeInfo,
   bustCache,
   getTerPrice,
   Market,
   Dispute,
-  DisputeRequirements,
+  DisputeInfo,
+  DisputeSide,
+  SubmitDisputePayload,
   Bet,
   TerPrice,
 } from "@shared/api/client";
+import { DisputeContestFields } from "@/components/DisputeContestFields";
 import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
@@ -235,10 +238,10 @@ export const MarketDetailPage: FC = () => {
     window.scrollTo(0, 0);
   }, [id]);
   const [, setDisputes] = useState<Dispute[]>([]);
-  const [disputeReqs, setDisputeReqs] = useState<DisputeRequirements | null>(
-    null,
-  );
+  const [disputeInfo, setDisputeInfo] = useState<DisputeInfo | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
+  const [disputeBond, setDisputeBond] = useState(10);
+  const [disputeSide, setDisputeSide] = useState<DisputeSide>("object");
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [disputeError, setDisputeError] = useState<string | null>(null);
   const [disputeSuccess, setDisputeSuccess] = useState(false);
@@ -325,9 +328,11 @@ export const MarketDetailPage: FC = () => {
     getDisputes(id)
       .then(setDisputes)
       .catch(() => {});
-    getDisputeRequirements(id)
-      .then((reqs) => {
-        setDisputeReqs(reqs);
+    getDisputeInfo(id)
+      .then((info) => {
+        setDisputeInfo(info);
+        // Default the bond input to the floor before anyone has set it.
+        if (!info.bondFixed) setDisputeBond((b) => (b < info.minBond ? info.minBond : b));
       })
       .catch(() => {});
   }, [id, market?.status]);
@@ -357,18 +362,34 @@ export const MarketDetailPage: FC = () => {
   const handleSubmitDispute = async () => {
     if (!id) return;
     if (!disputeReason.trim()) {
-      setDisputeError("Please explain why the proposed outcome is incorrect.");
+      setDisputeError(
+        disputeSide === "support"
+          ? "Please explain why the proposed outcome is correct."
+          : "Please explain why the proposed outcome is incorrect.",
+      );
+      return;
+    }
+    const bondFixed = !!disputeInfo?.bondFixed;
+    if (!bondFixed && disputeBond < (disputeInfo?.minBond ?? 10)) {
+      setDisputeError(`The minimum bond is Nu ${disputeInfo?.minBond ?? 10}.`);
       return;
     }
     setDisputeSubmitting(true);
     setDisputeError(null);
     try {
-      await submitDispute(id, {
+      const payload: SubmitDisputePayload = {
         reason: disputeReason,
-      });
+        side: disputeSide,
+      };
+      // Only the first objector sets the amount; everyone else matches it.
+      if (!bondFixed && disputeSide === "object") payload.bondAmount = disputeBond;
+      await submitDispute(id, payload);
       setDisputeSuccess(true);
       getDisputes(id)
         .then(setDisputes)
+        .catch(() => {});
+      getDisputeInfo(id)
+        .then(setDisputeInfo)
         .catch(() => {});
     } catch (e: any) {
       setDisputeError(e.message || "Failed to submit dispute");
@@ -434,6 +455,16 @@ export const MarketDetailPage: FC = () => {
 
   const isOpen = m.status === "open";
 
+  // Bundle the resolution-contest controls so each themed detail form can drop
+  // in the shared <DisputeContestFields> with a single prop.
+  const disputeContest = {
+    info: disputeInfo,
+    bond: disputeBond,
+    setBond: setDisputeBond,
+    side: disputeSide,
+    setSide: setDisputeSide,
+  };
+
   // TER / BTC price markets get the dedicated trading-styled detail view with
   // the live chart, price-to-beat and Higher/Lower.
   if (m.externalSource === "ter" || m.externalSource === "btc") {
@@ -461,6 +492,7 @@ export const MarketDetailPage: FC = () => {
           disputeSubmitting={disputeSubmitting}
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
+          disputeContest={disputeContest}
         />
       </Page>
     );
@@ -488,6 +520,7 @@ export const MarketDetailPage: FC = () => {
           disputeSubmitting={disputeSubmitting}
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
+          disputeContest={disputeContest}
         />
       </Page>
     );
@@ -515,6 +548,7 @@ export const MarketDetailPage: FC = () => {
           disputeSubmitting={disputeSubmitting}
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
+          disputeContest={disputeContest}
         />
       </Page>
     );
@@ -542,6 +576,7 @@ export const MarketDetailPage: FC = () => {
           disputeSubmitting={disputeSubmitting}
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
+          disputeContest={disputeContest}
         />
       </Page>
     );
@@ -569,6 +604,7 @@ export const MarketDetailPage: FC = () => {
           disputeSubmitting={disputeSubmitting}
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
+          disputeContest={disputeContest}
         />
       </Page>
     );
@@ -948,8 +984,8 @@ export const MarketDetailPage: FC = () => {
                   </strong>
                 </div>
 
-                {/* Ineligibility notice */}
-                {disputeReqs && !disputeReqs.eligible && (
+                {/* Eligibility notice — only bettors with a position can join */}
+                {disputeInfo && !disputeInfo.canObject && (
                   <div
                     style={{
                       background: "#fef2f2",
@@ -982,7 +1018,8 @@ export const MarketDetailPage: FC = () => {
                         fontWeight: 700,
                       }}
                     >
-                      {disputeReqs.reason}
+                      Only bettors with an active position in this market can
+                      join its objection.
                     </span>
                   </div>
                 )}
@@ -1015,7 +1052,7 @@ export const MarketDetailPage: FC = () => {
                     >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    Dispute Submitted
+                    Bond locked — your position is in
                   </div>
                 ) : (
                   <div
@@ -1025,56 +1062,17 @@ export const MarketDetailPage: FC = () => {
                       gap: 12,
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        background: "rgba(245,158,11,0.1)",
-                        border: "1.5px solid #fde68a",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "#b45309",
-                          fontWeight: 800,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        Dispute Bond
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "1rem",
-                          fontWeight: 900,
-                          color: "#b45309",
-                        }}
-                      >
-                        Nu 10
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.7rem",
-                        color: "#b45309",
-                        fontWeight: 600,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      This bond is locked when you raise an objection. You get
-                      it back + a reward if the admin agrees the outcome was
-                      wrong. You lose it if the admin upholds their decision.
-                    </div>
+                    <DisputeContestFields light {...disputeContest} />
                     <textarea
                       value={disputeReason}
                       onChange={(e) => setDisputeReason(e.target.value)}
-                      placeholder="Explain why the proposed outcome is incorrect..."
+                      placeholder={
+                        disputeSide === "support"
+                          ? "Explain why the proposed outcome is correct..."
+                          : "Explain why the proposed outcome is incorrect..."
+                      }
                       rows={2}
-                      disabled={disputeReqs != null && !disputeReqs.eligible}
+                      disabled={disputeInfo != null && !disputeInfo.canObject}
                       style={{
                         width: "100%",
                         padding: "12px",
@@ -1100,26 +1098,32 @@ export const MarketDetailPage: FC = () => {
                       onClick={handleSubmitDispute}
                       disabled={
                         disputeSubmitting ||
-                        (disputeReqs != null && !disputeReqs.eligible)
+                        (disputeInfo != null && !disputeInfo.canObject)
                       }
                       style={{
                         width: "100%",
                         padding: "14px",
                         borderRadius: 12,
                         background:
-                          disputeReqs && !disputeReqs.eligible
+                          disputeInfo && !disputeInfo.canObject
                             ? "#d1d5db"
-                            : "#f59e0b",
+                            : disputeSide === "support"
+                              ? "#10b981"
+                              : "#f59e0b",
                         color: "#fff",
                         fontWeight: 900,
                         border: "none",
                         cursor:
-                          disputeReqs && !disputeReqs.eligible
+                          disputeInfo && !disputeInfo.canObject
                             ? "not-allowed"
                             : "pointer",
                       }}
                     >
-                      {disputeSubmitting ? "SUBMITTING..." : "SUBMIT DISPUTE"}
+                      {disputeSubmitting
+                        ? "SUBMITTING..."
+                        : disputeSide === "support"
+                          ? "DEFEND OUTCOME"
+                          : "SUBMIT OBJECTION"}
                     </button>
                   </div>
                 )}

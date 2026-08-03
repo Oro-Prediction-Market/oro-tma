@@ -454,39 +454,59 @@ export interface Market {
   outcomes: Outcome[];
 }
 
+export type DisputeSide = "object" | "support";
+export type DisputeBondStatus =
+  | "locked"
+  | "rewarded"
+  | "forfeited"
+  | "not_applicable";
+
 export interface Dispute {
   id: string;
   userId: string;
   marketId: string;
   bondAmount: string;
   reason: string | null;
-  bondRefunded: boolean;
+  /** "object" challenges the proposal; "support" defends it. */
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondStatus: DisputeBondStatus;
   createdAt: string;
 }
 
 export interface SubmitDisputePayload {
+  reason: string;
+  /** Only the FIRST objector may set this (min 10). Others match automatically — omit it. */
   bondAmount?: number;
-  paymentId?: string;
-  reason?: string;
+  /** "object" (default) challenges the proposal; "support" defends it. */
+  side?: DisputeSide;
 }
 
 export function getDisputes(marketId: string): Promise<Dispute[]> {
   return request<Dispute[]>(`/markets/${marketId}/disputes`);
 }
 
-export interface DisputeRequirements {
+export interface DisputeInfo {
+  /** OBJECT-side count. */
+  objectionCount: number;
+  objectCount: number;
+  supportCount: number;
+  windowOpen: boolean;
+  windowClosesAt: string | null;
+  windowMinutes: number;
+  canObject: boolean;
+  /** Fixed per-head bond once the first objector set it; null until then. */
+  bondRequired: number | null;
+  /** true once the bond is locked in for everyone (after the first objection). */
+  bondFixed: boolean;
+  /** Floor for the first objector's chosen bond. */
   minBond: number;
-  minParticipants: number;
-  eligible: boolean;
-  reason: string | null;
+  bondNote: string;
 }
 
-export function getDisputeRequirements(
-  marketId: string,
-): Promise<DisputeRequirements> {
-  return request<DisputeRequirements>(
-    `/markets/${marketId}/dispute-requirements`,
-  );
+export function getDisputeInfo(marketId: string): Promise<DisputeInfo> {
+  return request<DisputeInfo>(`/markets/${marketId}/dispute-info`);
 }
 
 export function submitDispute(

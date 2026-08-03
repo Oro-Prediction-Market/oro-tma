@@ -12,6 +12,10 @@ import {
   CornerMark,
 } from "@shared/components/EsportsUi";
 import { TmaBetModal } from "@/components/TmaBetModal";
+import {
+  DisputeContestFields,
+  type DisputeContestControls,
+} from "@/components/DisputeContestFields";
 import { calcProb, calcOdds } from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import {
@@ -119,6 +123,7 @@ export interface EsportsMarketDetailProps {
   disputeSubmitting: boolean;
   disputeError: string | null;
   disputeSuccess: boolean;
+  disputeContest?: DisputeContestControls;
 }
 
 export function EsportsMarketDetail({
@@ -133,6 +138,7 @@ export function EsportsMarketDetail({
   disputeSubmitting,
   disputeError,
   disputeSuccess,
+  disputeContest,
 }: EsportsMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -514,6 +520,11 @@ export function EsportsMarketDetail({
               </div>
             ) : (
               <div style={{ marginTop: 12 }}>
+                {disputeContest && (
+                  <div style={{ marginBottom: 12 }}>
+                    <DisputeContestFields {...disputeContest} accent="#22d3ee" />
+                  </div>
+                )}
                 <textarea
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}

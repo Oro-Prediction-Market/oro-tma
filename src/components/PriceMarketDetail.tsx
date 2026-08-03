@@ -13,6 +13,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { Market, Outcome } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
+import {
+  DisputeContestFields,
+  type DisputeContestControls,
+} from "@/components/DisputeContestFields";
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -46,6 +50,7 @@ interface Props {
   disputeSubmitting: boolean;
   disputeError: string | null;
   disputeSuccess: boolean;
+  disputeContest?: DisputeContestControls;
 }
 
 const fmtDate = (d: string) =>
@@ -105,6 +110,7 @@ export const PriceMarketDetail: FC<Props> = ({
   disputeSubmitting,
   disputeError,
   disputeSuccess,
+  disputeContest,
 }) => {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -334,10 +340,22 @@ export const PriceMarketDetail: FC<Props> = ({
                 </div>
               ) : (
                 <div style={{ marginTop: 12 }}>
+                  {disputeContest && (
+                    <div style={{ marginBottom: 12 }}>
+                      <DisputeContestFields
+                        {...disputeContest}
+                        accent={P.accent}
+                      />
+                    </div>
+                  )}
                   <textarea
                     value={disputeReason}
                     onChange={(e) => setDisputeReason(e.target.value)}
-                    placeholder="Explain why the proposed result is incorrect…"
+                    placeholder={
+                      disputeContest?.side === "support"
+                        ? "Explain why the proposed result is correct…"
+                        : "Explain why the proposed result is incorrect…"
+                    }
                     rows={3}
                     style={{
                       width: "100%",
