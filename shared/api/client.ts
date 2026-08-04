@@ -863,6 +863,27 @@ export function joinChallenge(challengeId: string): Promise<ChallengeResponse> {
   });
 }
 
+/** Minimal challenge info shown before sign-in, from a `challenge_<id>` deep link. */
+export interface ChallengePreview {
+  id: string;
+  marketId: string;
+  marketTitle: string | null;
+  marketStatus: string | null;
+  outcomeId: string;
+  outcomeLabel: string | null;
+  creatorName: string;
+  wagerAmount: number | null;
+  status: string;
+  expiresAt: string | null;
+}
+
+/** Public — no auth required. Resolves a challenge deep link to its market. */
+export function getChallengePreview(
+  challengeId: string,
+): Promise<ChallengePreview> {
+  return request<ChallengePreview>(`/challenges/${challengeId}/preview`);
+}
+
 // ─── Seasons ─────────────────────────────────────────────────────────────────
 
 export interface Season {

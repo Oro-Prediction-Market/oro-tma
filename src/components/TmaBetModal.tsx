@@ -115,6 +115,11 @@ export function TmaBetModal({
     return Math.max(parimutuel, betAmount * 1.05);
   })();
   const estProfit = estPayout - betAmount;
+  // The live parimutuel multiple on this side right now. Because winners split
+  // the pool, this number FALLS as more money backs the same outcome — the
+  // "lock it in now" hook. It's specific to this user's stake and needs no
+  // crowd, so it works even when only a handful have predicted.
+  const estMultiple = betAmount > 0 ? estPayout / betAmount : 0;
   // No one has placed a bet on this market yet — the user would be the first
   // predictor, so there's no pool to compute a meaningful payout against.
   const poolEmpty = (Number(market.totalPool) || 0) === 0;
@@ -951,9 +956,6 @@ export function TmaBetModal({
               ) : isValidAmount ? (
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                     background:
                       estProfit >= 0 ? "rgba(22,163,74,0.1)" : "var(--bg-main)",
                     border: `1px solid ${estProfit >= 0 ? "#86efac" : "var(--glass-border)"}`,
@@ -962,6 +964,48 @@ export function TmaBetModal({
                     marginBottom: 16,
                   }}
                 >
+                  {/* Live multiple — the "lock it in now" hook. Falls as more
+                      money backs this side. */}
+                  {estProfit >= 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 8,
+                        paddingBottom: 8,
+                        marginBottom: 8,
+                        borderBottom: "1px solid rgba(134,239,172,0.35)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 26,
+                          fontWeight: 900,
+                          color: "#16a34a",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {estMultiple.toFixed(2)}×
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "var(--text-subtle)",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        on this side now — drops as more money backs it
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                   <div>
                     <div
                       style={{
@@ -1018,6 +1062,7 @@ export function TmaBetModal({
                         Grows when more people join
                       </div>
                     )}
+                  </div>
                   </div>
                 </div>
               ) : null}

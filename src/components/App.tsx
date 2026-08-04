@@ -11,6 +11,8 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { OnboardingModal, useOnboarding } from "./OnboardingModal";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { RouteTracker } from "@shared/components/RouteTracker";
+import { DeepLinkRedirect } from "@shared/components/DeepLinkRedirect";
+import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanner";
 import { trackEvent } from "@shared/api/client";
 
 export function App() {
@@ -52,6 +54,7 @@ export function App() {
     >
       <HashRouter future={{ v7_startTransition: true }}>
         <RouteTracker />
+        <DeepLinkRedirect />
         <div
           style={{
             paddingBottom: 80,
@@ -59,6 +62,7 @@ export function App() {
             position: "relative",
           }}
         >
+          <ChallengeContextBanner />
           <Suspense
             fallback={
               <div
