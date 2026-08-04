@@ -6,18 +6,22 @@ import {
   getMarket,
   getMyBets,
   getDisputes,
+  getMyDispute,
   submitDispute,
   getDisputeInfo,
   bustCache,
   getTerPrice,
   Market,
   Dispute,
+  MyDispute,
   DisputeInfo,
   DisputeSide,
   SubmitDisputePayload,
   Bet,
   TerPrice,
 } from "@shared/api/client";
+import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
+import { YourPositionCard } from "@shared/components/YourPositionCard";
 import { DisputeContestFields } from "@/components/DisputeContestFields";
 import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -238,6 +242,7 @@ export const MarketDetailPage: FC = () => {
     window.scrollTo(0, 0);
   }, [id]);
   const [, setDisputes] = useState<Dispute[]>([]);
+  const [myDispute, setMyDispute] = useState<MyDispute | null>(null);
   const [disputeInfo, setDisputeInfo] = useState<DisputeInfo | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeBond, setDisputeBond] = useState(10);
@@ -335,6 +340,21 @@ export const MarketDetailPage: FC = () => {
         if (!info.bondFixed) setDisputeBond((b) => (b < info.minBond ? info.minBond : b));
       })
       .catch(() => {});
+  }, [id, market?.status]);
+
+  // Load the caller's OWN dispute result once the market is settled, so we can
+  // show them what they won or lost. No-ops silently when signed out or when no
+  // objection was ever filed (endpoint returns null / 401).
+  useEffect(() => {
+    if (!id || !market) return;
+    const settled = market.status === "settled" || market.status === "resolved";
+    if (!settled) {
+      setMyDispute(null);
+      return;
+    }
+    getMyDispute(id)
+      .then(setMyDispute)
+      .catch(() => setMyDispute(null));
   }, [id, market?.status]);
 
   // ── Haptic feedback on win
@@ -439,6 +459,9 @@ export const MarketDetailPage: FC = () => {
 
   const hasWon = wonTotalPayout > 0;
 
+  // The caller's own bets on THIS market — drives the "Your position" card.
+  const myMarketBets = userBets.filter((b) => b.marketId === m.id);
+
   const proposedOutcome =
     isResolving && m.proposedOutcomeId
       ? m.outcomes.find((o) => o.id === m.proposedOutcomeId)
@@ -493,6 +516,8 @@ export const MarketDetailPage: FC = () => {
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
+          myDispute={myDispute}
+          myBets={myMarketBets}
         />
       </Page>
     );
@@ -521,6 +546,8 @@ export const MarketDetailPage: FC = () => {
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
+          myDispute={myDispute}
+          myBets={myMarketBets}
         />
       </Page>
     );
@@ -549,6 +576,8 @@ export const MarketDetailPage: FC = () => {
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
+          myDispute={myDispute}
+          myBets={myMarketBets}
         />
       </Page>
     );
@@ -577,6 +606,8 @@ export const MarketDetailPage: FC = () => {
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
+          myDispute={myDispute}
+          myBets={myMarketBets}
         />
       </Page>
     );
@@ -605,6 +636,8 @@ export const MarketDetailPage: FC = () => {
           disputeError={disputeError}
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
+          myDispute={myDispute}
+          myBets={myMarketBets}
         />
       </Page>
     );
@@ -888,6 +921,12 @@ export const MarketDetailPage: FC = () => {
               </div>
             </div>
           )}
+
+          {/* Your bets on this market (stake + result) */}
+          <YourPositionCard bets={myMarketBets} resolved={isResolved} />
+
+          {/* Your dispute result (won reward / lost bond) */}
+          <DisputeResultBanner dispute={myDispute} />
 
           {/* Share CTA for Winner */}
           {resolvedOutcome && hasWon && (

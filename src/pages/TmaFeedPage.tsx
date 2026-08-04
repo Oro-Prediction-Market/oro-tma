@@ -557,9 +557,17 @@ function OpenPicksStrip({
   markets: Market[];
 }) {
   const navigate = useNavigate();
+  // Active picks awaiting an outcome: live (open) markets AND those already in
+  // resolution (betting closed / resolving). The card labels each accordingly
+  // (LIVE / CLOSED / RESOLVING). Resolved & settled picks live in Results.
   const openBets = pendingBets.filter((bet) => {
     const m = markets.find((mk) => mk.id === bet.marketId);
-    return m && m.status === "open";
+    return (
+      m &&
+      (m.status === "open" ||
+        m.status === "resolving" ||
+        m.status === "closed")
+    );
   });
   if (!openBets.length) return null;
 

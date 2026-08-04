@@ -472,6 +472,8 @@ export interface Dispute {
   /** true = this side won, false = lost, null = not settled yet. */
   upheld: boolean | null;
   bondStatus: DisputeBondStatus;
+  /** Reward paid on top of the returned bond when this side won; "0" otherwise. */
+  rewardAmount: string;
   createdAt: string;
 }
 
@@ -485,6 +487,42 @@ export interface SubmitDisputePayload {
 
 export function getDisputes(marketId: string): Promise<Dispute[]> {
   return request<Dispute[]>(`/markets/${marketId}/disputes`);
+}
+
+/** The caller's OWN dispute for a market — result + bond + reward, or null. */
+export interface MyDispute {
+  id: string;
+  reason: string | null;
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondAmount: string;
+  bondStatus: DisputeBondStatus;
+  /** Reward paid on top of the returned bond when this side won; "0" otherwise. */
+  rewardAmount: string;
+  createdAt: string;
+}
+
+export function getMyDispute(marketId: string): Promise<MyDispute | null> {
+  return request<MyDispute | null>(`/markets/${marketId}/my-dispute`);
+}
+
+/** A dispute the caller raised on some market, with its settled result. */
+export interface MyDisputeSummary {
+  id: string;
+  marketId: string;
+  marketTitle: string | null;
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondAmount: string;
+  bondStatus: DisputeBondStatus;
+  rewardAmount: string;
+  createdAt: string;
+}
+
+export function getMyDisputes(): Promise<MyDisputeSummary[]> {
+  return request<MyDisputeSummary[]>("/markets/my-disputes");
 }
 
 export interface DisputeInfo {
@@ -634,7 +672,12 @@ export interface Transaction {
     | "refund"
     | "dispute_bond"
     | "dispute_refund"
+    | "dispute_bond_lock"
+    | "dispute_bond_forfeit"
+    | "dispute_bond_reward"
     | "referral_bonus"
+    | "referral_prize"
+    | "streak_bonus"
     | "duel_wager"
     | "duel_payout"
     | "free_credit"
