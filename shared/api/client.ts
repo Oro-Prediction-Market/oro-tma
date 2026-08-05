@@ -363,14 +363,15 @@ export interface LinkedBankAccount {
 export async function linkBankAccount(
   cid: string,
   phone?: string,
-  skipOtp?: boolean,
 ): Promise<{ accountName: string; maskedPhone: string; requiresOtp: boolean }> {
+  // Whether an OTP is required is decided by the server (it skips only when the
+  // DK-registered phone matches the user's already-verified phone). The client
+  // must honour `requiresOtp` in the response rather than asserting a skip.
   return request("/payments/bank/link", {
     method: "POST",
     body: JSON.stringify({
       cid,
       ...(phone ? { phone } : {}),
-      ...(skipOtp ? { skipOtp } : {}),
     }),
   });
 }

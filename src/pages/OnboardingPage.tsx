@@ -282,13 +282,16 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
     try {
       await register(username, fullName.trim(), otpDigits, phone, undefined);
       setDisplayName(telegramProfile?.firstName ?? "");
-      // Auto-trigger bank linking with CID collected during contact step (skip OTP since identity already verified)
+      // Auto-trigger bank linking with the CID collected during the contact
+      // step. The server skips the bank OTP only when the DK-registered phone
+      // matches the phone we just OTP-verified in register() above; otherwise it
+      // sends an OTP and we fall into the bank OTP step.
       try {
         const userPhone = phone || undefined;
-        const res = await linkBankAccount(cid.trim(), userPhone, true);
+        const res = await linkBankAccount(cid.trim(), userPhone);
         setBankAccountName(res.accountName);
         setBankMaskedPhone(res.maskedPhone);
-        setBankStep("done");
+        setBankStep(res.requiresOtp ? "otp" : "done");
       } catch (err: any) {
         setBankError(err.message || "Could not link bank account.");
       }
