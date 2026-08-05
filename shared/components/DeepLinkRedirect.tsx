@@ -23,9 +23,14 @@ import { getChallengePreview } from "@shared/api/client";
 // Module-level so a component remount (e.g. React strict mode) can't re-fire it.
 let handled = false;
 
-function readStartParam(): string | undefined {
-  // Same resolution order as useAuth: @tma.js launch params first, then the
-  // legacy global if the classic web-app script happens to be present.
+// A new user tapping a share link hits the onboarding screen FIRST — the router
+// (and this component) only mount after sign-up. By then the launch param can be
+// gone. So we stash the target in sessionStorage the moment the app opens (see
+// captureStartParam, called from App before the onboarding gate) and read it
+// back here after sign-up. Keyed separately from referral capture.
+const DEEPLINK_KEY = "oro_pending_deeplink";
+
+function rawStartParam(): string | undefined {
   try {
     const fromSdk = retrieveLaunchParams().tgWebAppStartParam;
     if (fromSdk) return fromSdk;
@@ -33,6 +38,41 @@ function readStartParam(): string | undefined {
     // SDK not initialized (e.g. non-Telegram env) — fall through.
   }
   return (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param;
+}
+
+/**
+ * Persist the deep-link target as early as possible — BEFORE the onboarding
+ * gate — so it survives a brand-new user's sign-up flow. No-op unless the launch
+ * param actually points at a market or challenge.
+ */
+export function captureStartParam(): void {
+  try {
+    const p = rawStartParam();
+    if (p && (marketIdFromStartParam(p) || challengeIdFromStartParam(p))) {
+      sessionStorage.setItem(DEEPLINK_KEY, p);
+    }
+  } catch {
+    // sessionStorage unavailable — the live launch param is still the fallback.
+  }
+}
+
+function readStartParam(): string | undefined {
+  // Prefer the stashed target (survives onboarding), then the live launch param.
+  try {
+    const stashed = sessionStorage.getItem(DEEPLINK_KEY);
+    if (stashed) return stashed;
+  } catch {
+    // ignore
+  }
+  return rawStartParam();
+}
+
+function clearStashedParam(): void {
+  try {
+    sessionStorage.removeItem(DEEPLINK_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 /** Pull the market id out of any of the deep-link shapes, or null. */
@@ -73,12 +113,14 @@ export function DeepLinkRedirect() {
 
     if (marketId) {
       handled = true;
+      clearStashedParam();
       navigate(`/market/${marketId}`, { replace: true });
       return;
     }
 
     if (challengeId) {
       handled = true;
+      clearStashedParam();
       // A challenge has no page of its own — resolve it to its market so the
       // recipient lands where the duel actually lives, with context in state.
       getChallengePreview(challengeId)

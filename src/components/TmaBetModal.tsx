@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 import confetti from "canvas-confetti";
-import { getMe, placeBet, trackEvent } from "@shared/api/client";
+import { getMe, getMyBets, placeBet, trackEvent } from "@shared/api/client";
 import type { Market, BetStreak } from "@shared/api/client";
 import { PayoutBreakdown } from "@shared/components/PayoutBreakdown";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -49,9 +49,14 @@ export function TmaBetModal({
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [streak, setStreak] = useState<BetStreak | null>(null);
+  // How much the user has ALREADY staked on this exact pick (active positions).
+  // Adding more to a side you already hold enlarges the group you'd split the
+  // pot with — i.e. it lowers your own multiple — so we surface it before they
+  // stake again.
+  const [existingStake, setExistingStake] = useState(0);
   const { user } = useAuth();
 
-  // Fetch user's balance when modal opens
+  // Fetch user's balance + any existing position on this pick when modal opens
   useEffect(() => {
     if (!isOpen) return;
     trackEvent({
@@ -64,7 +69,20 @@ export function TmaBetModal({
         setCreditsBalance(u.creditsBalance ?? 0);
       })
       .catch(() => {});
-  }, [isOpen]);
+    getMyBets()
+      .then((bets) => {
+        const held = bets
+          .filter(
+            (b) =>
+              b.marketId === market.id &&
+              b.outcomeId === outcomeId &&
+              b.status === "pending",
+          )
+          .reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+        setExistingStake(held);
+      })
+      .catch(() => setExistingStake(0));
+  }, [isOpen, outcomeId]);
 
   // Track visual viewport so the bottom sheet follows the keyboard precisely
   useEffect(() => {
@@ -123,6 +141,26 @@ export function TmaBetModal({
   // No one has placed a bet on this market yet — the user would be the first
   // predictor, so there's no pool to compute a meaningful payout against.
   const poolEmpty = (Number(market.totalPool) || 0) === 0;
+
+  // Some markets are created with an incomplete title (e.g. "UFC Fight Night:"
+  // with the fighters left off). Fall back to the matchup from the outcomes so
+  // the confirmation always says WHICH event was backed.
+  const matchupLabel =
+    market.outcomes
+      ?.map((o) => o.label)
+      .filter(Boolean)
+      .join(" vs ") ?? "";
+  const titleIncomplete = /[:\-–—]\s*$/.test((market.title ?? "").trim());
+  const displayTitle =
+    titleIncomplete && matchupLabel
+      ? `${(market.title ?? "").trim()} ${matchupLabel}`
+      : market.title;
+  const closeLabel = market.closesAt
+    ? new Date(market.closesAt).toLocaleString([], {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : null;
 
   if (!isOpen) return null;
 
@@ -311,7 +349,7 @@ export function TmaBetModal({
                     marginBottom: 4,
                   }}
                 >
-                  Prediction Locked In!
+                  Prediction placed
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                   Your position is now active
@@ -338,7 +376,7 @@ export function TmaBetModal({
                   marginBottom: 4,
                 }}
               >
-                {market.title}
+                {displayTitle}
               </div>
               <div
                 style={{
@@ -350,6 +388,17 @@ export function TmaBetModal({
                 Nu {betAmount.toLocaleString()} on{" "}
                 <span style={{ color: "#10b981" }}>{outcome?.label}</span>
               </div>
+              {closeLabel && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-subtle)",
+                    marginTop: 6,
+                  }}
+                >
+                  Closes {closeLabel} · your payout is final at close
+                </div>
+              )}
             </div>
 
             {/* ── Streak Banner ── */}
@@ -1107,6 +1156,29 @@ export function TmaBetModal({
                   }}
                 >
                   {error}
+                </div>
+              )}
+
+              {existingStake > 0 && (
+                <div
+                  style={{
+                    background: "rgba(245,158,11,0.1)",
+                    border: "1px solid rgba(245,158,11,0.35)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    marginBottom: 12,
+                    fontSize: 12.5,
+                    lineHeight: 1.45,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <strong>
+                    You already have Nu {existingStake.toLocaleString()} on{" "}
+                    {outcome?.label ?? "this pick"}.
+                  </strong>{" "}
+                  Adding more to the same side splits the winnings with a bigger
+                  group — it lowers your own payout. Backing a different outcome
+                  raises it.
                 </div>
               )}
 

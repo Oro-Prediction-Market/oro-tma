@@ -11,7 +11,10 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { OnboardingModal, useOnboarding } from "./OnboardingModal";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { RouteTracker } from "@shared/components/RouteTracker";
-import { DeepLinkRedirect } from "@shared/components/DeepLinkRedirect";
+import {
+  DeepLinkRedirect,
+  captureStartParam,
+} from "@shared/components/DeepLinkRedirect";
 import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanner";
 import { trackEvent } from "@shared/api/client";
 
@@ -30,6 +33,10 @@ export function App() {
 
   useEffect(() => {
     trackEvent({ eventType: "app.open", platform: "tma" });
+    // Stash any deep-link target NOW, before the onboarding gate below can
+    // return early — so a brand-new user's market/challenge link survives
+    // sign-up and DeepLinkRedirect can replay it once the router mounts.
+    captureStartParam();
   }, []);
 
   // Connect to SSE for real-time server push (balance updates, market changes)
