@@ -7,9 +7,6 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Globe,
-  PieChart,
-  Calendar,
   Flame,
   Crosshair,
   Sprout,
@@ -19,17 +16,14 @@ import {
   getMyResults,
   getMyBets,
   getMyDisputes,
-  getResolvedMarkets,
   getMe,
   type Bet,
   type MyDisputeSummary,
-  type ResolvedMarket,
   type AuthUser,
 } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 
-// Collapse/expand toggle for the Active & Settled lists. Styled to match the
-// "View More History" control on the Resolution Record below.
+// Collapse/expand toggle for the Active & Settled lists.
 function ShowMore({
   expanded,
   remaining,
@@ -85,9 +79,6 @@ export function PwaResultsPage() {
   const [bets, setBets] = useState<Bet[]>([]);
   const [pending, setPending] = useState<Bet[]>([]);
   const [betsLoading, setBetsLoading] = useState(true);
-  const [resolved, setResolved] = useState<ResolvedMarket[]>([]);
-  const [resolvedLoading, setResolvedLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false);
   const [me, setMe] = useState<AuthUser | null>(null);
   const [repOpen, setRepOpen] = useState(true);
   // "active" = open picks awaiting resolution, "settled" = won/lost/refunded.
@@ -132,14 +123,6 @@ export function PwaResultsPage() {
       initedTab.current = true;
     }
   }, [pending.length, bets.length]);
-
-  // Resolved markets are public — fetch immediately
-  useEffect(() => {
-    getResolvedMarkets()
-      .then(setResolved)
-      .catch(() => {})
-      .finally(() => setResolvedLoading(false));
-  }, []);
 
   // Latest-first ordering for both lists (most recent placement on top).
   const byNewest = (a: Bet, b: Bet) =>
@@ -1059,298 +1042,6 @@ export function PwaResultsPage() {
           )}
         </>
       )}
-
-      {/* ── Resolution Record (always shown — public data) ── */}
-      <div style={{ marginTop: 8 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 14,
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--text-subtle)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="6" />
-            <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-          </svg>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 800,
-              color: "var(--text-subtle)",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            Resolution Record
-          </span>
-          <span
-            style={{
-              fontSize: "0.7rem",
-              color: "var(--text-muted)",
-              fontWeight: 600,
-            }}
-          >
-            {resolvedLoading
-              ? "…"
-              : `${resolved.length} market${resolved.length !== 1 ? "s" : ""}`}
-          </span>
-        </div>
-
-        {resolvedLoading ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "40px 0",
-              color: "var(--text-subtle)",
-            }}
-          >
-            Loading…
-          </div>
-        ) : resolved.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 0",
-              color: "var(--text-subtle)",
-            }}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--text-subtle)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ marginBottom: 12 }}
-            >
-              <circle cx="12" cy="8" r="6" />
-              <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-            </svg>
-            <div>No resolved markets yet.</div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {resolved.slice(0, showAll ? undefined : 5).map((m) => (
-              <Link
-                key={m.id}
-                to={`/market/${m.id}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--glass-border)",
-                    borderRadius: 20,
-                    padding: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 12,
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 12,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        color: "var(--text-main)",
-                        flex: 1,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {m.title}
-                    </span>
-                    {m.category && m.category.toLowerCase() !== "other" && (
-                      <span
-                        style={{
-                          fontSize: "0.7rem",
-                          fontWeight: 800,
-                          color: "var(--text-muted)",
-                          background: "var(--bg-secondary)",
-                          padding: "4px 10px",
-                          borderRadius: 8,
-                          whiteSpace: "nowrap",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                        }}
-                      >
-                        {m.category}
-                      </span>
-                    )}
-                  </div>
-
-                  {m.winner && (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 14px",
-                        background: "rgba(34, 197, 94, 0.08)",
-                        borderRadius: 12,
-                        border: "1px solid rgba(34, 197, 94, 0.15)",
-                      }}
-                    >
-                      <Trophy size={16} stroke="#22c55e" />
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            color: "#22c55e",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          Winning Outcome
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "0.9rem",
-                            fontWeight: 800,
-                            color: "#22c55e",
-                          }}
-                        >
-                          {m.winner.label}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 16,
-                      flexWrap: "wrap",
-                      paddingTop: 12,
-                      borderTop: "1px solid var(--glass-border)",
-                    }}
-                  >
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <PieChart
-                        size={14}
-                        style={{ color: "var(--text-subtle)" }}
-                      />
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-subtle)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Nu {Number(m.totalPool).toLocaleString()}
-                      </span>
-                    </div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <Globe
-                        size={14}
-                        style={{ color: "var(--text-subtle)" }}
-                      />
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-subtle)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {m.participantCount} predictor{m.participantCount !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    {m.resolvedAt && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          marginLeft: "auto",
-                        }}
-                      >
-                        <Calendar
-                          size={14}
-                          style={{ color: "var(--text-muted)" }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-muted)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {new Date(m.resolvedAt).toLocaleDateString("en-BT")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-        {resolved.length > 5 && (
-          <button
-            onClick={() => setShowAll((s) => !s)}
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginTop: 12,
-              background: "var(--glass-bg)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: 12,
-              color: "var(--text-main)",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{
-                transform: showAll ? "rotate(180deg)" : "none",
-                transition: "transform 0.2s",
-              }}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-            {showAll
-              ? "Show Less"
-              : `View More History (${resolved.length - 5} more)`}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
