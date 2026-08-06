@@ -12,6 +12,7 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 const configMinBet = config.payments.dkBank.minBet;
 
+// huhhhhh
 const QUICK_AMOUNTS_DEFAULT = [100, 200, 500, 1000];
 const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
 
