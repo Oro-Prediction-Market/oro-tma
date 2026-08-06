@@ -49,17 +49,25 @@ function findOutcome(m: Market, label: "yes" | "no"): Outcome | undefined {
   return m.outcomes?.find((o) => o.label?.trim().toLowerCase() === label);
 }
 
-/** Chance % of an outcome (LMSR prob, else Laplace-smoothed pool share). */
+/** Chance % of an outcome (Laplace-smoothed pool share once bets exist, else
+ *  initial LMSR odds). */
 function chanceOf(m: Market, o: Outcome | undefined): number {
   if (!o) return 50;
+  const prior = 1000;
+  const n = m.outcomes.length || 1;
+  const totalPool = Number(m.totalPool) || 0;
+  // Real money in the pool → use the outcome's pool share (see calcProb). Stored
+  // LMSR probabilities saturate on a lopsided pool (favourite → ~0.99, everyone
+  // else → ~0) and misreport as "99% / 0%".
+  if (totalPool > 0) {
+    const smoothedAmount = Number(o.totalBetAmount) + prior / n;
+    return (smoothedAmount / (totalPool + prior)) * 100;
+  }
   const lmsr = (m.outcomes ?? []).map((x) => Number(x.lmsrProbability) || 0);
   if (lmsr.length && lmsr.every((p) => p > 0)) {
     const sum = lmsr.reduce((a, b) => a + b, 0);
     return ((Number(o.lmsrProbability) || 0) / sum) * 100;
   }
-  const prior = 1000;
-  const n = m.outcomes.length || 1;
-  const totalPool = Number(m.totalPool);
   const smoothedAmount = Number(o.totalBetAmount) + prior / n;
   return (smoothedAmount / (totalPool + prior)) * 100;
 }

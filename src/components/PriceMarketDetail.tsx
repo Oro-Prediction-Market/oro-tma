@@ -178,10 +178,21 @@ export const PriceMarketDetail: FC<Props> = ({
   const outs = market.outcomes ?? [];
   const up = outs.find((o) => /(high|up|yes|above|over)/i.test(o.label)) ?? outs[0];
   const down = outs.find((o) => o?.id !== up?.id) ?? outs[1];
-  const upRaw = up?.lmsrProbability;
-  const downRaw = down?.lmsrProbability;
-  let upProb = upRaw ?? (downRaw != null ? 1 - downRaw : 0.5);
-  if (upProb < 0 || upProb > 1 || Number.isNaN(upProb)) upProb = 0.5;
+  // Pool share once bets exist (consistent with the price card and the rest of
+  // the app). The stored LMSR value saturates on a lopsided pool, so it only
+  // seeds the display while the pool is empty.
+  const upStakeAmt = Number(up?.totalBetAmount) || 0;
+  const downStakeAmt = Number(down?.totalBetAmount) || 0;
+  const stakedPool = upStakeAmt + downStakeAmt;
+  let upProb: number;
+  if (stakedPool > 0) {
+    upProb = upStakeAmt / stakedPool;
+  } else {
+    const upRaw = up?.lmsrProbability;
+    const downRaw = down?.lmsrProbability;
+    upProb = upRaw ?? (downRaw != null ? 1 - downRaw : 0.5);
+  }
+  if (!(upProb >= 0 && upProb <= 1)) upProb = 0.5;
   const upPct = Math.round(upProb * 100);
   const downPct = 100 - upPct;
   const upLabel = up?.label ?? "Higher";

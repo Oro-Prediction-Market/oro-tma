@@ -814,6 +814,12 @@ function useCountdown(targetAt: string | null): string {
 
 // ── Market Card ───────────────────────────────────────────────────────────────
 
+// How many outcomes a card shows before collapsing the rest behind "+N more".
+// Tuned to sit just within the height of the TER/BTC chart cards: enough to fill
+// the space next to them, but not so many that a multi-outcome market (e.g. Ballon
+// d'Or) grows taller than its neighbours and drags the whole grid row up.
+const DEFAULT_VISIBLE_OUTCOMES = 4;
+
 const MarketCard = memo(function MarketCard({
   market,
   onBet,
@@ -860,16 +866,20 @@ const MarketCard = memo(function MarketCard({
       const pct = calcProb(market, o.id) * 100;
       return { ...o, pct: isNaN(pct) ? 100 / n : pct };
     });
+    // Order outcomes by probability (which tracks the money on each side)
+    // descending, so the favourites lead and the "+N more" collapse hides the
+    // longest shots rather than whatever order they were created in.
     const sorted = [...raw].sort((a, b) => b.pct - a.pct);
-    return raw.map((o) => {
-      const rank = sorted.findIndex((s) => s.id === o.id);
+    return sorted.map((o, rank) => {
       const resolved =
         market.status === "resolved" || market.status === "settled";
-      return { ...o, color: outcomeColor(rank, raw.length, resolved) };
+      return { ...o, color: outcomeColor(rank, sorted.length, resolved) };
     });
   })();
 
-  const displayOutcomes = showAll ? sentiment : sentiment.slice(0, 2);
+  const displayOutcomes = showAll
+    ? sentiment
+    : sentiment.slice(0, DEFAULT_VISIBLE_OUTCOMES);
   return (
     <div
       style={{
@@ -1349,7 +1359,7 @@ const MarketCard = memo(function MarketCard({
         )}
       </div>
 
-      {market.outcomes.length > 2 && (
+      {market.outcomes.length > DEFAULT_VISIBLE_OUTCOMES && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1370,7 +1380,7 @@ const MarketCard = memo(function MarketCard({
         >
           {showAll
             ? "Show Less ▲"
-            : `+${market.outcomes.length - 2} more outcomes`}
+            : `+${market.outcomes.length - DEFAULT_VISIBLE_OUTCOMES} more outcomes`}
         </button>
       )}
 
