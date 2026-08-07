@@ -2657,15 +2657,15 @@ export const TmaFeedPage: FC = () => {
           </div>
         )}
 
-        {/* ── UEFA Champions League Banner Card ── */}
-        {showSportsBanners && (
+        {/* ── UEFA Champions League Banner Card ── (hidden until 2026/27 season) */}
+        {false && showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <UclBanner onClick={() => navigate("/ucl")} />
           </div>
         )}
 
-        {/* ── English Premier League Banner Card ── */}
-        {!searchQuery.trim() && (
+        {/* ── English Premier League Banner Card ── (hidden until 2026/27 season) */}
+        {false && !searchQuery.trim() && (
           <div
             role="button"
             tabIndex={0}
