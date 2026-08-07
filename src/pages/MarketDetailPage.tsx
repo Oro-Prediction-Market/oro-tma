@@ -25,10 +25,13 @@ import { YourPositionCard } from "@shared/components/YourPositionCard";
 import { DisputeContestFields } from "@/components/DisputeContestFields";
 import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
+import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { getCategoryVisual } from "@shared/helpers/visuals";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
+import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Share2 } from "lucide-react";
 import { calcProb, calcOdds } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
@@ -233,6 +236,9 @@ export const MarketDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const track = useTrack();
   const haptic = useTmaHaptic();
+  const { user } = useAuth();
+  const referralId = String(user?.telegramId ?? user?.id ?? "");
+  const [shareOpen, setShareOpen] = useState(false);
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -495,6 +501,7 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <PriceMarketDetail
           market={m}
+          referralId={referralId}
           userPickedOutcomeId={userBets[0]?.outcomeId}
           hasWon={hasWon}
           wonTotalPayout={wonTotalPayout}
@@ -529,6 +536,7 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <UfcMarketDetail
           market={m}
+          referralId={referralId}
           onBetPlaced={() => {
             if (!id) return;
             bustCache(`/markets/${id}`);
@@ -559,6 +567,7 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <EsportsMarketDetail
           market={m}
+          referralId={referralId}
           onBetPlaced={() => {
             if (!id) return;
             bustCache(`/markets/${id}`);
@@ -589,6 +598,7 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <UclMarketDetail
           market={m}
+          referralId={referralId}
           onBetPlaced={() => {
             if (!id) return;
             bustCache(`/markets/${id}`);
@@ -619,6 +629,7 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <EplMarketDetail
           market={m}
+          referralId={referralId}
           onBetPlaced={() => {
             if (!id) return;
             bustCache(`/markets/${id}`);
@@ -744,7 +755,33 @@ export const MarketDetailPage: FC = () => {
                 )}
                 Nu {Number(m.totalPool).toLocaleString()}
               </div>
+              <button
+                onClick={() => setShareOpen(true)}
+                style={{
+                  background: "var(--bg-secondary)",
+                  border: "none",
+                  padding: "4px 12px",
+                  borderRadius: 8,
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  color: "var(--text-main)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Share2 size={13} />
+                Share
+              </button>
             </div>
+            <MarketShareSheet
+              open={shareOpen}
+              onClose={() => setShareOpen(false)}
+              market={m}
+              accentColor={getCategoryVisual(m.category).accentColor}
+              referralId={referralId}
+            />
             {m.description && m.externalSource !== "ter" && (
               <p
                 style={{

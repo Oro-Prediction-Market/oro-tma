@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
 import type { Bet, Market, Outcome, MyDispute } from "@shared/api/client";
@@ -83,6 +84,7 @@ export interface EplMarketDetailProps {
   disputeContest?: DisputeContestControls;
   myDispute?: MyDispute | null;
   myBets?: Bet[];
+  referralId?: string;
 }
 
 export function EplMarketDetail({
@@ -100,9 +102,11 @@ export function EplMarketDetail({
   disputeContest,
   myDispute,
   myBets,
+  referralId,
 }: EplMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Open the detail view at the top, not at the feed's scroll position
   useEffect(() => {
@@ -172,20 +176,18 @@ export function EplMarketDetail({
             <ArrowLeft size={15} />
             Back
           </button>
-          <button
-            onClick={() => {
-              const url = window.location.href;
-              if (navigator.share) {
-                navigator.share({ title: market.title, url }).catch(() => {});
-              } else {
-                navigator.clipboard?.writeText(url);
-              }
-            }}
-            style={iconBtn}
-          >
+          <button onClick={() => setShareOpen(true)} style={iconBtn}>
             <Share2 size={15} />
             Share
           </button>
+          <MarketShareSheet
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            market={market}
+            accentColor={ACCENT}
+            theme="epl"
+            referralId={referralId}
+          />
         </div>
 
         {/* ── Masthead ── */}

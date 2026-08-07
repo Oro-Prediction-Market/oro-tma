@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
 import type { Bet, Market, Outcome, MyDispute } from "@shared/api/client";
@@ -128,6 +129,7 @@ export interface EsportsMarketDetailProps {
   disputeContest?: DisputeContestControls;
   myDispute?: MyDispute | null;
   myBets?: Bet[];
+  referralId?: string;
 }
 
 export function EsportsMarketDetail({
@@ -145,9 +147,11 @@ export function EsportsMarketDetail({
   disputeContest,
   myDispute,
   myBets,
+  referralId,
 }: EsportsMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Open the detail view at the top, not at the feed's scroll position
   useEffect(() => {
@@ -227,16 +231,7 @@ export function EsportsMarketDetail({
             <Label color={EWC.textSecondary}>Back</Label>
           </button>
           <button
-            onClick={() => {
-              const url = window.location.href;
-              if (navigator.share) {
-                navigator
-                  .share({ title: market.title, url })
-                  .catch(() => {});
-              } else {
-                navigator.clipboard?.writeText(url);
-              }
-            }}
+            onClick={() => setShareOpen(true)}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -252,6 +247,14 @@ export function EsportsMarketDetail({
             <Share2 size={15} />
             <Label color={EWC.textSecondary}>Share</Label>
           </button>
+          <MarketShareSheet
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            market={market}
+            accentColor={EWC.goldBright}
+            theme="esports"
+            referralId={referralId}
+          />
         </div>
 
         {/* ── Masthead ── */}

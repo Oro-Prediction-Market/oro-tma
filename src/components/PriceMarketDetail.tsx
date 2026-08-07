@@ -22,6 +22,7 @@ import {
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { ShareCTA } from "@shared/components/ShareCTA";
+import { MarketShareSheet } from "@/components/MarketShareSheet";
 
 // Shared "trading" palette lifted straight from the TER / BTC price cards so the
 // whole detail page reads as one surface with the chart card.
@@ -55,6 +56,7 @@ interface Props {
   disputeContest?: DisputeContestControls;
   myDispute?: MyDispute | null;
   myBets?: Bet[];
+  referralId?: string;
 }
 
 const fmtDate = (d: string) =>
@@ -117,9 +119,11 @@ export const PriceMarketDetail: FC<Props> = ({
   disputeContest,
   myDispute,
   myBets,
+  referralId,
 }) => {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const isBtc = market.externalSource === "btc";
 
   // Open the detail view at the top, not at the feed's scroll position
@@ -212,6 +216,7 @@ export const PriceMarketDetail: FC<Props> = ({
   ].filter((r) => r.date);
 
   return (
+    <>
     <div style={{ minHeight: "100vh", background: P.pageBg, fontFamily: FONT }}>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 16px 120px" }}>
         {/* ── Top bar ── */}
@@ -227,17 +232,7 @@ export const PriceMarketDetail: FC<Props> = ({
             <ArrowLeft size={15} />
             Back
           </button>
-          <button
-            onClick={() => {
-              const url = window.location.href;
-              if (navigator.share) {
-                navigator.share({ title: market.title, url }).catch(() => {});
-              } else {
-                navigator.clipboard?.writeText(url);
-              }
-            }}
-            style={barBtn}
-          >
+          <button onClick={() => setShareOpen(true)} style={barBtn}>
             <Share2 size={15} />
             Share
           </button>
@@ -546,5 +541,18 @@ export const PriceMarketDetail: FC<Props> = ({
         />
       )}
     </div>
+    <MarketShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      market={market}
+      accentColor={P.accent}
+      theme={isBtc ? "btc" : "ter"}
+      outcomes={[
+        { label: "UP", pct: upPct, color: "#10b981" },
+        { label: "DOWN", pct: 100 - upPct, color: "#f43f5e" },
+      ]}
+      referralId={referralId}
+    />
+    </>
   );
 };

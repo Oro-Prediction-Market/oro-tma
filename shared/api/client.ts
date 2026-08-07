@@ -161,6 +161,7 @@ export interface AuthUser {
   boostReady?: boolean;
   // Referrals
   referralCount?: number;
+  featuredAchievementIds?: string[];
 }
 
 export interface AuthResponse {
@@ -706,6 +707,19 @@ export function getMyResults(): Promise<Bet[]> {
 
 export function getMe(): Promise<AuthUser> {
   return request<AuthUser>("/users/me");
+}
+export function setFeaturedAchievements(achievementIds: string[]): Promise<{ featuredAchievementIds: string[] }> { return request("/users/me/featured-achievements", { method: "POST", body: JSON.stringify({ achievementIds }) }); }
+
+export interface PublicProfile {
+  id: string; firstName: string | null; lastName: string | null; username: string | null;
+  photoUrl: string | null; reputationTier: string; reputationScore: number | null;
+  totalPredictions: number; correctPredictions: number; winRate: number; rank: number | null;
+  streak: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
+  featuredAchievementIds?: string[];
+  recentCalls?: Array<{ id: string; marketTitle: string; outcomeLabel: string; status: "won" | "lost" | "refunded"; payout: number | null; placedAt: string }>;
+}
+export function getPublicProfile(id: string): Promise<PublicProfile> {
+  return request<PublicProfile>(`/users/profiles/${encodeURIComponent(id)}`);
 }
 
 export function getMyTransactions(
