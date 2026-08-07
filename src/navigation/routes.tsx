@@ -33,9 +33,6 @@ const PwaResultsPage = lazy(() =>
 const TmaProfilePage = lazy(() =>
   import("@/pages/TmaProfilePage").then((m) => ({ default: m.TmaProfilePage })),
 );
-const TmaPublicProfilePage = lazy(() =>
-  import("@/pages/TmaPublicProfilePage").then((m) => ({ default: m.TmaPublicProfilePage })),
-);
 const ResolvedMarketsPage = lazy(() =>
   import("@/pages/ResolvedMarketsPage").then((m) => ({
     default: m.ResolvedMarketsPage,
@@ -126,7 +123,6 @@ export const routes: Route[] = [
   { path: "/my-bets", Component: WrappedMyBets, title: "My Positions" },
   { path: "/results", Component: WrappedResults, title: "Results" },
   { path: "/profile", Component: TmaProfilePage, title: "Profile" },
-  { path: "/profile/:id", Component: TmaPublicProfilePage },
   {
     path: "/resolved",
     Component: ResolvedMarketsPage,

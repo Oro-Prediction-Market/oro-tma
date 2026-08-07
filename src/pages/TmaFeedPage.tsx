@@ -15,10 +15,10 @@ import { TmaBetModal } from "@/components/TmaBetModal";
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { GroupedMarketCard } from "@/components/GroupedMarketCard";
-import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { Link } from "@/components/Link/Link";
-import { Flame, TrendingUp } from "lucide-react";
+import { Flame, X, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BetShareCard } from "@shared/components/BetShareCard";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
 import {
@@ -824,12 +824,16 @@ const MarketCard = memo(function MarketCard({
   market,
   onBet,
   telegramId,
+  userName,
+  userPhotoUrl,
   userPickedOutcomeId,
 }: {
   market: Market;
   onBet: (outcomeId: string) => void;
   hasBet?: boolean;
   telegramId?: string | number | null;
+  userName?: string | null;
+  userPhotoUrl?: string | null;
   userPickedOutcomeId?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -1485,13 +1489,82 @@ const MarketCard = memo(function MarketCard({
           </button>
         </div>
       </div>
-      <MarketShareSheet
-        open={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        market={market}
-        accentColor={getCategoryVisual(market.category).accentColor}
-        referralId={String(telegramId ?? "")}
-      />
+      {/* Share modal with card image */}
+      {showShareModal && (
+        <div
+          onClick={() => setShowShareModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2000,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 16px",
+            gap: 16,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 560,
+              position: "relative",
+              animation:
+                "shareModalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <style>{`
+              @keyframes shareModalIn {
+                from { opacity: 0; transform: scale(0.93); }
+                to   { opacity: 1; transform: scale(1); }
+              }
+            `}</style>
+
+            {/* Close */}
+            <button
+              onClick={() => setShowShareModal(false)}
+              style={{
+                position: "absolute",
+                top: -36,
+                right: 0,
+                background: "transparent",
+                border: "none",
+                color: "rgba(255,255,255,0.7)",
+                cursor: "pointer",
+                padding: 6,
+              }}
+            >
+              <X size={22} />
+            </button>
+
+            {/* Card image — built-in Share Image / Download buttons included */}
+            <BetShareCard
+              userName={
+                userName
+                  ? userName
+                  : telegramId
+                    ? `User ${telegramId}`
+                    : "A Predictor"
+              }
+              userPhotoUrl={userPhotoUrl ?? null}
+              marketTitle={market.title}
+              outcomePicked={
+                [...market.outcomes].sort(
+                  (a, b) => (b.lmsrProbability ?? 0) - (a.lmsrProbability ?? 0),
+                )[0]?.label ?? ""
+              }
+              totalPool={totalPool}
+              outcomeColor="#3b82f6"
+              referralId={String(telegramId ?? "")}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -3056,7 +3129,6 @@ export const TmaFeedPage: FC = () => {
                   onBet={(marketId, outcomeId) =>
                     setActiveBet({ marketId, outcomeId })
                   }
-                  referralId={String(user?.telegramId ?? user?.id ?? "")}
                 />
               </div>
             );
@@ -3162,6 +3234,12 @@ export const TmaFeedPage: FC = () => {
                       ?.outcomeId
                   }
                   telegramId={user?.telegramId}
+                  userName={
+                    user?.username
+                      ? `@${user.username}`
+                      : (user?.firstName ?? null)
+                  }
+                  userPhotoUrl={user?.photoUrl ?? null}
                   onBet={(outcomeId) =>
                     setActiveBet({ marketId: market.id, outcomeId })
                   }

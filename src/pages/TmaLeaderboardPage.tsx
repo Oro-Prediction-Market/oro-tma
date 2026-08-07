@@ -1,5 +1,4 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Page } from "@/components/Page";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
@@ -1405,7 +1404,6 @@ export const TmaLeaderboardPage: FC = () => {
   const [showSeasons, setShowSeasons] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "week">("all");
-  const navigate = useNavigate();
   const [currentSeason, setCurrentSeason] = useState<Season | null>(null);
   const [seasonHistory, setSeasonHistory] = useState<Season[]>([]);
   const [depositTxs, setDepositTxs] = useState<Transaction[]>([]);
@@ -1733,7 +1731,7 @@ export const TmaLeaderboardPage: FC = () => {
                 <TableRow
                   key={entry.id}
                   entry={entry}
-                  onTap={entry.isMe ? () => setShowMyStats(true) : () => navigate(`/profile/${entry.id}`)}
+                  onTap={entry.isMe ? () => setShowMyStats(true) : undefined}
                 />
               ))}
 

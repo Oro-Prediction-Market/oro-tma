@@ -3,11 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@shared/hooks/useAuth";
 import {
   getMe,
-  getMyResults,
   getReferralStats,
-  setFeaturedAchievements,
   AuthUser,
-  type Bet,
   type ReferralStats,
 } from "@shared/api/client";
 import { Page } from "@/components/Page";
@@ -47,8 +44,6 @@ export const TmaProfilePage: FC = () => {
   const [streakModalOpen, setStreakModalOpen] = useState(false);
   const [showProfileShare, setShowProfileShare] = useState(false);
   const [collectiblesOpen, setCollectiblesOpen] = useState(false);
-  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
-  const [recentCalls, setRecentCalls] = useState<Bet[]>([]);
 
   // Badge unlock popup
   const [newlyUnlockedQueue, setNewlyUnlockedQueue] = useState<
@@ -64,7 +59,6 @@ export const TmaProfilePage: FC = () => {
     getMe()
       .then((u) => {
         setFreshUser(u);
-        setFeaturedIds(u.featuredAchievementIds ?? []);
         // Detect newly unlocked badges
         const storageKey = `oro_seen_badges_${u.id ?? u.telegramId}`;
         const seenRaw = localStorage.getItem(storageKey);
@@ -100,7 +94,6 @@ export const TmaProfilePage: FC = () => {
     getReferralStats()
       .then(setReferralStats)
       .catch(() => undefined);
-    getMyResults().then((calls) => setRecentCalls(calls.slice(0, 3))).catch(() => undefined);
   }, [authLoading]);
 
   const user = freshUser ?? authUser;
@@ -184,7 +177,6 @@ export const TmaProfilePage: FC = () => {
     user?.referralCount ?? 0,
   );
   const unlockedCount = badges.filter((b) => b.unlocked).length;
-  const toggleFeatured = async (id: string) => { const next=featuredIds.includes(id)?featuredIds.filter(x=>x!==id):featuredIds.length<3?[...featuredIds,id]:featuredIds; if(next===featuredIds)return; setFeaturedIds(next); try{await setFeaturedAchievements(next)}catch{setFeaturedIds(featuredIds)} };
 
   type TierProgress = {
     label: string;
@@ -572,8 +564,6 @@ export const TmaProfilePage: FC = () => {
           </div>
         </div>
 
-        {featuredIds.length > 0 && <FeaturedBadges badges={badges.filter((badge) => featuredIds.includes(badge.id))} />}
-
         {/* ── Cards grid: streak + tier progress (two-col on desktop) ─── */}
         <div className="profile-two-col" style={{ display: "contents" }}>
         {/* ── Streak Status ─────────────────────────────────────── */}
@@ -902,8 +892,6 @@ export const TmaProfilePage: FC = () => {
           <ChevronRight size={16} color="var(--text-muted)" />
         </button>
 
-        {recentCalls[0] && <RecentCallTile call={recentCalls[0]} onOpen={() => navigate("/results")} />}
-
         </div>{/* close profile-two-col (collectibles + wallet) */}
 
         {/* ── Invite & Referral ─────────────────────────────────── */}
@@ -1104,8 +1092,6 @@ export const TmaProfilePage: FC = () => {
                 hasPhone={!!user?.isPhoneVerified}
                 hasDKBank={!!user?.dkCid}
                 referralCount={user?.referralCount ?? 0}
-                featuredIds={featuredIds}
-                onToggleFeatured={toggleFeatured}
               />
             </div>
           </div>
@@ -1416,12 +1402,3 @@ const heroCard: React.CSSProperties = {
   boxShadow: "var(--balance-card-shadow)",
   borderBottom: "1px solid rgba(255,255,255,0.1)",
 };
-
-function RecentCallTile({ call, onOpen }: { call: Bet; onOpen: () => void }) {
-  const color = call.status === "won" ? "#22c55e" : call.status === "lost" ? "#f87171" : "#fbbf24";
-  return <button onClick={onOpen} style={{ margin: "8px 16px 0", borderRadius: 14, padding: "14px 16px", background: "var(--bg-card)", border: `1px solid ${color}55`, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", boxShadow: "var(--shadow-sm)", textAlign: "left" }}><div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}1f`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Target size={20} /></div><div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>Latest call</div><div style={{ fontSize: 11, color: "var(--text-subtle)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{call.outcome?.label ?? "Selected outcome"} · {call.status}</div></div><ChevronRight size={16} color="var(--text-muted)" /></button>;
-}
-
-function FeaturedBadges({ badges }: { badges: CollectibleBadge[] }) {
-  return <section className="profile-card-margin" style={{ margin: "12px 16px 0", padding: "8px 10px", borderRadius: 13, background: "var(--bg-card)", border: "1px solid var(--glass-border)" }}><div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(badges.length, 3)}, minmax(0, 1fr))`, gap: 6 }}>{badges.map((badge) => <div key={badge.id} style={{ width: "100%", textAlign: "center", fontSize: 9, fontWeight: 700, lineHeight: 1.1, color: "var(--text-main)" }}><div style={{ width: 50, height: 50, margin: "auto", padding: 3, borderRadius: 15, background: "#0a101b", border: "2px solid rgba(177,128,79,.72)", boxShadow: "0 3px 10px rgba(0,0,0,.32)" }}>{badge.img ? <img src={badge.img} alt={badge.name} style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: 10, display: "block" }} /> : <div style={{ height: "100%", display: "grid", placeItems: "center", fontSize: 26 }}>🏆</div>}</div><div style={{ marginTop: 4 }}>{badge.name}</div></div>)}</div></section>;
-}

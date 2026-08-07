@@ -21,9 +21,10 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
         inset: 0,
         zIndex: 2000,
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
-        padding: 16,
+        padding: 20,
+        paddingTop: "15vh",
         background: "rgba(0,0,0,0.6)",
         backdropFilter: "blur(8px)",
       }}
@@ -48,16 +49,13 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
         style={{
           width: "100%",
           maxWidth: 400,
-          maxHeight: "calc(100dvh - 32px)",
           background: "linear-gradient(135deg, #1e293b, #0f172a)",
           borderRadius: 24,
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
           position: "relative",
           animation: "modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-          overflowY: "auto",
-          overscrollBehavior: "contain",
-          WebkitOverflowScrolling: "touch",
+          overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
       >
