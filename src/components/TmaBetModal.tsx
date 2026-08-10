@@ -49,6 +49,7 @@ export function TmaBetModal({
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [streak, setStreak] = useState<BetStreak | null>(null);
+  const [closing, setClosing] = useState(false);
   // How much the user has ALREADY staked on this exact pick (active positions).
   // Adding more to a side you already hold enlarges the group you'd split the
   // pot with — i.e. it lowers your own multiple — so we surface it before they
@@ -173,9 +174,15 @@ export function TmaBetModal({
   };
 
   const handleClose = () => {
-    if (status === "processing") return;
-    onClose();
-    resetForm();
+    if (status === "processing" || closing) return;
+    setClosing(true);
+    // Parents commonly conditionally render this modal. Defer their close
+    // callback until the exit motion is complete so the sheet can slide down.
+    window.setTimeout(() => {
+      onClose();
+      resetForm();
+      setClosing(false);
+    }, 320);
   };
 
   const handlePlaceBet = async () => {
@@ -248,6 +255,10 @@ export function TmaBetModal({
           from { transform: translateY(100%); }
           to   { transform: translateY(0); }
         }
+        @keyframes tmaSheetDown {
+          from { transform: translateY(0); }
+          to   { transform: translateY(100%); }
+        }
         @keyframes tmaSuccessPop {
           0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
           55%  { transform: scale(1.25) rotate(4deg); opacity: 1; }
@@ -284,7 +295,7 @@ export function TmaBetModal({
           maxWidth: 500,
           boxSizing: "border-box",
           boxShadow: "0 -4px 32px rgba(0,0,0,0.22)",
-          animation: "tmaSheetUp 0.32s cubic-bezier(0.32,0.72,0,1) forwards",
+          animation: `${closing ? "tmaSheetDown" : "tmaSheetUp"} 0.32s cubic-bezier(0.32,0.72,0,1) forwards`,
           maxHeight: `${viewportHeight * 0.92}px`,
           overflowY: "auto",
           display: "flex",

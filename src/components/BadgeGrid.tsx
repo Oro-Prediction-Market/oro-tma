@@ -367,6 +367,8 @@ interface BadgeGridProps {
   hasDKBank: boolean;
   /** Total accepted referrals — requires backend field `referralCount` on AuthUser */
   referralCount?: number;
+  featuredIds?: string[];
+  onToggleFeatured?: (id: string) => void;
 }
 
 export function BadgeGrid({
@@ -377,6 +379,8 @@ export function BadgeGrid({
   hasPhone,
   hasDKBank,
   referralCount = 0,
+  featuredIds = [],
+  onToggleFeatured,
 }: BadgeGridProps) {
   const badges = buildBadges(
     totalPredictions,
@@ -443,7 +447,7 @@ export function BadgeGrid({
             key={b.id}
             onClick={(e) => {
               e.stopPropagation();
-              setTapped((prev) => (prev === b.id ? null : b.id));
+              if (b.unlocked && onToggleFeatured) onToggleFeatured(b.id); else setTapped((prev) => (prev === b.id ? null : b.id));
             }}
             style={{
               display: "flex",
@@ -511,7 +515,7 @@ export function BadgeGrid({
                   : b.unlocked
                     ? "var(--bg-secondary)"
                     : "var(--bg-secondary)",
-                border: b.legendary
+                border: featuredIds.includes(b.id) ? "2px solid #fbbf24" : b.legendary
                   ? b.unlocked
                     ? "2px solid #ffd700"
                     : "1.5px dashed #4b5563"
@@ -521,11 +525,14 @@ export function BadgeGrid({
                       : "1.5px solid #f59e0b44"
                     : "1.5px solid transparent",
                 display: "flex",
+                position: "relative",
                 alignItems: "center",
                 justifyContent: "center",
                 overflow: "hidden",
                 boxShadow:
-                  b.legendary && b.unlocked
+                  featuredIds.includes(b.id)
+                    ? "0 0 0 3px rgba(251,191,36,0.22), 0 0 16px rgba(245,158,11,0.5)"
+                    : b.legendary && b.unlocked
                     ? "0 0 16px rgba(255,215,0,0.5)"
                     : b.unlocked
                       ? "0 0 8px rgba(245,158,11,0.18)"
@@ -557,6 +564,7 @@ export function BadgeGrid({
               ) : (
                 <Lock size={14} color="#6b7280" />
               )}
+              {featuredIds.includes(b.id) && <span style={{ position: "absolute", right: 2, bottom: 2, width: 15, height: 15, borderRadius: "50%", background: "#fbbf24", color: "#111827", fontSize: 11, fontWeight: 900, lineHeight: "15px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>✓</span>}
             </div>
 
             {/* Name — always readable, not faded out */}

@@ -16,6 +16,8 @@ import {
   shortFighterName,
   FighterAvatar,
 } from "@/pages/UfcHubPage";
+import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { marketOutcomeChances } from "@/components/MarketShareCard";
 
 // ── UFC theme tokens (mirror the hub) ─────────────────────────────────────────
 const RED = "#d20a0a";
@@ -124,6 +126,7 @@ export interface UfcMarketDetailProps {
   disputeContest?: DisputeContestControls;
   myDispute?: MyDispute | null;
   myBets?: Bet[];
+  referralId?: string;
 }
 
 export function UfcMarketDetail({
@@ -141,9 +144,11 @@ export function UfcMarketDetail({
   disputeContest,
   myDispute,
   myBets,
+  referralId,
 }: UfcMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Open the detail view at the top, not at the feed's scroll position
   useEffect(() => {
@@ -182,6 +187,17 @@ export function UfcMarketDetail({
 
   const onBet = (outcomeId: string) => setActiveBet(outcomeId);
 
+  // Share-card outcomes, themed by corner (red / blue), draw greyed.
+  const shareOutcomes = (() => {
+    let nd = 0;
+    return marketOutcomeChances(market).map((o) => {
+      if (isDrawOutcome(o.label)) return { ...o, label: "Draw", color: "#8a8f98" };
+      const color = nd === 0 ? RED : BLUE;
+      nd += 1;
+      return { ...o, color };
+    });
+  })();
+
   const iconBtn: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -199,6 +215,7 @@ export function UfcMarketDetail({
   };
 
   return (
+    <>
     <div style={{ minHeight: "100vh", background: BG }}>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 16px 120px" }}>
         {/* ── Top bar ── */}
@@ -214,17 +231,7 @@ export function UfcMarketDetail({
             <ArrowLeft size={15} />
             Back
           </button>
-          <button
-            onClick={() => {
-              const url = window.location.href;
-              if (navigator.share) {
-                navigator.share({ title: market.title, url }).catch(() => {});
-              } else {
-                navigator.clipboard?.writeText(url);
-              }
-            }}
-            style={iconBtn}
-          >
+          <button onClick={() => setShareOpen(true)} style={iconBtn}>
             <Share2 size={15} />
             Share
           </button>
@@ -616,6 +623,16 @@ export function UfcMarketDetail({
         />
       )}
     </div>
+    <MarketShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      market={market}
+      accentColor={RED}
+      theme="ufc"
+      outcomes={shareOutcomes}
+      referralId={referralId}
+    />
+    </>
   );
 }
 
