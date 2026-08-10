@@ -40,7 +40,13 @@ const NON_BPL_COMPETITIONS = [
   "asian cup", "saff", "world cup", "qualifier", "friendly",
 ];
 
+// BPL hub is retired/hidden — neutralize the classifier so BPL-type markets
+// fall back into the main feed instead of a removed hub. Flip to false (and
+// uncomment the /bpl route in routes.tsx / PwaApp.tsx) to bring BPL back.
+const BPL_HIDDEN: boolean = true;
+
 export function isBplMarket(m: Market): boolean {
+  if (BPL_HIDDEN) return false;
   if (m.category === "political") return false;
   // A market filed under Gaming belongs to /esports, even if it still carries a
   // leftover BPL settlement URL from the admin form's sports presets
