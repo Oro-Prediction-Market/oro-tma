@@ -1136,6 +1136,15 @@ export const TmaProfilePage: FC = () => {
               width: "100%",
               maxWidth: 520,
               position: "relative",
+              padding: 20,
+              borderRadius: 24,
+              background:
+                "linear-gradient(155deg, rgba(25,35,58,0.98) 0%, rgba(10,15,27,0.98) 100%)",
+              border: "1px solid rgba(148,163,184,0.2)",
+              boxShadow:
+                "0 28px 80px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.06)",
+              maxHeight: "calc(100dvh - 32px)",
+              overflowY: "auto",
               animation:
                 "fadeSlideUp 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
             }}
@@ -1144,11 +1153,11 @@ export const TmaProfilePage: FC = () => {
               onClick={() => setShowProfileShare(false)}
               style={{
                 position: "absolute",
-                top: -40,
-                right: 0,
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 10,
+                top: 14,
+                right: 14,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 12,
                 width: 32,
                 height: 32,
                 display: "flex",
@@ -1160,10 +1169,21 @@ export const TmaProfilePage: FC = () => {
             >
               <X size={16} />
             </button>
-            <div style={{ marginBottom: 14, textAlign: "center" }}>
+            <div style={{ marginBottom: 18, paddingRight: 42 }}>
               <div
                 style={{
-                  fontSize: 16,
+                  color: "#60a5fa",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: 1.2,
+                  marginBottom: 6,
+                }}
+              >
+                PROFILE CARD
+              </div>
+              <div
+                style={{
+                  fontSize: 20,
                   fontWeight: 800,
                   color: "#fff",
                   marginBottom: 4,
@@ -1171,7 +1191,7 @@ export const TmaProfilePage: FC = () => {
               >
                 Share Your Profile
               </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.56)" }}>
                 Challenge friends with your prediction record
               </div>
             </div>
@@ -1181,7 +1201,9 @@ export const TmaProfilePage: FC = () => {
                   ? `@${user.username}`
                   : (user?.firstName ?? "Predictor")
               }
+              avatarInitial={user?.firstName ?? user?.username ?? null}
               userPhotoUrl={user?.photoUrl ?? null}
+              userId={user?.photoUrl ? user?.id : undefined}
               reputationTier={user?.reputationTier ?? "rookie"}
               reputationScore={Number(user?.reputationScore ?? 0)}
               totalPredictions={user?.totalPredictions ?? 0}

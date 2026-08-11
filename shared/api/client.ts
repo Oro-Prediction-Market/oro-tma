@@ -40,6 +40,16 @@ export function isTokenValid(): boolean {
   return payload.exp * 1000 > Date.now() + 30_000;
 }
 
+/**
+ * URL for the CORS-friendly avatar proxy. Telegram's photo hosts don't send
+ * CORS headers on the image itself, so the share-card <canvas> can't draw them
+ * directly without tainting (which breaks PNG export). This backend route
+ * re-serves the photo from our origin with proper CORS.
+ */
+export function avatarUrl(userId: string): string {
+  return `${API_URL}/users/avatar/${encodeURIComponent(userId)}`;
+}
+
 // ─── In-memory GET cache (stale-while-revalidate, 15s TTL) ───────────────────
 const _cache = new Map<
   string,
