@@ -16,6 +16,7 @@ import {
   captureStartParam,
 } from "@shared/components/DeepLinkRedirect";
 import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanner";
+import { SystemNotificationModal } from "@/components/SystemNotificationModal";
 import { trackEvent } from "@shared/api/client";
 
 export function App() {
@@ -70,6 +71,7 @@ export function App() {
           }}
         >
           <ChallengeContextBanner />
+          <SystemNotificationModal />
           <Suspense
             fallback={
               <div
