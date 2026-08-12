@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Trophy,
@@ -7,32 +7,90 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Globe,
-  PieChart,
-  Calendar,
   Flame,
   Crosshair,
   Sprout,
+  Clock,
 } from "lucide-react";
 import {
   getMyResults,
-  getResolvedMarkets,
+  getMyBets,
+  getMyDisputes,
   getMe,
   type Bet,
-  type ResolvedMarket,
+  type MyDisputeSummary,
   type AuthUser,
 } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 
+// Collapse/expand toggle for the Active & Settled lists.
+function ShowMore({
+  expanded,
+  remaining,
+  onClick,
+}: {
+  expanded: boolean;
+  remaining: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        padding: "12px",
+        marginTop: 12,
+        background: "var(--glass-bg)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: 12,
+        color: "var(--text-main)",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+      }}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          transform: expanded ? "rotate(180deg)" : "none",
+          transition: "transform 0.2s",
+        }}
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+      {expanded ? "Show Less" : `Show More (${remaining} more)`}
+    </button>
+  );
+}
+
 export function PwaResultsPage() {
   const { loading: authLoading } = useAuth();
   const [bets, setBets] = useState<Bet[]>([]);
+  const [pending, setPending] = useState<Bet[]>([]);
   const [betsLoading, setBetsLoading] = useState(true);
-  const [resolved, setResolved] = useState<ResolvedMarket[]>([]);
-  const [resolvedLoading, setResolvedLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false);
   const [me, setMe] = useState<AuthUser | null>(null);
   const [repOpen, setRepOpen] = useState(true);
+  // "active" = open picks awaiting resolution, "settled" = won/lost/refunded.
+  const [resultsTab, setResultsTab] = useState<"active" | "settled">("settled");
+  const initedTab = useRef(false);
+  // Each list shows this many rows collapsed; a toggle reveals the rest.
+  const RESULTS_COLLAPSED = 5;
+  const [activeShowAll, setActiveShowAll] = useState(false);
+  const [settledShowAll, setSettledShowAll] = useState(false);
+  const [myDisputes, setMyDisputes] = useState<MyDisputeSummary[]>(
+    [],
+  );
 
   // Wait for TMA auto-auth to finish before fetching user-specific data
   useEffect(() => {
@@ -41,18 +99,43 @@ export function PwaResultsPage() {
       .then(setBets)
       .catch(() => {})
       .finally(() => setBetsLoading(false));
+    // Open picks awaiting resolution — powers the "Active" tab.
+    getMyBets("pending")
+      .then(setPending)
+      .catch(() => {});
+    // Which markets the user disputed (+ result) — flags rows in the list.
+    getMyDisputes()
+      .then(setMyDisputes)
+      .catch(() => {});
     getMe()
       .then(setMe)
       .catch(() => {});
   }, [authLoading]);
 
-  // Resolved markets are public — fetch immediately
+  // Land on the Active tab the first time we learn the user has open picks,
+  // without overriding a later manual tab switch.
   useEffect(() => {
-    getResolvedMarkets()
-      .then(setResolved)
-      .catch(() => {})
-      .finally(() => setResolvedLoading(false));
-  }, []);
+    if (initedTab.current) return;
+    if (pending.length > 0) {
+      setResultsTab("active");
+      initedTab.current = true;
+    } else if (bets.length > 0) {
+      initedTab.current = true;
+    }
+  }, [pending.length, bets.length]);
+
+  // Latest-first ordering for both lists (most recent placement on top).
+  const byNewest = (a: Bet, b: Bet) =>
+    new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime();
+  const sortedPending = useMemo(() => [...pending].sort(byNewest), [pending]);
+  const sortedBets = useMemo(() => [...bets].sort(byNewest), [bets]);
+
+  // Map marketId -> the caller's dispute on it, for the "Disputed" row badge.
+  const disputeByMarket = useMemo(() => {
+    const map = new Map<string, MyDisputeSummary>();
+    for (const d of myDisputes) if (!map.has(d.marketId)) map.set(d.marketId, d);
+    return map;
+  }, [myDisputes]);
 
   const stats = useMemo(() => {
     const won = bets.filter((b) => b.status === "won");
@@ -518,44 +601,247 @@ export function PwaResultsPage() {
             )}
           </div>
 
-          {/* ── Individual Bet Results ── */}
-          {bets.length > 0 && (
+          {/* ── Your bets: Active picks + Settled results ── */}
+          {(bets.length > 0 || pending.length > 0) && (
             <div style={{ marginBottom: 32 }}>
+              {/* Tab switcher */}
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: 8,
+                  gap: 6,
                   marginBottom: 14,
+                  background: "var(--bg-secondary)",
+                  padding: 4,
+                  borderRadius: 12,
                 }}
               >
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 800,
-                    color: "var(--text-subtle)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                  }}
-                >
-                  Your Results
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "var(--text-muted)",
-                    fontWeight: 600,
-                  }}
-                >
-                  {bets.length} bet{bets.length !== 1 ? "s" : ""}
-                </span>
+                {(
+                  [
+                    { key: "active", label: "Active", count: pending.length },
+                    { key: "settled", label: "Settled", count: bets.length },
+                  ] as const
+                ).map((t) => {
+                  const isActive = resultsTab === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => {
+                        initedTab.current = true;
+                        setResultsTab(t.key);
+                      }}
+                      style={{
+                        flex: 1,
+                        border: "none",
+                        cursor: "pointer",
+                        borderRadius: 9,
+                        padding: "8px 10px",
+                        fontSize: "0.8rem",
+                        fontWeight: 800,
+                        background: isActive ? "var(--bg-card)" : "transparent",
+                        color: isActive
+                          ? "var(--text-main)"
+                          : "var(--text-muted)",
+                        boxShadow: isActive
+                          ? "0 1px 4px rgba(0,0,0,0.15)"
+                          : "none",
+                      }}
+                    >
+                      {t.label} {t.count > 0 ? `(${t.count})` : ""}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Active picks list */}
+              {resultsTab === "active" && (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {pending.length === 0 ? (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "32px 0",
+                        color: "var(--text-subtle)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      No active picks. Your open predictions will appear here.
+                    </div>
+                  ) : (
+                    sortedPending
+                      .slice(0, activeShowAll ? undefined : RESULTS_COLLAPSED)
+                      .map((bet) => (
+                      <Link
+                        key={bet.id}
+                        to={`/market/${bet.marketId}`}
+                        style={{ textDecoration: "none" }}
+                      >
+                        <div
+                          style={{
+                            background: "rgba(245,158,11,0.05)",
+                            border: "1px solid rgba(245,158,11,0.2)",
+                            borderRadius: 16,
+                            padding: "14px 16px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 14,
+                            position: "relative",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: 3,
+                              background: "#f59e0b",
+                            }}
+                          />
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              background: "rgba(245,158,11,0.15)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#f59e0b",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Clock size={18} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: "0.85rem",
+                                fontWeight: 800,
+                                color: "var(--text-main)",
+                                lineHeight: 1.3,
+                                marginBottom: 4,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {bet.market?.title ?? `Market #${bet.marketId}`}
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "#f59e0b",
+                                  background: "rgba(245,158,11,0.1)",
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                }}
+                              >
+                                Active
+                              </span>
+                              {bet.outcome?.label && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: "var(--text-muted)",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {bet.outcome.label}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "var(--text-muted)",
+                              }}
+                            >
+                              Nu {Number(bet.amount).toLocaleString()}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: "var(--text-subtle)",
+                                marginTop: 2,
+                              }}
+                            >
+                              {new Date(bet.placedAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <ChevronRight
+                            size={14}
+                            style={{
+                              color: "var(--text-subtle)",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                  {pending.length > RESULTS_COLLAPSED && (
+                    <ShowMore
+                      expanded={activeShowAll}
+                      remaining={pending.length - RESULTS_COLLAPSED}
+                      onClick={() => setActiveShowAll((s) => !s)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Settled results list */}
+              {resultsTab === "settled" && (
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 10 }}
               >
-                {bets.map((bet) => {
+                {bets.length === 0 ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "32px 0",
+                      color: "var(--text-subtle)",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    No settled results yet.
+                  </div>
+                ) : (
+                sortedBets
+                  .slice(0, settledShowAll ? undefined : RESULTS_COLLAPSED)
+                  .map((bet) => {
                   const isWon = bet.status === "won";
                   const isLost = bet.status === "lost";
+                  const dispute = disputeByMarket.get(bet.marketId);
+                  const disputeColor =
+                    dispute?.bondStatus === "rewarded"
+                      ? "#22c55e"
+                      : dispute?.bondStatus === "forfeited"
+                        ? "#ef4444"
+                        : "#f59e0b";
+                  const disputeLabel =
+                    dispute?.bondStatus === "rewarded"
+                      ? " · won"
+                      : dispute?.bondStatus === "forfeited"
+                        ? " · lost"
+                        : "";
                   const accentColor = isWon
                     ? "#22c55e"
                     : isLost
@@ -660,6 +946,21 @@ export function PwaResultsPage() {
                             >
                               {isWon ? "Won" : isLost ? "Lost" : "Refunded"}
                             </span>
+                            {dispute && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  color: disputeColor,
+                                  background: `${disputeColor}1a`,
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                ⚖ Disputed{disputeLabel}
+                              </span>
+                            )}
                             {bet.outcome?.label && (
                               <span
                                 style={{
@@ -726,304 +1027,21 @@ export function PwaResultsPage() {
                       </div>
                     </Link>
                   );
-                })}
+                })
+                )}
+                {bets.length > RESULTS_COLLAPSED && (
+                  <ShowMore
+                    expanded={settledShowAll}
+                    remaining={bets.length - RESULTS_COLLAPSED}
+                    onClick={() => setSettledShowAll((s) => !s)}
+                  />
+                )}
               </div>
+              )}
             </div>
           )}
         </>
       )}
-
-      {/* ── Resolution Record (always shown — public data) ── */}
-      <div style={{ marginTop: 8 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 14,
-          }}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--text-subtle)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="6" />
-            <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-          </svg>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              fontWeight: 800,
-              color: "var(--text-subtle)",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            Resolution Record
-          </span>
-          <span
-            style={{
-              fontSize: "0.7rem",
-              color: "var(--text-muted)",
-              fontWeight: 600,
-            }}
-          >
-            {resolvedLoading
-              ? "…"
-              : `${resolved.length} market${resolved.length !== 1 ? "s" : ""}`}
-          </span>
-        </div>
-
-        {resolvedLoading ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "40px 0",
-              color: "var(--text-subtle)",
-            }}
-          >
-            Loading…
-          </div>
-        ) : resolved.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 0",
-              color: "var(--text-subtle)",
-            }}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--text-subtle)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ marginBottom: 12 }}
-            >
-              <circle cx="12" cy="8" r="6" />
-              <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-            </svg>
-            <div>No resolved markets yet.</div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {resolved.slice(0, showAll ? undefined : 5).map((m) => (
-              <Link
-                key={m.id}
-                to={`/market/${m.id}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--glass-border)",
-                    borderRadius: 20,
-                    padding: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 12,
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 12,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        color: "var(--text-main)",
-                        flex: 1,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {m.title}
-                    </span>
-                    {m.category && m.category.toLowerCase() !== "other" && (
-                      <span
-                        style={{
-                          fontSize: "0.7rem",
-                          fontWeight: 800,
-                          color: "var(--text-muted)",
-                          background: "var(--bg-secondary)",
-                          padding: "4px 10px",
-                          borderRadius: 8,
-                          whiteSpace: "nowrap",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.03em",
-                        }}
-                      >
-                        {m.category}
-                      </span>
-                    )}
-                  </div>
-
-                  {m.winner && (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 14px",
-                        background: "rgba(34, 197, 94, 0.08)",
-                        borderRadius: 12,
-                        border: "1px solid rgba(34, 197, 94, 0.15)",
-                      }}
-                    >
-                      <Trophy size={16} stroke="#22c55e" />
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            color: "#22c55e",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          Winning Outcome
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "0.9rem",
-                            fontWeight: 800,
-                            color: "#22c55e",
-                          }}
-                        >
-                          {m.winner.label}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 16,
-                      flexWrap: "wrap",
-                      paddingTop: 12,
-                      borderTop: "1px solid var(--glass-border)",
-                    }}
-                  >
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <PieChart
-                        size={14}
-                        style={{ color: "var(--text-subtle)" }}
-                      />
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-subtle)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Nu {Number(m.totalPool).toLocaleString()}
-                      </span>
-                    </div>
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <Globe
-                        size={14}
-                        style={{ color: "var(--text-subtle)" }}
-                      />
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-subtle)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {m.participantCount} predictor{m.participantCount !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    {m.resolvedAt && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          marginLeft: "auto",
-                        }}
-                      >
-                        <Calendar
-                          size={14}
-                          style={{ color: "var(--text-muted)" }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-muted)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {new Date(m.resolvedAt).toLocaleDateString("en-BT")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-        {resolved.length > 5 && (
-          <button
-            onClick={() => setShowAll((s) => !s)}
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginTop: 12,
-              background: "var(--glass-bg)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: 12,
-              color: "var(--text-main)",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{
-                transform: showAll ? "rotate(180deg)" : "none",
-                transition: "transform 0.2s",
-              }}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-            {showAll
-              ? "Show Less"
-              : `View More History (${resolved.length - 5} more)`}
-          </button>
-        )}
-      </div>
     </div>
   );
 }

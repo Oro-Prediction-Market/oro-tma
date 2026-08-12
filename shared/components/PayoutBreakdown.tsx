@@ -1,4 +1,4 @@
-// import { useState } from 'react';
+import { useState } from 'react';
 import type { Market } from '@shared/api/client';
 
 function Row({ label, value, muted, bold, green }: {
@@ -20,7 +20,7 @@ export function PayoutBreakdown({ market, outcomeId, betAmount }: {
   outcomeId: string;
   betAmount: number;
 }) {
-  // const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const outcome = market.outcomes.find((o) => o.id === outcomeId);
   if (!outcome || betAmount <= 0) return null;
@@ -41,30 +41,26 @@ export function PayoutBreakdown({ market, outcomeId, betAmount }: {
 
   return (
     <div style={{ marginTop: 6 }}>
-      {/* <button
+      <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           background: 'none', border: 'none', padding: 0, cursor: 'pointer',
           fontSize: 11, fontWeight: 600, color: '#6b7280',
         }}
-      > */}
-        {/* calculator icon */}
-        {/* <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="2" width="16" height="20" rx="2" />
-          <line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="10" x2="10" y2="10" />
-          <line x1="14" y1="10" x2="16" y2="10" /><line x1="8" y1="14" x2="10" y2="14" />
-          <line x1="14" y1="14" x2="16" y2="14" /><line x1="8" y1="18" x2="10" y2="18" />
-          <line x1="14" y1="18" x2="16" y2="18" />
-        </svg> */}
-        {/* How is this calculated?
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>
+      >
+        <span>How is this calculated?</span>
+        <svg
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}
+        >
           <polyline points="6 9 12 15 18 9" />
         </svg>
-      </button> */}
+      </button>
 
-      {false && (
+      {open && (
         <div style={{
           marginTop: 8, background: '#f8fafc', borderRadius: 8,
           border: '1px solid #e5e7eb', padding: '12px 14px',
@@ -98,16 +94,17 @@ export function PayoutBreakdown({ market, outcomeId, betAmount }: {
           <Row label="Est. payout if win" value={nu(netPayout)} bold green />
           <Row label="Est. profit" value={`+${nu(profit)}`} bold green />
 
-          {/* <div style={{
+          {/* Estimate disclaimer — parimutuel payouts are not fixed */}
+          <div style={{
             marginTop: 10, padding: '7px 10px', background: '#eff6ff',
             borderRadius: 6, border: '1px solid #bfdbfe',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', marginBottom: 2 }}>Formula</div>
-            <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.6, fontFamily: 'monospace' }}>
-              (bet ÷ new {outcome?.label} pool) × new total pool × (1 − house%)<br />
-              ({betAmount} ÷ {newOutcomePool.toFixed(0)}) × {newTotalPool.toFixed(0)} × {(1 - houseEdgePct / 100).toFixed(2)} = {nu(netPayout)}
+            <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.6 }}>
+              This is an <strong>estimate</strong>, not a fixed payout. The winning
+              pool is shared among all winners, so your final amount changes as
+              more people bet and is settled from the total pool at close.
             </div>
-          </div> */}
+          </div>
         </div>
       )}
     </div>

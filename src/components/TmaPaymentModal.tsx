@@ -122,7 +122,11 @@ export function TmaPaymentModal({
     const outcomePool = (Number(outcome.totalBetAmount) || 0) + betAmount;
     const totalPool = (Number(market.totalPool) || 0) + betAmount;
     if (outcomePool <= 0 || isNaN(outcomePool) || isNaN(totalPool)) return 0;
-    return betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
+    const parimutuel =
+      betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
+    // Winners are guaranteed a 1.05x floor (funded by the house edge at
+    // settlement), so the preview must never show less than that.
+    return Math.max(parimutuel, betAmount * 1.05);
   })();
   const estProfit = estPayout - betAmount;
 

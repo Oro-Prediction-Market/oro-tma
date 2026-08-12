@@ -12,6 +12,7 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 
 const configMinBet = config.payments.dkBank.minBet;
 
+// huhhhhh
 const QUICK_AMOUNTS_DEFAULT = [100, 200, 500, 1000];
 const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
 
@@ -114,7 +115,11 @@ export const DKBankBetPage: FC = () => {
     const newTotalPool = totalPool + betAmount;
     const houseEdge = Number(market.houseEdgePct) / 100;
     if (newOutcomePool > 0 && !isNaN(newOutcomePool) && !isNaN(newTotalPool)) {
-      winAmount = (betAmount / newOutcomePool) * newTotalPool * (1 - houseEdge);
+      const parimutuel =
+        (betAmount / newOutcomePool) * newTotalPool * (1 - houseEdge);
+      // Winners are guaranteed a 1.05x floor (funded by the house edge at
+      // settlement), so the preview must never show less than that.
+      winAmount = Math.max(parimutuel, betAmount * 1.05);
     }
 
     // Price impact: LMSR softmax before and after this bet

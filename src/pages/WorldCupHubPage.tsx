@@ -288,10 +288,17 @@ export function calcProb(market: Market, outcomeId: string): number {
   const n = outcomes.length || 1;
   const prior = 1000;
   const tPool = Number(market.totalPool) || 0;
-  // Use LMSR probabilities only when EVERY outcome has one. With a lopsided
-  // pool the LMSR saturates (winner stored as 1.000000, loser as 0.000000),
-  // and mixing an LMSR value for one outcome with the pool-based fallback for
-  // another produces percentages that don't sum to 100.
+  // Once there is real money in the pool, the honest probability is the
+  // outcome's Laplace-smoothed share of the pool — which is also consistent with
+  // the parimutuel payout multiple shown next to it. The stored LMSR values are
+  // NOT used here: on a lopsided pool they saturate (favourite → ~0.99, everyone
+  // else → a tiny non-zero number), which read as "99% / 0%" and don't reflect
+  // the actual money on each side.
+  if (tPool > 0) {
+    return (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
+  }
+  // Empty pool: show sensible initial odds from LMSR when every outcome has one
+  // (they sum to ~100), otherwise fall back to equal priors.
   const lmsr = outcomes.map((x) => Number(x.lmsrProbability) || 0);
   if (lmsr.every((p) => p > 0)) {
     const sum = lmsr.reduce((a, b) => a + b, 0);

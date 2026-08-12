@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { hapticFeedback } from "@tma.js/sdk-react";
 import confetti from "canvas-confetti";
-import { getMe, placeBet, trackEvent } from "@shared/api/client";
+import { getMe, getMyBets, placeBet, trackEvent } from "@shared/api/client";
 import type { Market, BetStreak } from "@shared/api/client";
 import { PayoutBreakdown } from "@shared/components/PayoutBreakdown";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -49,9 +49,15 @@ export function TmaBetModal({
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [viewportOffsetTop, setViewportOffsetTop] = useState(0);
   const [streak, setStreak] = useState<BetStreak | null>(null);
+  const [closing, setClosing] = useState(false);
+  // How much the user has ALREADY staked on this exact pick (active positions).
+  // Adding more to a side you already hold enlarges the group you'd split the
+  // pot with — i.e. it lowers your own multiple — so we surface it before they
+  // stake again.
+  const [existingStake, setExistingStake] = useState(0);
   const { user } = useAuth();
 
-  // Fetch user's balance when modal opens
+  // Fetch user's balance + any existing position on this pick when modal opens
   useEffect(() => {
     if (!isOpen) return;
     trackEvent({
@@ -64,7 +70,20 @@ export function TmaBetModal({
         setCreditsBalance(u.creditsBalance ?? 0);
       })
       .catch(() => {});
-  }, [isOpen]);
+    getMyBets()
+      .then((bets) => {
+        const held = bets
+          .filter(
+            (b) =>
+              b.marketId === market.id &&
+              b.outcomeId === outcomeId &&
+              b.status === "pending",
+          )
+          .reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+        setExistingStake(held);
+      })
+      .catch(() => setExistingStake(0));
+  }, [isOpen, outcomeId]);
 
   // Track visual viewport so the bottom sheet follows the keyboard precisely
   useEffect(() => {
@@ -110,12 +129,39 @@ export function TmaBetModal({
     const outcomePool = (Number(outcome.totalBetAmount) || 0) + betAmount;
     const totalPool = (Number(market.totalPool) || 0) + betAmount;
     if (outcomePool <= 0 || isNaN(outcomePool) || isNaN(totalPool)) return 0;
-    return betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
+    const parimutuel = betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
+    // Winners are guaranteed a 1.05x floor (funded by the house edge at settlement).
+    return Math.max(parimutuel, betAmount * 1.05);
   })();
   const estProfit = estPayout - betAmount;
+  // The live parimutuel multiple on this side right now. Because winners split
+  // the pool, this number FALLS as more money backs the same outcome — the
+  // "lock it in now" hook. It's specific to this user's stake and needs no
+  // crowd, so it works even when only a handful have predicted.
+  const estMultiple = betAmount > 0 ? estPayout / betAmount : 0;
   // No one has placed a bet on this market yet — the user would be the first
   // predictor, so there's no pool to compute a meaningful payout against.
   const poolEmpty = (Number(market.totalPool) || 0) === 0;
+
+  // Some markets are created with an incomplete title (e.g. "UFC Fight Night:"
+  // with the fighters left off). Fall back to the matchup from the outcomes so
+  // the confirmation always says WHICH event was backed.
+  const matchupLabel =
+    market.outcomes
+      ?.map((o) => o.label)
+      .filter(Boolean)
+      .join(" vs ") ?? "";
+  const titleIncomplete = /[:\-–—]\s*$/.test((market.title ?? "").trim());
+  const displayTitle =
+    titleIncomplete && matchupLabel
+      ? `${(market.title ?? "").trim()} ${matchupLabel}`
+      : market.title;
+  const closeLabel = market.closesAt
+    ? new Date(market.closesAt).toLocaleString([], {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : null;
 
   if (!isOpen) return null;
 
@@ -128,9 +174,15 @@ export function TmaBetModal({
   };
 
   const handleClose = () => {
-    if (status === "processing") return;
-    onClose();
-    resetForm();
+    if (status === "processing" || closing) return;
+    setClosing(true);
+    // Parents commonly conditionally render this modal. Defer their close
+    // callback until the exit motion is complete so the sheet can slide down.
+    window.setTimeout(() => {
+      onClose();
+      resetForm();
+      setClosing(false);
+    }, 320);
   };
 
   const handlePlaceBet = async () => {
@@ -203,6 +255,10 @@ export function TmaBetModal({
           from { transform: translateY(100%); }
           to   { transform: translateY(0); }
         }
+        @keyframes tmaSheetDown {
+          from { transform: translateY(0); }
+          to   { transform: translateY(100%); }
+        }
         @keyframes tmaSuccessPop {
           0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
           55%  { transform: scale(1.25) rotate(4deg); opacity: 1; }
@@ -239,7 +295,7 @@ export function TmaBetModal({
           maxWidth: 500,
           boxSizing: "border-box",
           boxShadow: "0 -4px 32px rgba(0,0,0,0.22)",
-          animation: "tmaSheetUp 0.32s cubic-bezier(0.32,0.72,0,1) forwards",
+          animation: `${closing ? "tmaSheetDown" : "tmaSheetUp"} 0.32s cubic-bezier(0.32,0.72,0,1) forwards`,
           maxHeight: `${viewportHeight * 0.92}px`,
           overflowY: "auto",
           display: "flex",
@@ -304,7 +360,7 @@ export function TmaBetModal({
                     marginBottom: 4,
                   }}
                 >
-                  Prediction Locked In!
+                  Prediction placed
                 </div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
                   Your position is now active
@@ -331,7 +387,7 @@ export function TmaBetModal({
                   marginBottom: 4,
                 }}
               >
-                {market.title}
+                {displayTitle}
               </div>
               <div
                 style={{
@@ -343,6 +399,17 @@ export function TmaBetModal({
                 Nu {betAmount.toLocaleString()} on{" "}
                 <span style={{ color: "#10b981" }}>{outcome?.label}</span>
               </div>
+              {closeLabel && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-subtle)",
+                    marginTop: 6,
+                  }}
+                >
+                  Closes {closeLabel} · your payout is final at close
+                </div>
+              )}
             </div>
 
             {/* ── Streak Banner ── */}
@@ -949,9 +1016,6 @@ export function TmaBetModal({
               ) : isValidAmount ? (
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
                     background:
                       estProfit >= 0 ? "rgba(22,163,74,0.1)" : "var(--bg-main)",
                     border: `1px solid ${estProfit >= 0 ? "#86efac" : "var(--glass-border)"}`,
@@ -960,6 +1024,48 @@ export function TmaBetModal({
                     marginBottom: 16,
                   }}
                 >
+                  {/* Live multiple — the "lock it in now" hook. Falls as more
+                      money backs this side. */}
+                  {estProfit >= 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 8,
+                        paddingBottom: 8,
+                        marginBottom: 8,
+                        borderBottom: "1px solid rgba(134,239,172,0.35)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 26,
+                          fontWeight: 900,
+                          color: "#16a34a",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {estMultiple.toFixed(2)}×
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "var(--text-subtle)",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        on this side now — drops as more money backs it
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                   <div>
                     <div
                       style={{
@@ -970,7 +1076,7 @@ export function TmaBetModal({
                         letterSpacing: "0.06em",
                       }}
                     >
-                      You'll win
+                      Est. payout
                     </div>
                     <div
                       style={{
@@ -1017,8 +1123,24 @@ export function TmaBetModal({
                       </div>
                     )}
                   </div>
+                  </div>
                 </div>
               ) : null}
+
+              {isValidAmount && !poolEmpty && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-subtle)",
+                    marginTop: -8,
+                    marginBottom: 8,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Estimate only — the winning pool is shared among all winners, so
+                  your payout changes as more people bet and is final at close.
+                </div>
+              )}
 
               {isValidAmount && (
                 <PayoutBreakdown
@@ -1045,6 +1167,29 @@ export function TmaBetModal({
                   }}
                 >
                   {error}
+                </div>
+              )}
+
+              {existingStake > 0 && (
+                <div
+                  style={{
+                    background: "rgba(245,158,11,0.1)",
+                    border: "1px solid rgba(245,158,11,0.35)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    marginBottom: 12,
+                    fontSize: 12.5,
+                    lineHeight: 1.45,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  <strong>
+                    You already have Nu {existingStake.toLocaleString()} on{" "}
+                    {outcome?.label ?? "this pick"}.
+                  </strong>{" "}
+                  Adding more to the same side splits the winnings with a bigger
+                  group — it lowers your own payout. Backing a different outcome
+                  raises it.
                 </div>
               )}
 

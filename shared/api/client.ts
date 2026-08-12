@@ -40,6 +40,16 @@ export function isTokenValid(): boolean {
   return payload.exp * 1000 > Date.now() + 30_000;
 }
 
+/**
+ * URL for the CORS-friendly avatar proxy. Telegram's photo hosts don't send
+ * CORS headers on the image itself, so the share-card <canvas> can't draw them
+ * directly without tainting (which breaks PNG export). This backend route
+ * re-serves the photo from our origin with proper CORS.
+ */
+export function avatarUrl(userId: string): string {
+  return `${API_URL}/users/avatar/${encodeURIComponent(userId)}`;
+}
+
 // ─── In-memory GET cache (stale-while-revalidate, 15s TTL) ───────────────────
 const _cache = new Map<
   string,
@@ -161,6 +171,7 @@ export interface AuthUser {
   boostReady?: boolean;
   // Referrals
   referralCount?: number;
+  featuredAchievementIds?: string[];
 }
 
 export interface AuthResponse {
@@ -363,14 +374,15 @@ export interface LinkedBankAccount {
 export async function linkBankAccount(
   cid: string,
   phone?: string,
-  skipOtp?: boolean,
 ): Promise<{ accountName: string; maskedPhone: string; requiresOtp: boolean }> {
+  // Whether an OTP is required is decided by the server (it skips only when the
+  // DK-registered phone matches the user's already-verified phone). The client
+  // must honour `requiresOtp` in the response rather than asserting a skip.
   return request("/payments/bank/link", {
     method: "POST",
     body: JSON.stringify({
       cid,
       ...(phone ? { phone } : {}),
-      ...(skipOtp ? { skipOtp } : {}),
     }),
   });
 }
@@ -454,39 +466,97 @@ export interface Market {
   outcomes: Outcome[];
 }
 
+export type DisputeSide = "object" | "support";
+export type DisputeBondStatus =
+  | "locked"
+  | "rewarded"
+  | "forfeited"
+  | "not_applicable";
+
 export interface Dispute {
   id: string;
   userId: string;
   marketId: string;
   bondAmount: string;
   reason: string | null;
-  bondRefunded: boolean;
+  /** "object" challenges the proposal; "support" defends it. */
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondStatus: DisputeBondStatus;
+  /** Reward paid on top of the returned bond when this side won; "0" otherwise. */
+  rewardAmount: string;
   createdAt: string;
 }
 
 export interface SubmitDisputePayload {
+  reason: string;
+  /** Only the FIRST objector may set this (min 10). Others match automatically — omit it. */
   bondAmount?: number;
-  paymentId?: string;
-  reason?: string;
+  /** "object" (default) challenges the proposal; "support" defends it. */
+  side?: DisputeSide;
 }
 
 export function getDisputes(marketId: string): Promise<Dispute[]> {
   return request<Dispute[]>(`/markets/${marketId}/disputes`);
 }
 
-export interface DisputeRequirements {
-  minBond: number;
-  minParticipants: number;
-  eligible: boolean;
+/** The caller's OWN dispute for a market — result + bond + reward, or null. */
+export interface MyDispute {
+  id: string;
   reason: string | null;
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondAmount: string;
+  bondStatus: DisputeBondStatus;
+  /** Reward paid on top of the returned bond when this side won; "0" otherwise. */
+  rewardAmount: string;
+  createdAt: string;
 }
 
-export function getDisputeRequirements(
-  marketId: string,
-): Promise<DisputeRequirements> {
-  return request<DisputeRequirements>(
-    `/markets/${marketId}/dispute-requirements`,
-  );
+export function getMyDispute(marketId: string): Promise<MyDispute | null> {
+  return request<MyDispute | null>(`/markets/${marketId}/my-dispute`);
+}
+
+/** A dispute the caller raised on some market, with its settled result. */
+export interface MyDisputeSummary {
+  id: string;
+  marketId: string;
+  marketTitle: string | null;
+  side: DisputeSide;
+  /** true = this side won, false = lost, null = not settled yet. */
+  upheld: boolean | null;
+  bondAmount: string;
+  bondStatus: DisputeBondStatus;
+  rewardAmount: string;
+  createdAt: string;
+}
+
+export function getMyDisputes(): Promise<MyDisputeSummary[]> {
+  return request<MyDisputeSummary[]>("/markets/my-disputes");
+}
+
+export interface DisputeInfo {
+  /** OBJECT-side count. */
+  objectionCount: number;
+  objectCount: number;
+  supportCount: number;
+  windowOpen: boolean;
+  windowClosesAt: string | null;
+  windowMinutes: number;
+  canObject: boolean;
+  /** Fixed per-head bond once the first objector set it; null until then. */
+  bondRequired: number | null;
+  /** true once the bond is locked in for everyone (after the first objection). */
+  bondFixed: boolean;
+  /** Floor for the first objector's chosen bond. */
+  minBond: number;
+  bondNote: string;
+}
+
+export function getDisputeInfo(marketId: string): Promise<DisputeInfo> {
+  return request<DisputeInfo>(`/markets/${marketId}/dispute-info`);
 }
 
 export function submitDispute(
@@ -614,7 +684,12 @@ export interface Transaction {
     | "refund"
     | "dispute_bond"
     | "dispute_refund"
+    | "dispute_bond_lock"
+    | "dispute_bond_forfeit"
+    | "dispute_bond_reward"
     | "referral_bonus"
+    | "referral_prize"
+    | "streak_bonus"
     | "duel_wager"
     | "duel_payout"
     | "free_credit"
@@ -642,6 +717,19 @@ export function getMyResults(): Promise<Bet[]> {
 
 export function getMe(): Promise<AuthUser> {
   return request<AuthUser>("/users/me");
+}
+export function setFeaturedAchievements(achievementIds: string[]): Promise<{ featuredAchievementIds: string[] }> { return request("/users/me/featured-achievements", { method: "POST", body: JSON.stringify({ achievementIds }) }); }
+
+export interface PublicProfile {
+  id: string; firstName: string | null; lastName: string | null; username: string | null;
+  photoUrl: string | null; reputationTier: string; reputationScore: number | null;
+  totalPredictions: number; correctPredictions: number; winRate: number; rank: number | null;
+  streak: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
+  featuredAchievementIds?: string[];
+  recentCalls?: Array<{ id: string; marketTitle: string; outcomeLabel: string; status: "won" | "lost" | "refunded"; payout: number | null; placedAt: string }>;
+}
+export function getPublicProfile(id: string): Promise<PublicProfile> {
+  return request<PublicProfile>(`/users/profiles/${encodeURIComponent(id)}`);
 }
 
 export function getMyTransactions(
@@ -798,6 +886,27 @@ export function joinChallenge(challengeId: string): Promise<ChallengeResponse> {
   return request<ChallengeResponse>(`/challenges/${challengeId}/join`, {
     method: "POST",
   });
+}
+
+/** Minimal challenge info shown before sign-in, from a `challenge_<id>` deep link. */
+export interface ChallengePreview {
+  id: string;
+  marketId: string;
+  marketTitle: string | null;
+  marketStatus: string | null;
+  outcomeId: string;
+  outcomeLabel: string | null;
+  creatorName: string;
+  wagerAmount: number | null;
+  status: string;
+  expiresAt: string | null;
+}
+
+/** Public — no auth required. Resolves a challenge deep link to its market. */
+export function getChallengePreview(
+  challengeId: string,
+): Promise<ChallengePreview> {
+  return request<ChallengePreview>(`/challenges/${challengeId}/preview`);
 }
 
 // ─── Seasons ─────────────────────────────────────────────────────────────────
@@ -970,4 +1079,50 @@ export interface EplSeason {
 
 export function getEplSeason(): Promise<EplSeason> {
   return request<EplSeason>("/epl/season");
+}
+
+// ── UEFA Champions League (same shapes as EPL) ────────────────────────────────
+export type UclStandingRow = EplStandingRow;
+export type UclStandings = EplStandings;
+export type UclStatEntry = EplStatEntry;
+export type UclStats = EplStats;
+export type UclSeason = EplSeason;
+
+export function getUclStandings(): Promise<UclStandings> {
+  return request<UclStandings>("/ucl/standings");
+}
+
+export function getUclStats(): Promise<UclStats> {
+  return request<UclStats>("/ucl/stats");
+}
+
+export function getUclSeason(): Promise<UclSeason> {
+  return request<UclSeason>("/ucl/season");
+}
+
+export interface UclBracketTeam {
+  name: string;
+  short: string;
+  crest: string;
+}
+export interface UclBracketMatch {
+  a: UclBracketTeam | null;
+  b: UclBracketTeam | null;
+  winner: "a" | "b" | null;
+}
+export interface UclBracketRound {
+  key: string;
+  label: string;
+  matches: UclBracketMatch[];
+}
+export interface UclBracket {
+  updatedAt: string;
+  season: string | null;
+  hasData: boolean;
+  decided: boolean;
+  rounds: UclBracketRound[];
+}
+
+export function getUclBracket(): Promise<UclBracket> {
+  return request<UclBracket>("/ucl/bracket");
 }

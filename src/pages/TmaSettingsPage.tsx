@@ -50,7 +50,7 @@ const STEPS = [
   {
     emoji: <Target />,
     title: "Pick a market & predict",
-    desc: 'Browse the Feed, tap a market, choose an outcome (e.g. "X team wins"), and enter your amount. Your prediction is locked in immediately.',
+    desc: 'Browse the Feed, tap a market, choose an outcome (e.g. "X team wins"), and enter your amount. Your prediction is placed immediately.',
   },
   {
     emoji: <BarChart2 />,

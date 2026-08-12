@@ -1,6 +1,8 @@
 import { useState, useEffect, memo, type FC } from "react";
 import type { Market, Outcome } from "@shared/api/client";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { BottomSheet } from "@/components/ui/Modal";
+import { MarketShareCard } from "@/components/MarketShareCard";
 
 // ── Grouped multi-binary market card (Polymarket-style) ─────────────────────
 // One card per groupId: the umbrella question as the title, one row per
@@ -49,17 +51,25 @@ function findOutcome(m: Market, label: "yes" | "no"): Outcome | undefined {
   return m.outcomes?.find((o) => o.label?.trim().toLowerCase() === label);
 }
 
-/** Chance % of an outcome (LMSR prob, else Laplace-smoothed pool share). */
+/** Chance % of an outcome (Laplace-smoothed pool share once bets exist, else
+ *  initial LMSR odds). */
 function chanceOf(m: Market, o: Outcome | undefined): number {
   if (!o) return 50;
+  const prior = 1000;
+  const n = m.outcomes.length || 1;
+  const totalPool = Number(m.totalPool) || 0;
+  // Real money in the pool → use the outcome's pool share (see calcProb). Stored
+  // LMSR probabilities saturate on a lopsided pool (favourite → ~0.99, everyone
+  // else → ~0) and misreport as "99% / 0%".
+  if (totalPool > 0) {
+    const smoothedAmount = Number(o.totalBetAmount) + prior / n;
+    return (smoothedAmount / (totalPool + prior)) * 100;
+  }
   const lmsr = (m.outcomes ?? []).map((x) => Number(x.lmsrProbability) || 0);
   if (lmsr.length && lmsr.every((p) => p > 0)) {
     const sum = lmsr.reduce((a, b) => a + b, 0);
     return ((Number(o.lmsrProbability) || 0) / sum) * 100;
   }
-  const prior = 1000;
-  const n = m.outcomes.length || 1;
-  const totalPool = Number(m.totalPool);
   const smoothedAmount = Number(o.totalBetAmount) + prior / n;
   return (smoothedAmount / (totalPool + prior)) * 100;
 }
@@ -81,11 +91,14 @@ interface GroupedMarketCardProps {
   /** All sibling markets sharing one groupId (each a Yes/No candidate market). */
   markets: Market[];
   onBet: (marketId: string, outcomeId: string) => void;
+  /** Current user's referral id (telegramId) for the share-card deep link. */
+  referralId?: string;
 }
 
 export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
-  ({ markets, onBet }) => {
+  ({ markets, onBet, referralId }) => {
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
+    const [shareOpen, setShareOpen] = useState(false);
     const first = markets[0];
     const title = (first.groupTitle || first.title).trim();
     const vis = getCategoryVisual(first.category);
@@ -180,6 +193,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
     };
 
     return (
+      <>
       <div
         style={{
           background: "var(--bg-card)",
@@ -486,14 +500,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const url = `${window.location.origin}/market/${first.id}`;
-                  const text = `Check out this prediction market: ${title}`;
-                  if (navigator.share) {
-                    navigator.share({ title, text, url }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(url);
-                    alert("Link copied to clipboard!");
-                  }
+                  setShareOpen(true);
                 }}
                 style={{
                   background: "var(--bg-secondary)",
@@ -540,6 +547,27 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           </div>
         </div>
       </div>
+      <BottomSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Share market"
+      >
+        <div style={{ padding: "0 16px 8px" }}>
+          <MarketShareCard
+            marketTitle={title}
+            outcomes={rows.map((r) => ({
+              label: r.name,
+              pct: r.pct,
+              image: r.market.imageUrl,
+            }))}
+            accentColor={vis.accentColor}
+            poolAmount={groupPool}
+            marketId={first.id}
+            referralId={referralId}
+          />
+        </div>
+      </BottomSheet>
+      </>
     );
   },
 );

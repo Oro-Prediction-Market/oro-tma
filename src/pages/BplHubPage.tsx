@@ -31,7 +31,22 @@ const CLUB_KEYWORDS = [
   "thimphu city", "thimphu fc",
 ];
 
+// Bhutanese clubs (and the national team) also play international/continental
+// fixtures — those are NOT the domestic Bhutan Premier League. When the title
+// names one of these competitions, skip the loose club-name fallback so the
+// market stays in the main feed instead of being filed under /bpl.
+const NON_BPL_COMPETITIONS = [
+  "afc challenge league", "afc champions league", "afc cup", "afc club",
+  "asian cup", "saff", "world cup", "qualifier", "friendly",
+];
+
+// BPL hub is retired/hidden — neutralize the classifier so BPL-type markets
+// fall back into the main feed instead of a removed hub. Flip to false (and
+// uncomment the /bpl route in routes.tsx / PwaApp.tsx) to bring BPL back.
+const BPL_HIDDEN: boolean = true;
+
 export function isBplMarket(m: Market): boolean {
+  if (BPL_HIDDEN) return false;
   if (m.category === "political") return false;
   // A market filed under Gaming belongs to /esports, even if it still carries a
   // leftover BPL settlement URL from the admin form's sports presets
@@ -43,6 +58,9 @@ export function isBplMarket(m: Market): boolean {
     return true;
   const title = m.title.toLowerCase();
   if (title.includes("bhutan premier league")) return true;
+  // Non-BPL competition named in the title → not a BPL market (the strong BPL
+  // signals above already returned true, so genuine BPL rows are unaffected).
+  if (NON_BPL_COMPETITIONS.some((c) => title.includes(c))) return false;
   return CLUB_KEYWORDS.some((k) => title.includes(k));
 }
 

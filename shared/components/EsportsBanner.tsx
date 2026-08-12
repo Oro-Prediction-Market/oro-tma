@@ -5,8 +5,8 @@ import {
   Skull,
   Castle,
   Flame,
-  Flag,
-  Spade,
+  Crown,
+  Trophy,
   Target,
   Sword,
 } from "lucide-react";
@@ -25,21 +25,21 @@ const TRACK = EWC.trackTiny;
 // Bracket arms carry four each — the hub's headline categories. The footer
 // rail lists every discipline the hub buckets into.
 const LEFT_DISCIPLINES = [
-  { label: "PUBG", Icon: Target },
   { label: "MLBB", Icon: Sword },
-  { label: "MOBA", Icon: Swords },
-  { label: "FPS", Icon: Crosshair },
+  { label: "PUBG", Icon: Target },
+  { label: "Dota 2", Icon: Swords },
+  { label: "League of Legends", Icon: Crown },
 ];
 const RIGHT_DISCIPLINES = [
-  { label: "Battle Royale", Icon: Skull },
-  { label: "Strategy", Icon: Castle },
-  { label: "Fighting", Icon: Flame },
-  { label: "Racing", Icon: Flag },
+  { label: "Call of Duty", Icon: Crosshair },
+  { label: "EA FC Pro", Icon: Trophy },
+  { label: "Street Fighter", Icon: Flame },
+  { label: "Tekken 8", Icon: Skull },
 ];
 const ALL_DISCIPLINES = [
   ...LEFT_DISCIPLINES,
   ...RIGHT_DISCIPLINES,
-  { label: "Card Games", Icon: Spade },
+  { label: "Chess", Icon: Castle },
 ];
 
 /**
@@ -213,6 +213,11 @@ export function EsportsBanner({
           carries all eight disciplines on its own */}
       <style>{`
         .ewc-banner { min-height: 320px; }
+        @keyframes ewcMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes ewcSheen {
+          0% { transform: translateX(-140%) skewX(-18deg); }
+          55%, 100% { transform: translateX(360%) skewX(-18deg); }
+        }
         .ewc-banner-body { padding: 16px 18px 12px; gap: 10px; }
         .ewc-bracket-side { width: 84px; flex-shrink: 0; }
         .ewc-bracket-rail { --stub: 9px; --mid: 9px; --leg: 10px; --node: 5px; width: 28px; }
@@ -240,6 +245,23 @@ export function EsportsBanner({
       <CornerMark v="top" h="right" />
       <CornerMark v="bottom" h="left" />
       <CornerMark v="bottom" h="right" />
+
+      {/* Slow diagonal light sheen — premium sweep across the obsidian */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: "30%",
+          background:
+            "linear-gradient(105deg, transparent 0%, rgba(242,197,117,0.10) 50%, transparent 100%)",
+          animation: "ewcSheen 5s ease-in-out infinite",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
 
       <div
         className="ewc-banner-body"
@@ -344,38 +366,55 @@ export function EsportsBanner({
             padding: "9px 12px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            {ALL_DISCIPLINES.map(({ label, Icon }, i) => (
-              <React.Fragment key={label}>
-                {i > 0 && (
-                  <span
-                    className="ewc-banner-divider"
-                    style={{
-                      width: 1,
-                      height: 13,
-                      background: BORDER,
-                      flexShrink: 0,
-                    }}
-                  />
-                )}
+          <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative" }}>
+            {/* Left fade so titles ease in from the edge */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 22,
+                background: `linear-gradient(to right, ${SHEET}, transparent)`,
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                width: "max-content",
+                animation: "ewcMarquee 22s linear infinite",
+              }}
+            >
+              {[...ALL_DISCIPLINES, ...ALL_DISCIPLINES].map(({ label, Icon }, i) => (
                 <span
-                  className="ewc-banner-ficon"
-                  title={label}
-                  aria-label={label}
-                  style={{ display: "inline-flex", flexShrink: 0 }}
+                  key={i}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "0 12px",
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  <Icon size={15} color={GOLD_BRIGHT} />
+                  <Icon size={14} color={GOLD_BRIGHT} />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: TRACK,
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.72)",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <span style={{ color: GOLD, fontSize: 8 }}>◆</span>
                 </span>
-              </React.Fragment>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div style={{ flexShrink: 0 }}>

@@ -40,7 +40,7 @@ export const ShareCTA: FC<ShareCTAProps> = ({
     } else if (type === "lose") {
       shareText = `📊 Missed this one — "${marketTitle}"\n\nThink you can call it better? Come prove it on Oro 👇\n${refLink}`;
     } else if (type === "predict") {
-      shareText = `🧠 I'm predicting on:\n"${marketTitle}"\n\nLet's see who's got the best foresight. Join the pool 👇\n${refLink}`;
+      shareText = `🧠 I've made my call on:\n"${marketTitle}"\n\nThink you'd call it better? Prove me wrong 👇\n${refLink}`;
     } else if (type === "profile") {
       const tierLabel =
         reputation === "expert"

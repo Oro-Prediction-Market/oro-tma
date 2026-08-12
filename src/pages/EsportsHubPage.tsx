@@ -8,11 +8,11 @@ import {
   Skull,
   Castle,
   Flame,
-  Flag,
-  Spade,
   Gamepad2,
   Target,
   Sword,
+  Crown,
+  Trophy,
 } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
@@ -22,7 +22,11 @@ import { isBplMarket, isDrawOutcome } from "./BplHubPage";
 import { isUfcMarket } from "./UfcHubPage";
 import { isEplMarket } from "./EplHubPage";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
-import { hasToken, looksEsports } from "@shared/helpers/esportsKeywords";
+import {
+  hasToken,
+  looksEsports,
+  isEsportsFinal,
+} from "@shared/helpers/esportsKeywords";
 import { EsportsWordmark } from "@shared/components/EsportsWordmark";
 import {
   EWC,
@@ -51,7 +55,20 @@ type EsportsCategory = {
 
 export const ESPORTS_CATEGORIES: EsportsCategory[] = [
   {
-    // Own category rather than a Battle Royale bucket — it's a title in its own right
+    key: "mlbb",
+    label: "MLBB",
+    Icon: Sword,
+    tags: ["mlbb", "ml", "mobile-legends", "mobilelegends"],
+    games: [
+      "mobile legends",
+      "mobile legends: bang bang",
+      "mlbb",
+      "mpl",
+      "m6 world championship",
+      "msc",
+    ],
+  },
+  {
     key: "pubg",
     label: "PUBG",
     Icon: Target,
@@ -67,177 +84,78 @@ export const ESPORTS_CATEGORIES: EsportsCategory[] = [
     ],
   },
   {
-    key: "mlbb",
-    label: "MLBB",
-    Icon: Sword,
-    tags: ["mlbb", "ml", "mobile-legends", "mobilelegends"],
-    games: [
-      "mobile legends",
-      "mobile legends: bang bang",
-      "mlbb",
-      "mpl",
-      "m6 world championship",
-      "msc",
-    ],
-  },
-  {
-    key: "battle-royale",
-    label: "Battle Royale",
-    Icon: Skull,
-    tags: ["battle-royale", "battleroyale", "br"],
-    // Before FPS so "Apex Legends" / "Warzone" land here, not in FPS
-    games: [
-      "battle royale",
-      "fortnite",
-      "free fire",
-      "apex",
-      "apex legends",
-      "warzone",
-      "fall guys",
-      "naraka",
-    ],
-  },
-  {
-    key: "moba",
-    label: "MOBA",
+    key: "dota2",
+    label: "Dota 2",
     Icon: Swords,
-    tags: ["moba"],
+    tags: ["dota", "dota2", "dota-2"],
+    games: ["dota", "dota 2", "the international", "ti"],
+  },
+  {
+    key: "lol",
+    label: "League of Legends",
+    Icon: Crown,
+    tags: ["lol", "league-of-legends", "leagueoflegends", "league"],
     games: [
-      "moba",
-      "dota",
-      "dota 2",
-      "the international",
       "league of legends",
       "lol",
       "lck",
       "lec",
       "lpl",
+      "lcs",
       "worlds",
-      "wild rift",
-      "honor of kings",
-      "arena of valor",
-      "smite",
-      "pokemon unite",
+      "msi",
     ],
   },
   {
-    key: "fps",
-    label: "FPS",
+    key: "cod",
+    label: "Call of Duty",
     Icon: Crosshair,
-    tags: ["fps", "shooter"],
+    tags: ["cod", "call-of-duty", "warzone", "cdl"],
     games: [
-      "fps",
-      "counter-strike",
-      "counter strike",
-      "cs2",
-      "csgo",
-      "cs:go",
-      "blast premier",
-      "iem",
-      "esl pro league",
-      "valorant",
-      "vct",
-      "overwatch",
-      "owcs",
-      "rainbow six",
-      "r6",
-      "siege",
       "call of duty",
       "cod",
       "cdl",
-      "halo",
-      "quake",
-      "the finals",
+      "warzone",
+      "modern warfare",
+      "black ops",
     ],
   },
   {
-    key: "card-games",
-    label: "Card Games",
-    Icon: Spade,
-    // Before Strategy so Hearthstone / TFT resolve to cards, not RTS
-    tags: ["card-games", "cardgames", "card", "tcg", "ccg"],
+    key: "ea-fc",
+    label: "EA FC Pro",
+    Icon: Trophy,
+    tags: ["ea-fc", "eafc", "fc-pro", "ea-sports-fc", "fifa"],
     games: [
-      "card game",
-      "hearthstone",
-      "magic: the gathering",
-      "magic the gathering",
-      "mtg",
-      "yu-gi-oh",
-      "yugioh",
-      "gwent",
-      "legends of runeterra",
-      "teamfight tactics",
-      "tft",
-      "poker",
-      "wsop",
-      "marvel snap",
-      "pokemon tcg",
-      "balatro",
+      "ea fc",
+      "ea sports fc",
+      "fc pro",
+      "fc 26",
+      "fc26",
+      "fc 25",
+      "fc25",
+      "fifa",
     ],
   },
   {
-    key: "strategy",
-    label: "Strategy",
-    Icon: Castle,
-    tags: ["strategy", "rts"],
-    games: [
-      "strategy",
-      "starcraft",
-      "sc2",
-      "age of empires",
-      "aoe",
-      "aoe2",
-      "aoe4",
-      "warcraft iii",
-      "warcraft 3",
-      "clash royale",
-      "clash of clans",
-      "civilization",
-      "company of heroes",
-      "stormgate",
-    ],
-  },
-  {
-    key: "fighting",
-    label: "Fighting",
+    key: "street-fighter",
+    label: "Street Fighter",
     Icon: Flame,
-    tags: ["fighting", "fgc"],
-    games: [
-      "fighting game",
-      "evo",
-      "street fighter",
-      "sf6",
-      "tekken",
-      "mortal kombat",
-      "smash bros",
-      "super smash",
-      "melee",
-      "guilty gear",
-      "granblue fantasy versus",
-      "dragon ball fighterz",
-      "brawlhalla",
-      "king of fighters",
-      "kof",
-    ],
+    tags: ["street-fighter", "streetfighter", "sf6", "sf"],
+    games: ["street fighter", "sf6", "sfv", "sf 6"],
   },
   {
-    key: "racing",
-    label: "Racing",
-    Icon: Flag,
-    tags: ["racing", "sim-racing", "simracing"],
-    games: [
-      "sim racing",
-      "rocket league",
-      "rlcs",
-      "f1 esports",
-      "gran turismo",
-      "forza",
-      "iracing",
-      "assetto corsa",
-      "trackmania",
-      "mario kart",
-      "need for speed",
-    ],
+    key: "tekken",
+    label: "Tekken 8",
+    Icon: Skull,
+    tags: ["tekken", "tekken8", "tekken-8"],
+    games: ["tekken", "tekken 8", "tekken8"],
+  },
+  {
+    key: "chess",
+    label: "Chess",
+    Icon: Castle,
+    tags: ["chess"],
+    games: ["chess", "fide", "grand chess tour", "candidates tournament"],
   },
   { key: "other", label: "Other", Icon: Gamepad2, tags: [], games: [] },
 ];
@@ -378,7 +296,7 @@ export function categoryMeta(key: EsportsCategoryKey): EsportsCategory {
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
-function getSideImage(market: Market, idx: number): string | null {
+export function getSideImage(market: Market, idx: number): string | null {
   const sides = (market.outcomes ?? []).filter(
     (o) => !isDrawOutcome(o.label ?? ""),
   );
@@ -389,7 +307,7 @@ function getSideImage(market: Market, idx: number): string | null {
   return null;
 }
 
-function outcomeImage(market: Market, outcome: Outcome): string | null {
+export function outcomeImage(market: Market, outcome: Outcome): string | null {
   if (outcome.imageUrl) return outcome.imageUrl;
   const sides = (market.outcomes ?? []).filter(
     (o) => !isDrawOutcome(o.label ?? ""),
@@ -400,14 +318,14 @@ function outcomeImage(market: Market, outcome: Outcome): string | null {
   return null;
 }
 
-function shortTeamName(label: string): string {
+export function shortTeamName(label: string): string {
   const trimmed = label.trim();
   if (trimmed.length <= 14) return trimmed;
   const parts = trimmed.split(/\s+/);
   return parts.length > 1 ? parts[parts.length - 1] : trimmed;
 }
 
-function parseVsNames(title: string): { a: string; b: string } {
+export function parseVsNames(title: string): { a: string; b: string } {
   const m = title.match(
     /^(?:.*?[:\-–—]\s*)?(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:?]|\s*\(|\s+(?:who|which|will)\b|$)/i,
   );
@@ -476,7 +394,13 @@ export function TeamAvatar({
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        style={{ ...shape, objectFit: "cover", background: EWC.control }}
+        style={{
+          ...shape,
+          objectFit: "contain",
+          padding: Math.round(size * 0.1),
+          boxSizing: "border-box",
+          background: EWC.control,
+        }}
       />
     );
   }
@@ -729,6 +653,7 @@ function EsportsMatchCard({
 
   const pctA = Math.round(calcProb(m, sa.id) * 100);
   const pctB = 100 - pctA;
+  const isFinal = isEsportsFinal(market.title);
 
   const renderSide = (
     outcome: typeof sa,
@@ -884,21 +809,35 @@ function EsportsMatchCard({
           justifyContent: "space-between",
           gap: 10,
           padding: "7px 10px",
-          background: EWC.panel,
+          background: isFinal ? EWC.glass : EWC.panel,
+          borderTop: isFinal ? `1px solid ${EWC.goldLine}` : "none",
         }}
       >
         <span
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            minWidth: 0,
             fontFamily: DISPLAY_FONT,
             fontSize: 10,
-            fontWeight: 400,
-            color: EWC.textMuted,
+            fontWeight: isFinal ? 700 : 400,
+            color: isFinal ? EWC.goldBright : EWC.textMuted,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {market.title}
+          {isFinal && <Trophy size={11} style={{ flexShrink: 0 }} />}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {market.title}
+          </span>
         </span>
         <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
           <Label>pool </Label>
@@ -1203,7 +1142,7 @@ export function EsportsMasthead({
 
 type ActiveBet = { marketId: string; outcomeId: string };
 
-function isMatchMarket(m: Market): boolean {
+export function isMatchMarket(m: Market): boolean {
   const sides = (m.outcomes ?? []).filter((o) => !isDrawOutcome(o.label ?? ""));
   if (sides.length !== 2) return false;
   const isBinary = sides.every((o) => /^(yes|no)$/i.test((o.label ?? "").trim()));
@@ -1274,6 +1213,13 @@ export function EsportsHubPage() {
     (s, { market }) => s + Number(market.totalPool ?? 0),
     0,
   );
+  // Pool volume per category — the tiebreaker when two chips have equal counts.
+  const poolByCat = useMemo(() => {
+    const p = new Map<EsportsCategoryKey, number>();
+    for (const { categoryKey, market } of tagged)
+      p.set(categoryKey, (p.get(categoryKey) ?? 0) + Number(market.totalPool ?? 0));
+    return p;
+  }, [tagged]);
   // Admin-defined categories (subcategories with no preset), busiest first
   const adminCategories = useMemo(
     () =>
@@ -1292,13 +1238,26 @@ export function EsportsHubPage() {
     [counts, adminCategories],
   );
 
-  // "Other" only earns a chip when something actually landed there
-  const chips = [
-    ...ESPORTS_CATEGORIES.filter(
-      (c) => c.key !== "other" || (counts.get("other") ?? 0) > 0,
-    ),
-    ...adminCategories,
-  ];
+  // "Other" only earns a chip when something actually landed there.
+  // Busiest categories lead — sorted by market count, then pool volume. Ties
+  // (e.g. every empty category) keep their ESPORTS_CATEGORIES order via stable
+  // sort, so the row stays predictable.
+  const chips = useMemo(() => {
+    const base = [
+      ...ESPORTS_CATEGORIES.filter(
+        (c) => c.key !== "other" || (counts.get("other") ?? 0) > 0,
+      ),
+      ...adminCategories,
+    ];
+    return [...base].sort((a, b) => {
+      const ca = counts.get(a.key) ?? 0;
+      const cb = counts.get(b.key) ?? 0;
+      if (cb !== ca) return cb - ca;
+      const pa = poolByCat.get(a.key) ?? 0;
+      const pb = poolByCat.get(b.key) ?? 0;
+      return pb - pa;
+    });
+  }, [counts, poolByCat, adminCategories]);
 
   const visible =
     selected === "all"
@@ -1326,25 +1285,35 @@ export function EsportsHubPage() {
         onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
       />
     ) : (
-      <EsportsEventMarket
-        key={market.id}
-        market={market}
-        categoryKey={categoryKey}
-        onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
-      />
+      // Field/tournament markets are the headline — span the whole row
+      <div key={market.id} style={{ gridColumn: "1 / -1" }}>
+        <EsportsEventMarket
+          market={market}
+          categoryKey={categoryKey}
+          onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+        />
+      </div>
     );
 
-  const grid = (items: typeof tagged) => (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-        gap: 10,
-      }}
-    >
-      {items.map(renderCard)}
-    </div>
-  );
+  const grid = (items: typeof tagged) => {
+    // Headline field/tournament markets first, matches after (stable otherwise)
+    const ordered = [...items].sort(
+      (a, b) =>
+        Number(isMatchMarket(a.market)) - Number(isMatchMarket(b.market)),
+    );
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gap: 10,
+          alignItems: "start",
+        }}
+      >
+        {ordered.map(renderCard)}
+      </div>
+    );
+  };
 
   return (
     <Page>

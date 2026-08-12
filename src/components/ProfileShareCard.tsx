@@ -1,9 +1,14 @@
 import { FC, useRef, useEffect, useState } from "react";
 import { Share2, Download } from "lucide-react";
+import { avatarUrl } from "@shared/api/client";
 
 interface ProfileShareCardProps {
   userName: string;
+  avatarInitial?: string | null;
   userPhotoUrl?: string | null;
+  /** User id — used to load the avatar via the CORS-friendly proxy so the
+   *  canvas can draw a Telegram photo and still export as PNG. */
+  userId?: string;
   reputationTier: string;
   reputationScore: number;
   totalPredictions: number;
@@ -13,7 +18,9 @@ interface ProfileShareCardProps {
 
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME as string;
 const CARD_W = 640;
-const CARD_H = 360;
+const CARD_H = 400;
+// Render at 2x so the exported PNG is crisp on retina screens and when re-shared.
+const SCALE = 2;
 
 function tierLabel(tier: string): string {
   if (tier === "legend") return "Legend";
@@ -22,11 +29,18 @@ function tierLabel(tier: string): string {
   return "Rookie";
 }
 
+// Primary + secondary accent per tier — the secondary gives gradients depth.
 function tierColor(tier: string): string {
-  if (tier === "legend") return "#f59e0b";
+  if (tier === "legend") return "#f5a623";
   if (tier === "hot_hand") return "#10b981";
   if (tier === "sharpshooter") return "#3b82f6";
-  return "#a3a3a3";
+  return "#818cf8"; // rookie — a cool indigo instead of flat grey
+}
+function tierColor2(tier: string): string {
+  if (tier === "legend") return "#fcd34d";
+  if (tier === "hot_hand") return "#34d399";
+  if (tier === "sharpshooter") return "#60a5fa";
+  return "#c4b5fd";
 }
 
 async function renderProfileCard(
@@ -34,58 +48,78 @@ async function renderProfileCard(
   opts: ProfileShareCardProps,
 ): Promise<void> {
   const ctx = canvas.getContext("2d")!;
-  canvas.width = CARD_W;
-  canvas.height = CARD_H;
+  canvas.width = CARD_W * SCALE;
+  canvas.height = CARD_H * SCALE;
+  ctx.scale(SCALE, SCALE);
 
   const tier = opts.reputationTier;
   const accent = tierColor(tier);
+  const accent2 = tierColor2(tier);
   const label = tierLabel(tier);
   const acc =
     opts.totalPredictions > 0
       ? Math.round((opts.correctPredictions / opts.totalPredictions) * 100)
       : 0;
 
-  // Background gradient
+  const rr = (x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  };
+
+  // ── Base background ─────────────────────────────────────────────────────────
   const bg = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
-  bg.addColorStop(0, "#0f1117");
-  bg.addColorStop(1, "#1a1f2e");
+  bg.addColorStop(0, "#111a2e");
+  bg.addColorStop(0.52, "#0b1221");
+  bg.addColorStop(1, "#080d17");
+  rr(0, 0, CARD_W, CARD_H, 24);
   ctx.fillStyle = bg;
-  ctx.roundRect(0, 0, CARD_W, CARD_H, 24);
   ctx.fill();
 
-  // Subtle grid lines
-  ctx.strokeStyle = "rgba(255,255,255,0.035)";
+  // Clip everything decorative to the rounded card.
+  ctx.save();
+  rr(0, 0, CARD_W, CARD_H, 24);
+  ctx.clip();
+
+  // Soft tier lighting stays behind the content instead of competing with it.
+  const glow1 = ctx.createRadialGradient(CARD_W - 28, 42, 8, CARD_W - 28, 42, 320);
+  glow1.addColorStop(0, `${accent}36`);
+  glow1.addColorStop(1, "transparent");
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  const glow2 = ctx.createRadialGradient(10, CARD_H, 10, 10, CARD_H, 300);
+  glow2.addColorStop(0, `${accent2}20`);
+  glow2.addColorStop(1, "transparent");
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  // A restrained grid gives the share card texture without making the logo busy.
+  ctx.strokeStyle = "rgba(255,255,255,0.025)";
   ctx.lineWidth = 1;
-  for (let x = 0; x < CARD_W; x += 40) {
+  for (let x = 0; x < CARD_W; x += 44) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, CARD_H);
     ctx.stroke();
   }
-  for (let y = 0; y < CARD_H; y += 40) {
+  for (let y = 0; y < CARD_H; y += 44) {
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(CARD_W, y);
     ctx.stroke();
   }
 
-  // Radial glow behind stats
-  const glow = ctx.createRadialGradient(
-    CARD_W / 2,
-    CARD_H * 0.6,
-    20,
-    CARD_W / 2,
-    CARD_H * 0.6,
-    240,
-  );
-  glow.addColorStop(0, `${accent}28`);
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  // Top accent hairline.
+  const topbar = ctx.createLinearGradient(0, 0, CARD_W, 0);
+  topbar.addColorStop(0, "transparent");
+  topbar.addColorStop(0.5, accent);
+  topbar.addColorStop(1, "transparent");
+  ctx.fillStyle = topbar;
+  ctx.fillRect(0, 0, CARD_W, 3);
 
-  // App brand
-  ctx.font = "bold 17px system-ui, sans-serif";
-  ctx.fillStyle = "#fff";
+  // ── Brand ───────────────────────────────────────────────────────────────────
+  // The real wordmark is wide. Keeping its original aspect ratio prevents the
+  // compressed, cluttered logo treatment that a square draw produced.
   ctx.textAlign = "left";
   try {
     const logoImg = new Image();
@@ -94,161 +128,238 @@ async function renderProfileCard(
       logoImg.onerror = () => rej();
       logoImg.src = "/logo.svg";
     });
-    ctx.drawImage(logoImg, 32, 24, 26, 26);
-    ctx.fillText("Oro Predict", 66, 42);
+    ctx.drawImage(logoImg, 32, 24, 82, 28);
   } catch {
-    ctx.fillText("💠 Oro Predict", 32, 42);
+    ctx.font = "800 18px system-ui, sans-serif";
+    ctx.fillStyle = "#f8fbff";
+    ctx.fillText("ORO", 32, 43);
   }
 
-  // Tier badge (top-right)
+  // Keep the app mark in a dedicated header so it never competes with the avatar.
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.fillRect(32, 72, CARD_W - 64, 1);
+
+  // ── Tier badge (top-right) — glowing pill ───────────────────────────────────
   const badgeText = label.toUpperCase();
   ctx.font = "bold 12px system-ui, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillStyle = accent;
-  const bW = ctx.measureText(badgeText).width + 22;
-  const bH = 26;
+  const bW = ctx.measureText(badgeText).width + 26;
+  const bH = 28;
   const bX = CARD_W - 32 - bW;
   const bY = 22;
   ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(bX, bY, bW, bH, 8);
-  ctx.fillStyle = `${accent}22`;
+  ctx.shadowColor = `${accent}88`;
+  ctx.shadowBlur = 14;
+  rr(bX, bY, bW, bH, 9);
+  const badgeGrad = ctx.createLinearGradient(bX, bY, bX, bY + bH);
+  badgeGrad.addColorStop(0, `${accent}30`);
+  badgeGrad.addColorStop(1, `${accent}14`);
+  ctx.fillStyle = badgeGrad;
   ctx.fill();
-  ctx.strokeStyle = `${accent}66`;
+  ctx.restore();
+  rr(bX, bY, bW, bH, 9);
+  ctx.strokeStyle = `${accent}88`;
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle = accent;
-  ctx.fillText(badgeText, CARD_W - 32 - 11, bY + 17);
+  ctx.textAlign = "center";
+  ctx.fillStyle = accent2;
+  ctx.fillText(badgeText, bX + bW / 2, bY + 18);
 
-  // User avatar
-  const avatarX = 32;
-  const avatarY = 72;
-  const avatarR = 36;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(avatarX + avatarR, avatarY + avatarR, avatarR, 0, Math.PI * 2);
-  ctx.clip();
+  // ── Avatar with glowing tier ring ───────────────────────────────────────────
+  const avatarR = 32;
+  const avatarInnerR = avatarR - 3.5;
+  const avatarCX = 32 + avatarR;
+  const avatarCY = 94 + avatarR;
 
   let avatarDrawn = false;
-  if (opts.userPhotoUrl) {
+  // Prefer the CORS-friendly avatar proxy (keeps the canvas exportable); fall
+  // back to a raw photoUrl. A ".svg" is Telegram's placeholder and isn't
+  // drawable, so skip straight to the initial.
+  const photoSrc = opts.userId
+    ? avatarUrl(opts.userId)
+    : opts.userPhotoUrl || null;
+  if (photoSrc && !/\.svg(\?|$)/i.test(photoSrc)) {
     try {
       const img = new Image();
       img.crossOrigin = "anonymous";
       await new Promise<void>((res, rej) => {
         img.onload = () => res();
         img.onerror = () => rej();
-        img.src = opts.userPhotoUrl!;
+        img.src = photoSrc;
       });
-      ctx.drawImage(img, avatarX, avatarY, avatarR * 2, avatarR * 2);
+      // Clip + draw synchronously (no await between save and restore) so the
+      // round mask can't be corrupted by a concurrent re-render. Center-crop
+      // to a square ("cover") so non-square photos fill the frame cleanly.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(avatarCX, avatarCY, avatarInnerR, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2;
+      const sy = (img.height - side) / 2;
+      ctx.drawImage(
+        img,
+        sx,
+        sy,
+        side,
+        side,
+        avatarCX - avatarInnerR,
+        avatarCY - avatarInnerR,
+        avatarInnerR * 2,
+        avatarInnerR * 2,
+      );
+      ctx.restore();
       avatarDrawn = true;
     } catch {}
   }
   if (!avatarDrawn) {
-    ctx.fillStyle = "#2d3748";
-    ctx.fillRect(avatarX, avatarY, avatarR * 2, avatarR * 2);
-    ctx.font = "bold 28px system-ui, sans-serif";
+    const initial = (
+      opts.avatarInitial?.trim() || opts.userName.replace(/^@+/, "").trim() || "?"
+    )[0].toUpperCase();
+    const ag = ctx.createLinearGradient(
+      avatarCX - avatarR,
+      avatarCY - avatarR,
+      avatarCX + avatarR,
+      avatarCY + avatarR,
+    );
+    ag.addColorStop(0, "#85dd77");
+    ag.addColorStop(1, "#49b967");
+    ctx.fillStyle = ag;
+    ctx.beginPath();
+    ctx.arc(avatarCX, avatarCY, avatarInnerR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = "800 30px system-ui, sans-serif";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
-    ctx.fillText(
-      (opts.userName?.[0] ?? "?").toUpperCase(),
-      avatarX + avatarR,
-      avatarY + avatarR + 10,
-    );
+    ctx.fillText(initial, avatarCX, avatarCY + 11);
   }
-  ctx.restore();
 
-  // Avatar ring in tier color
+  // Ring in tier gradient
+  const ring = ctx.createLinearGradient(
+    avatarCX - avatarR,
+    avatarCY - avatarR,
+    avatarCX + avatarR,
+    avatarCY + avatarR,
+  );
+  ring.addColorStop(0, accent2);
+  ring.addColorStop(1, accent);
   ctx.beginPath();
-  ctx.arc(avatarX + avatarR, avatarY + avatarR, avatarR + 2.5, 0, Math.PI * 2);
-  ctx.strokeStyle = accent;
+  ctx.arc(avatarCX, avatarCY, avatarR, 0, Math.PI * 2);
+  ctx.strokeStyle = ring;
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Name
+  // ── Name + underline + tagline ──────────────────────────────────────────────
+  const textX = avatarCX + avatarR + 20;
   ctx.textAlign = "left";
-  ctx.font = "bold 22px system-ui, sans-serif";
+  ctx.font = "800 25px system-ui, sans-serif";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(opts.userName, avatarX + avatarR * 2 + 16, avatarY + 24);
+  ctx.fillText(opts.userName, textX, avatarCY - 6);
 
-  // Tagline
+  // Accent underline bar
+  rr(textX, avatarCY + 4, 46, 3, 2);
+  const ul = ctx.createLinearGradient(textX, 0, textX + 46, 0);
+  ul.addColorStop(0, accent);
+  ul.addColorStop(1, `${accent}00`);
+  ctx.fillStyle = ul;
+  ctx.fill();
+
   ctx.font = "500 14px system-ui, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.fillText(
-    `I'm a ${label} on Oro. Beat me.`,
-    avatarX + avatarR * 2 + 16,
-    avatarY + 46,
-  );
+  ctx.fillStyle = "rgba(255,255,255,0.62)";
+  ctx.fillText(`I'm a ${label} on Oro. Beat me.`, textX, avatarCY + 28);
 
-  // Stats row
+  // ── Stat cards ──────────────────────────────────────────────────────────────
   const stats = [
     {
       label: "Win Rate",
       value: `${acc}%`,
-      color: acc >= 60 ? "#4ade80" : acc >= 40 ? "#f59e0b" : "#f87171",
+      color: acc >= 60 ? "#4ade80" : acc >= 40 ? "#fbbf24" : "#f87171",
     },
-    {
-      label: "Predictions",
-      value: String(opts.totalPredictions),
-      color: "#93c5fd",
-    },
-    {
-      label: "Correct",
-      value: String(opts.correctPredictions),
-      color: "#6ee7b7",
-    },
+    { label: "Predictions", value: String(opts.totalPredictions), color: "#93c5fd" },
+    { label: "Correct", value: String(opts.correctPredictions), color: "#6ee7b7" },
   ];
 
-  const statY = 196;
-  const statW = (CARD_W - 64) / 3;
+  const statY = 220;
+  const statH = 82;
+  const gap = 12;
+  const statW = (CARD_W - 64 - gap * 2) / 3;
   stats.forEach((s, i) => {
-    const sx = 32 + i * statW;
-    // Card bg
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(sx, statY, statW - 12, 70, 12);
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    const sx = 32 + i * (statW + gap);
+    // Card fill
+    rr(sx, statY, statW, statH, 13);
+    const cardGrad = ctx.createLinearGradient(sx, statY, sx, statY + statH);
+    cardGrad.addColorStop(0, "rgba(255,255,255,0.07)");
+    cardGrad.addColorStop(1, "rgba(255,255,255,0.03)");
+    ctx.fillStyle = cardGrad;
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.strokeStyle = "rgba(255,255,255,0.09)";
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.restore();
-    // Value
-    ctx.font = "bold 28px system-ui, sans-serif";
+    // Accent top edge
+    rr(sx + 14, statY, statW - 28, 2.5, 2);
+    ctx.fillStyle = `${s.color}cc`;
+    ctx.fill();
+    // Value (with glow)
+    ctx.save();
+    ctx.font = "800 30px system-ui, sans-serif";
     ctx.fillStyle = s.color;
     ctx.textAlign = "center";
-    ctx.fillText(s.value, sx + (statW - 12) / 2, statY + 38);
+    ctx.shadowColor = `${s.color}99`;
+    ctx.shadowBlur = 14;
+    ctx.fillText(s.value, sx + statW / 2, statY + 43);
+    ctx.restore();
     // Label
-    ctx.font = "600 11px system-ui, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.fillText(s.label.toUpperCase(), sx + (statW - 12) / 2, statY + 58);
+    ctx.font = "700 10px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.42)";
+    ctx.textAlign = "center";
+    const lbl = s.label.toUpperCase();
+    ctx.save();
+    // letter-spacing emulation
+    const ls = 1.5;
+    const total = ctx.measureText(lbl).width + ls * (lbl.length - 1);
+    let lx = sx + statW / 2 - total / 2;
+    ctx.textAlign = "left";
+    for (const ch of lbl) {
+      ctx.fillText(ch, lx, statY + 66);
+      lx += ctx.measureText(ch).width + ls;
+    }
+    ctx.restore();
   });
 
-  // Divider
-  ctx.strokeStyle = "rgba(255,255,255,0.1)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(32, CARD_H - 52);
-  ctx.lineTo(CARD_W - 32, CARD_H - 52);
-  ctx.stroke();
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  const divY = CARD_H - 54;
+  const div = ctx.createLinearGradient(32, 0, CARD_W - 32, 0);
+  div.addColorStop(0, `${accent}55`);
+  div.addColorStop(1, "rgba(255,255,255,0.04)");
+  ctx.fillStyle = div;
+  ctx.fillRect(32, divY, CARD_W - 64, 1);
 
-  // Referral link footer
   const refUrl = opts.referralId
     ? `https://t.me/${BOT_USERNAME}?startapp=ref_${opts.referralId}`
     : `https://t.me/${BOT_USERNAME}`;
   ctx.font = "600 12px system-ui, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
   ctx.textAlign = "left";
-  ctx.fillText(refUrl, 32, CARD_H - 28);
+  ctx.fillText(refUrl, 32, CARD_H - 27);
   ctx.textAlign = "right";
-  ctx.fillStyle = "rgba(255,255,255,0.2)";
-  ctx.fillText("oro.predict.bt", CARD_W - 32, CARD_H - 28);
+  ctx.fillStyle = `${accent}aa`;
+  ctx.fillText("ORO PREDICT", CARD_W - 32, CARD_H - 27);
+
+  ctx.restore(); // end card clip
+
+  // ── Border on top ───────────────────────────────────────────────────────────
+  rr(0.75, 0.75, CARD_W - 1.5, CARD_H - 1.5, 24);
+  ctx.strokeStyle = `${accent}3a`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 }
 
 export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [rendering, setRendering] = useState(true);
+  const accent = tierColor(props.reputationTier);
+  const accent2 = tierColor2(props.reputationTier);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -261,7 +372,15 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
         }, "image/png");
       })
       .finally(() => setRendering(false));
-  }, [props.userName, props.reputationTier, props.totalPredictions]);
+  }, [
+    props.avatarInitial,
+    props.correctPredictions,
+    props.reputationTier,
+    props.totalPredictions,
+    props.userName,
+    props.userPhotoUrl,
+    props.userId,
+  ]);
 
   const handleDownload = () => {
     if (!blobUrl) return;
@@ -304,8 +423,9 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
           width: "100%",
           borderRadius: 16,
           overflow: "hidden",
-          background: "#0f1117",
+          background: "#0a0d15",
           position: "relative",
+          boxShadow: `0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px ${accent}22`,
         }}
       >
         <canvas
@@ -350,13 +470,14 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
             gap: 8,
             padding: "12px 0",
             borderRadius: 12,
-            background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+            background: `linear-gradient(135deg, ${accent}, ${accent2})`,
             border: "none",
-            color: "#fff",
+            color: "#0b0f17",
             fontSize: 14,
             fontWeight: 800,
             cursor: rendering ? "default" : "pointer",
             opacity: rendering ? 0.6 : 1,
+            boxShadow: `0 6px 20px ${accent}55`,
           }}
         >
           <Share2 size={16} />

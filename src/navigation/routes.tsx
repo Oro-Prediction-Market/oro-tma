@@ -3,10 +3,15 @@ import { lazy, type ComponentType, type JSX } from "react";
 import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
-import { BplHubPage } from "@/pages/BplHubPage";
+// BPL hub retired/hidden — uncomment to re-enable (also flip BPL_HIDDEN in BplHubPage.tsx)
+// import { BplHubPage } from "@/pages/BplHubPage";
 import { UfcHubPage } from "@/pages/UfcHubPage";
 import { EplHubPage } from "@/pages/EplHubPage";
 import { EsportsHubPage } from "@/pages/EsportsHubPage";
+// UCL hidden until the 2026/27 season starts — uncomment to re-enable
+// import { UclHubPage } from "@/pages/UclHubPage";
+// EPL hidden until the 2026/27 season starts — uncomment to re-enable
+// import { EplHubPage } from "@/pages/EplHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
@@ -29,6 +34,9 @@ const PwaResultsPage = lazy(() =>
 );
 const TmaProfilePage = lazy(() =>
   import("@/pages/TmaProfilePage").then((m) => ({ default: m.TmaProfilePage })),
+);
+const TmaPublicProfilePage = lazy(() =>
+  import("@/pages/TmaPublicProfilePage").then((m) => ({ default: m.TmaPublicProfilePage })),
 );
 const ResolvedMarketsPage = lazy(() =>
   import("@/pages/ResolvedMarketsPage").then((m) => ({
@@ -79,7 +87,8 @@ const WrappedResults = () => (
 export const routes: Route[] = [
   { path: "/", Component: TmaFeedPage },
   { path: "/world-cup", Component: WorldCupHubPage, title: "World Cup Hub" },
-  { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
+  // BPL hub retired/hidden — uncomment to re-enable
+  // { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
   { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
   { path: "/epl", Component: EplHubPage, title: "EPL Hub" },
   { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
@@ -117,6 +126,7 @@ export const routes: Route[] = [
   { path: "/my-bets", Component: WrappedMyBets, title: "My Positions" },
   { path: "/results", Component: WrappedResults, title: "Results" },
   { path: "/profile", Component: TmaProfilePage, title: "Profile" },
+  { path: "/profile/:id", Component: TmaPublicProfilePage },
   {
     path: "/resolved",
     Component: ResolvedMarketsPage,

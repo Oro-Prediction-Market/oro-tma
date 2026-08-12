@@ -277,9 +277,11 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
   ]);
 
   const refLink = `https://t.me/${props.botUsername ?? BOT_USERNAME}?startapp=ref_${props.referralId ?? ""}`;
-  const shareText = props.stakeAmount
-    ? `🏆 I'm calling it! Nu ${props.stakeAmount.toLocaleString()} on "${props.outcomePicked}" in:\n"${props.marketTitle}"\n\nCan you predict better? Join 👇\n${refLink}`
-    : `🔥 Check this out: "${props.outcomePicked}" in\n"${props.marketTitle}"\n\nJoin Oro Predict 👇\n${refLink}`;
+  // Lead with the opinion and invite disagreement — money on the OTHER side
+  // raises the sharer's payout (and helps the market reach the 2-bettor min),
+  // whereas "join me" recruits onto their own side and cuts it. Deliberately no
+  // stake amount: nobody forwards a bet slip, and it's counterproductive to.
+  const shareText = `🎯 I'm backing "${props.outcomePicked}" in:\n"${props.marketTitle}"\n\nThink I'm wrong? Prove it 👇\n${refLink}`;
 
   const handleShare = async () => {
     if (sharing) return;
