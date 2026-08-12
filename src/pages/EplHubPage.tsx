@@ -179,10 +179,6 @@ export function EplCrest({
     </div>
   );
 }
-
-// Player head-shot with a photo-first fallback chain: primary photo (FPL) →
-// secondary photo (TheSportsDB) → club crest (EplCrest, which itself falls back
-// to initials). FPL portraits are top-weighted, so crop to the top.
 export function PlayerFace({
   face,
   faceBackup,
@@ -759,48 +755,67 @@ export function EplHubPage() {
     <Page>
       <div style={{ minHeight: "100vh", background: "var(--bg-main, #0f0f0f)" }}>
         {/* ── Header ─────────────────────────────────────────────────── */}
+        <style>{`
+          .epl-hub-banner { background-position: center 70%; }
+          @media (min-width: 768px) {
+            .epl-hub-banner { background-position: center 30%; }
+          }
+        `}</style>
         <div
+          className="epl-hub-banner"
           style={{
-            background:
-              "radial-gradient(ellipse at 85% 8%, rgba(247,37,133,0.4) 0%, transparent 46%), radial-gradient(ellipse at 8% 96%, rgba(0,255,133,0.2) 0%, transparent 50%), radial-gradient(ellipse at 55% 125%, rgba(123,31,212,0.5) 0%, transparent 60%), linear-gradient(125deg, #16082e 0%, #3d1080 38%, #7b1fd4 72%, #b81f95 100%)",
-            padding: "20px 24px 22px",
+            backgroundImage: "url('/epl-banner.png')",
+            backgroundSize: "cover",
+            minHeight: 170,
+            padding: "14px 24px",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative", maxWidth: 860, margin: "0 auto", textShadow: "0 2px 10px rgba(0,0,0,0.7)" }}>
-            <button
-              onClick={() => navigate(-1)}
-              style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "none",
-                borderRadius: "50%",
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "#fff",
-                fontSize: 18,
-                flexShrink: 0,
-              }}
-            >
-              ←
-            </button>
-            <div style={{ flex: 1 }}>
-              <img
-                src="/premier-league-logo.svg"
-                alt="Premier League"
-                style={{ height: 36, display: "block", marginBottom: 6, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
-              />
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", lineHeight: 1.1, fontFamily: "var(--font-display, sans-serif)" }}>
-                Prediction Hub
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              position: "absolute",
+              top: 14,
+              left: 14,
+              zIndex: 2,
+              background: "rgba(255,255,255,0.12)",
+              backdropFilter: "blur(4px)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "50%",
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#fff",
+              fontSize: 18,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              flexShrink: 0,
+            }}
+          >
+            ←
+          </button>
 
-          <div style={{ display: "flex", gap: 12, position: "relative", maxWidth: 860, margin: "18px auto 0" }}>
+          {/* Live vector logo overlay — the banner artwork's own baked-in logo
+              can get cropped away depending on viewport width (cover-fit on a
+              wide fixed image), so this guarantees it's always visible. */}
+          <img
+            src="/premier-league-logo.svg"
+            alt="Premier League"
+            style={{
+              position: "absolute",
+              top: 12,
+              left: 62,
+              zIndex: 2,
+              height: "clamp(44px, 6vw, 84px)",
+              width: "auto",
+              filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.5))",
+            }}
+          />
+
+          <div style={{ display: "flex", gap: 12, position: "absolute", zIndex: 1, left: 24, right: 24, bottom: 14, maxWidth: 860, margin: "0 auto" }}>
             {pulseTiles.map(({ label, val }) => (
               <div
                 key={label}
