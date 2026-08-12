@@ -19,7 +19,6 @@ import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { Link } from "@/components/Link/Link";
 import { Flame, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { BetShareCard } from "@shared/components/BetShareCard";
 import { EplBanner } from "@shared/components/EplBanner";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
@@ -36,7 +35,6 @@ import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { UfcBanner } from "@shared/components/UfcBanner";
 import { UclBanner } from "@shared/components/UclBanner";
-import { isEplMarket, EPL_CLUBS } from "./EplHubPage";
 import { isUclMarket } from "./UclHubPage";
 
 // ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
@@ -2657,6 +2655,13 @@ export const TmaFeedPage: FC = () => {
         {showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <UfcBanner onClick={() => navigate("/ufc")} />
+          </div>
+        )}
+
+        {/* ── UEFA Champions League Banner Card ── (hidden until 2026/27 season) */}
+        {false && showSportsBanners && (
+          <div style={{ marginBottom: 16 }}>
+            <UclBanner onClick={() => navigate("/ucl")} />
           </div>
         )}
 
