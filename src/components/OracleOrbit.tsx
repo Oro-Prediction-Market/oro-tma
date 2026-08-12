@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, ArrowUpCircle, MessageCircle, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -9,6 +9,11 @@ import {
   type MarketSuggestion,
   type SuggestionQuota,
 } from '@shared/api/client';
+import {
+  useSuggestionsSocket,
+  type SuggestionVoted,
+  type SuggestionAdded,
+} from '../hooks/useSuggestionsSocket';
 
 type Suggestion = MarketSuggestion;
 
@@ -17,6 +22,28 @@ function formatResetDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return 'next month';
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+const TITLE_BOX_RATIO = 0.72;
+const CHROME_H = 38; // category row + vote row + breathing room
+
+function fitTitle(title: string, orbSize: number): { fontSize: number; lines: number } {
+  const boxW = orbSize * TITLE_BOX_RATIO;
+  const boxH = orbSize * TITLE_BOX_RATIO - CHROME_H;
+  const longestWord = title
+    .split(/\s+/)
+    .reduce((max, w) => Math.max(max, w.length), 1);
+
+  for (let fontSize = 13; fontSize >= 8; fontSize -= 0.5) {
+    const charW = fontSize * 0.55; // ≈ average glyph width at weight 800
+    if (longestWord * charW > boxW) continue;
+    const perLine = Math.max(1, Math.floor(boxW / charW));
+    // +1 line of slack: ragged word wrapping never packs lines perfectly full.
+    const lines = Math.ceil(title.length / perLine) + 1;
+    if (lines * fontSize * 1.2 <= boxH) return { fontSize, lines };
+  }
+  // Nothing fits cleanly — smallest legible size, clamped with an ellipsis.
+  return { fontSize: 8, lines: Math.max(2, Math.floor(boxH / 9.6)) };
 }
 
 interface OracleOrbitProps {
@@ -39,6 +66,11 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
   const [error, setError] = useState<string | null>(null);
 
   const [newTitle, setNewTitle] = useState('');
+
+  /** Where each orb already sits, so a re-layout doesn't move it. */
+  const placedRef = useRef<Map<string, { x: number; y: number; delay: number }>>(
+    new Map(),
+  );
 
   // Load the orbit each time it opens so votes cast elsewhere show up.
   useEffect(() => {
@@ -100,6 +132,29 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
     }
   };
 
+  // ── Live updates ───────────────────────────────────────────────────────────
+  // Votes are broadcast to every open orbit, so a count changes under your eyes
+  // without a refetch. Counts only ever rise, so Math.max keeps an out-of-order
+  // delivery (or a stale echo of your own optimistic vote) from ticking it back.
+  const handleRemoteVote = useCallback((e: SuggestionVoted) => {
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === e.id ? { ...s, votes: Math.max(s.votes, e.votes) } : s,
+      ),
+    );
+  }, []);
+
+  // A suggestion the admin just approved joins the orbit in place. `votedByMe`
+  // is per-viewer and never broadcast, so it starts false — the one person who
+  // proposed it will see their vote on the next open.
+  const handleRemoteAdd = useCallback((e: SuggestionAdded) => {
+    setSuggestions((prev) =>
+      prev.some((s) => s.id === e.id) ? prev : [...prev, { ...e, votedByMe: false }],
+    );
+  }, []);
+
+  useSuggestionsSocket(isOpen, handleRemoteVote, handleRemoteAdd);
+
   useEffect(() => {
     if (isOpen) {
       const VIEWPORT_W = 390; // Typical mobile width
@@ -114,13 +169,33 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       suggestions.forEach(s => {
         let bestCandidate = null;
         let minOverlap = Infinity;
-        const orbSize = Math.round(112 + (s.votes / maxVotes) * 46);
-        
+        // Votes set the base size; a long question then buys extra room rather
+        // than being shrunk to fit a size it was never going to fit.
+        const lengthBump = Math.min(34, Math.max(0, s.title.length - 42) * 0.8);
+        const orbSize = Math.round(118 + (s.votes / maxVotes) * 46 + lengthBump);
+
+        // An orb that's already on screen keeps its spot. Live votes re-run this
+        // effect, and re-rolling the random placement would make every orb jump
+        // across the screen each time anyone votes.
+        const held = placedRef.current.get(s.id);
+        if (held) {
+          placedOrbs.push({ id: s.id, ...held, size: orbSize });
+          return;
+        }
+
+        // Keep the whole circle on screen, clear of the header and the
+        // "Ask the Crowd" button — bigger orbs need a bigger inset.
+        const marginX = ((orbSize / 2 + 10) / VIEWPORT_W) * 100;
+        const marginTop = ((orbSize / 2 + 130) / VIEWPORT_H) * 100;
+        const marginBottom = ((orbSize / 2 + 150) / VIEWPORT_H) * 100;
+        const spanX = Math.max(0, 100 - marginX * 2);
+        const spanY = Math.max(0, 100 - marginTop - marginBottom);
+
         // Try up to 50 times to find a non-overlapping spot
         for (let tries = 0; tries < 50; tries++) {
-          const candidateX = Math.random() * 65 + 17.5; // Slightly wider range 17.5% - 82.5%
-          const candidateY = Math.random() * 45 + 27.5; // Slightly wider range 27.5% - 72.5%
-          
+          const candidateX = marginX + Math.random() * spanX;
+          const candidateY = marginTop + Math.random() * spanY;
+
           let maxCollision = 0;
           let hasOverlap = false;
 
@@ -147,13 +222,19 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
           }
         }
 
-        if (bestCandidate) placedOrbs.push(bestCandidate);
+        if (bestCandidate) {
+          placedOrbs.push(bestCandidate);
+          const { x, y, delay } = bestCandidate;
+          placedRef.current.set(bestCandidate.id, { x, y, delay });
+        }
       });
 
       setOrbs(placedOrbs);
     } else {
       setSelectedId(null);
       setIsCasting(false);
+      // Fresh scatter next time the orbit opens.
+      placedRef.current.clear();
     }
   }, [isOpen, suggestions]);
 
@@ -295,6 +376,8 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       >
         {orbs.map((orb) => {
           const sug = suggestions.find((s) => s.id === orb.id);
+          const title = sug?.title ?? '';
+          const fitted = fitTitle(title, orb.size);
           return (
           <div
             key={orb.id}
@@ -338,24 +421,24 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
               </div>
               <div
                 style={{
-                  // A circle's usable width is its inscribed square (~0.7×), so
-                  // the text box is bounded to that and breaks on word edges —
-                  // otherwise long titles run under the curve and cut mid-word.
-                  maxWidth: orb.size * 0.72,
-                  fontSize: orb.size > 130 ? 12 : 10.5,
+                  // Bounded to the circle's inscribed square, at the largest
+                  // size that fits the whole title — see fitTitle().
+                  maxWidth: orb.size * TITLE_BOX_RATIO,
+                  fontSize: fitted.fontSize,
                   fontWeight: 800,
                   color: '#fff',
                   lineHeight: 1.2,
                   textShadow: '0 1px 8px rgba(0,0,0,0.72)',
                   display: '-webkit-box',
-                  WebkitLineClamp: 3,
+                  WebkitLineClamp: fitted.lines,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
+                  // Break on word edges only. `hyphens: auto` would split
+                  // "minister" into "minis-ter" inside the curve.
                   overflowWrap: 'break-word',
-                  hyphens: 'auto',
                 }}
               >
-                {sug?.title ?? ''}
+                {title}
               </div>
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <ArrowUpCircle size={10} color="#22c55e" />
