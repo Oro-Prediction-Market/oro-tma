@@ -206,11 +206,14 @@ export const TmaProfilePage: FC = () => {
     !!user?.dkCid,
     user?.referralCount ?? 0,
   );
-  const profileBadgeIds = ["duel_on_fire", "duel_master", "duel_oracle"];
-  const profileBadges = profileBadgeIds
-    .map((id) => badges.find((badge) => badge.id === id))
-    .filter((badge): badge is CollectibleBadge => !!badge && badge.unlocked);
-  const unlockedCount = badges.filter((b) => b.unlocked).length;
+ 
+  const unlockedBadges = badges.filter((b) => b.unlocked);
+  const featuredBadges = featuredIds
+    .map((id) => unlockedBadges.find((badge) => badge.id === id))
+    .filter((badge): badge is CollectibleBadge => !!badge);
+  const profileBadges =
+    featuredBadges.length > 0 ? featuredBadges : unlockedBadges.slice(-3);
+  const unlockedCount = unlockedBadges.length;
   const toggleFeatured = async (id: string) => { const next=featuredIds.includes(id)?featuredIds.filter(x=>x!==id):featuredIds.length<3?[...featuredIds,id]:featuredIds; if(next===featuredIds)return; setFeaturedIds(next); try{await setFeaturedAchievements(next)}catch{setFeaturedIds(featuredIds)} };
 
   type TierProgress = {
@@ -1513,11 +1516,9 @@ function ProfileBadgeDock({
               padding: 3,
               background: "#050812",
               border: `1.5px solid ${
-                badge.id === "duel_on_fire"
-                  ? "rgba(249,115,22,0.72)"
-                  : badge.id === "duel_oracle"
-                    ? "rgba(168,85,247,0.72)"
-                    : "rgba(245,158,11,0.68)"
+                badge.legendary
+                  ? "rgba(255,215,0,0.8)"
+                  : "rgba(245,158,11,0.68)"
               }`,
               boxShadow: "0 8px 18px rgba(0,0,0,0.28)",
               flexShrink: 0,
@@ -1550,7 +1551,7 @@ function ProfileBadgeDock({
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>
-          Featured duel badges
+          Featured collectibles
         </div>
         <div
           style={{
