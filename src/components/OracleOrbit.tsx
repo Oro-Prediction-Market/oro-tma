@@ -25,7 +25,7 @@ function formatResetDate(iso: string): string {
 }
 
 const TITLE_BOX_RATIO = 0.72;
-const CHROME_H = 38; // category row + vote row + breathing room
+const CHROME_H = 46; // category row + vote pill + breathing room
 
 function fitTitle(title: string, orbSize: number): { fontSize: number; lines: number } {
   const boxW = orbSize * TITLE_BOX_RATIO;
@@ -444,9 +444,38 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
               >
                 {title}
               </div>
-              <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <ArrowUpCircle size={10} color="#22c55e" />
-                <span style={{ fontSize: 10, fontWeight: 900, color: '#22c55e' }}>{sug?.votes ?? 0}</span>
+              {/* A bare number reads as decoration. As a bordered pill it reads
+                  as a control, which is the only tap affordance the orb has —
+                  filled while you can still back it, muted once you have. */}
+              <div
+                style={{
+                  marginTop: 6,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '3px 9px',
+                  borderRadius: 99,
+                  background: sug?.votedByMe
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(34,197,94,0.16)',
+                  border: `1px solid ${
+                    sug?.votedByMe ? 'rgba(255,255,255,0.18)' : 'rgba(34,197,94,0.5)'
+                  }`,
+                }}
+              >
+                <ArrowUpCircle
+                  size={10}
+                  color={sug?.votedByMe ? 'rgba(255,255,255,0.55)' : '#22c55e'}
+                />
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 900,
+                    color: sug?.votedByMe ? 'rgba(255,255,255,0.55)' : '#22c55e',
+                  }}
+                >
+                  {sug?.votes ?? 0}
+                </span>
               </div>
             </div>
           </div>
