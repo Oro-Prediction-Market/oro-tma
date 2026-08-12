@@ -314,8 +314,12 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       >
         <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05 }}>Community</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', fontWeight: 700, marginTop: 3 }}>Feed Page</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05 }}>Vote the next market</div>
+            {/* The orbs don't look tappable on their own — this line is what
+                tells you they are, and what backing one is worth. */}
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', fontWeight: 700, marginTop: 3, lineHeight: 1.35 }}>
+              Tap an orb to back it — top questions go live
+            </div>
             <div
               style={{
                 display: 'inline-flex',
@@ -331,7 +335,7 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
                 lineHeight: 1,
               }}
             >
-              live orbit
+              live
             </div>
           </div>
         </div>
