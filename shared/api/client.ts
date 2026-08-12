@@ -50,6 +50,54 @@ export function avatarUrl(userId: string): string {
   return `${API_URL}/users/avatar/${encodeURIComponent(userId)}`;
 }
 
+// ─── In-app notifications ─────────────────────────────────────────────────────
+
+export interface UserNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  metadata?: Record<string, any> | null;
+  createdAt: string;
+}
+
+/** Unseen in-app notifications for the current user (popped once on app open). */
+export function getMyNotifications(): Promise<UserNotification[]> {
+  return request<UserNotification[]>("/users/me/notifications").catch(() => []);
+}
+
+/** Mark notifications seen (by id, or all unseen when omitted) so they don't pop again. */
+export function markNotificationsSeen(
+  ids?: string[],
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("/users/me/notifications/seen", {
+    method: "POST",
+    body: JSON.stringify(ids?.length ? { ids } : {}),
+  })
+    .catch(() => ({ ok: false }))
+    .then((r) => {
+      bustCache("/users/me/notifications");
+      return r;
+    });
+}
+
+/** Report unlocked achievement badges so the backend creates a one-time
+ *  notification per new badge. `seenIds` baselines already-acknowledged badges. */
+export function syncAchievements(
+  badges: { id: string; name: string; requirement?: string }[],
+  seenIds: string[] = [],
+): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("/users/me/achievements/sync", {
+    method: "POST",
+    body: JSON.stringify({ badges, seenIds }),
+  })
+    .catch(() => ({ ok: false }))
+    .then((r) => {
+      bustCache("/users/me/notifications");
+      return r;
+    });
+}
+
 // ─── In-memory GET cache (stale-while-revalidate, 15s TTL) ───────────────────
 const _cache = new Map<
   string,

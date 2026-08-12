@@ -6,6 +6,9 @@ import {
   getMyResults,
   getReferralStats,
   setFeaturedAchievements,
+  syncAchievements,
+  getMyNotifications,
+  markNotificationsSeen,
   AuthUser,
   type Bet,
   type ReferralStats,
@@ -62,13 +65,9 @@ export const TmaProfilePage: FC = () => {
     if (authLoading) return;
 
     getMe()
-      .then((u) => {
+      .then(async (u) => {
         setFreshUser(u);
         setFeaturedIds(u.featuredAchievementIds ?? []);
-        // Detect newly unlocked badges
-        const storageKey = `oro_seen_badges_${u.id ?? u.telegramId}`;
-        const seenRaw = localStorage.getItem(storageKey);
-        const seen: string[] = seenRaw ? JSON.parse(seenRaw) : [];
 
         const currentBadges = buildBadges(
           u.totalPredictions ?? 0,
@@ -79,20 +78,44 @@ export const TmaProfilePage: FC = () => {
           !!u.dkCid,
           u.referralCount ?? 0,
         );
+        const unlocked = currentBadges.filter((b) => b.unlocked);
 
-        const newlyUnlocked = currentBadges.filter(
-          (b) => b.unlocked && !seen.includes(b.id),
+        // Carry over badges already acknowledged on this device so pre-earned
+        // ones aren't all re-celebrated now that "seen" lives server-side.
+        // localStorage stays updated purely as a baseline seed.
+        const storageKey = `oro_seen_badges_${u.id ?? u.telegramId}`;
+        const seenRaw = localStorage.getItem(storageKey);
+        const seenIds: string[] = seenRaw ? JSON.parse(seenRaw) : [];
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(unlocked.map((b) => b.id)),
         );
 
-        // Mark all currently unlocked as seen so we don't re-show on next visit
-        const allUnlockedIds = currentBadges
-          .filter((b) => b.unlocked)
-          .map((b) => b.id);
-        localStorage.setItem(storageKey, JSON.stringify(allUnlockedIds));
-
-        if (newlyUnlocked.length > 0) {
-          setNewlyUnlockedQueue(newlyUnlocked.slice(1));
-          setBadgePopup(newlyUnlocked[0]);
+        // Reconcile unlocks into server-backed notifications (reliable + cross
+        // device, no localStorage reliance), then pop any newly-celebrated ones.
+        try {
+          await syncAchievements(
+            unlocked.map((b) => ({
+              id: b.id,
+              name: b.name,
+              requirement: b.requirement,
+            })),
+            seenIds,
+          );
+          const byId = new Map(currentBadges.map((b) => [b.id, b]));
+          const fresh = (await getMyNotifications())
+            .filter((n) => n.type === "achievement")
+            .map((n) => ({ id: n.id, badge: byId.get(n.metadata?.badgeId) }))
+            .filter(
+              (x): x is { id: string; badge: CollectibleBadge } => !!x.badge,
+            );
+          if (fresh.length > 0) {
+            markNotificationsSeen(fresh.map((x) => x.id)).catch(() => {});
+            setNewlyUnlockedQueue(fresh.slice(1).map((x) => x.badge));
+            setBadgePopup(fresh[0].badge);
+          }
+        } catch {
+          /* notifications unavailable — skip the celebration, no crash */
         }
       })
       .catch(() => setFreshUser(authUser))
