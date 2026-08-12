@@ -1,58 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowUpCircle, MessageCircle, Share2, Sparkles } from 'lucide-react';
+import { X, ArrowUpCircle, MessageCircle, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import {
+  getSuggestions,
+  getSuggestionQuota,
+  createSuggestion,
+  voteSuggestion,
+  type MarketSuggestion,
+  type SuggestionQuota,
+} from '@shared/api/client';
 
-interface Suggestion {
-  id: string;
-  title: string;
-  votes: number;
-  category: string;
-  creator: string;
-  description: string;
+type Suggestion = MarketSuggestion;
+
+/** "1 Sep" — when this user's monthly suggestion slot opens again. */
+function formatResetDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'next month';
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
-
-const MOCK_SUGGESTIONS: Suggestion[] = [
-  {
-    id: '1',
-    title: 'Will Bitcoin hit $100k by year end?',
-    votes: 1240,
-    category: 'Finance',
-    creator: '@crypto_king',
-    description: 'The market is heating up and institutional adoption is at an all-time high. Will the psychological barrier be broken?'
-  },
-  {
-    id: '2',
-    title: 'Will GTA VI be delayed to 2026?',
-    votes: 850,
-    category: 'Gaming',
-    creator: '@rockstar_fan',
-    description: 'Rumors are swirling about development hurdles. Is the 2025 window realistic?'
-  },
-  {
-    id: '3',
-    title: 'Will the Lakers win the 2024 Cup?',
-    votes: 2100,
-    category: 'Sports',
-    creator: '@hoops_master',
-    description: 'They have the momentum and the health. Can they pull off another legendary run?'
-  },
-  {
-    id: '4',
-    title: 'Will AI reach AGI by 2027?',
-    votes: 1560,
-    category: 'Tech',
-    creator: '@silicon_valley',
-    description: 'Sam Altman says it\'s closer than we think. What does the community believe?'
-  },
-  {
-    id: '5',
-    title: 'Will Elon Musk step down from X?',
-    votes: 3200,
-    category: 'Business',
-    creator: '@tech_guru',
-    description: 'Pressure is mounting from investors. Is a new CEO on the horizon?'
-  }
-];
 
 interface OracleOrbitProps {
   isOpen: boolean;
@@ -63,9 +28,77 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isCasting, setIsCasting] = useState(false);
   const [orbs, setOrbs] = useState<{ id: string; x: number; y: number; size: number; delay: number }[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>(MOCK_SUGGESTIONS);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [quota, setQuota] = useState<SuggestionQuota | null>(null);
+  const [voting, setVoting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // Set after a successful submit — the suggestion is invisible until the super
+  // admin approves it, so we say so rather than pretending it joined the orbit.
+  const [submittedNotice, setSubmittedNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [newTitle, setNewTitle] = useState('');
+
+  // Load the orbit each time it opens so votes cast elsewhere show up.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.all([getSuggestions(), getSuggestionQuota().catch(() => null)])
+      .then(([list, q]) => {
+        if (cancelled) return;
+        setSuggestions(list);
+        setQuota(q);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Could not load suggestions. Pull down to retry.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const handleVote = async (id: string) => {
+    if (voting) return;
+    const current = suggestions.find((s) => s.id === id);
+    if (!current || current.votedByMe) return;
+    setVoting(true);
+    // Optimistic — the server is idempotent, so a lost response can't double-count.
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, votes: s.votes + 1, votedByMe: true } : s,
+      ),
+    );
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#22c55e', '#3b82f6', '#f59e0b'],
+    });
+    try {
+      const res = await voteSuggestion(id);
+      setSuggestions((prev) =>
+        prev.map((s) =>
+          s.id === id ? { ...s, votes: res.votes, votedByMe: res.votedByMe } : s,
+        ),
+      );
+    } catch {
+      setSuggestions((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? { ...s, votes: Math.max(0, s.votes - 1), votedByMe: false }
+            : s,
+        ),
+      );
+    } finally {
+      setVoting(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -73,10 +106,15 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       const VIEWPORT_H = 700; // Typical mobile height
       const placedOrbs: typeof orbs = [];
 
+      // Size orbs against the busiest suggestion in the set, not an absolute
+      // vote target — real counts are single digits, so any fixed denominator
+      // pins every orb to the minimum and the title clips mid-word.
+      const maxVotes = Math.max(1, ...suggestions.map((s) => s.votes));
+
       suggestions.forEach(s => {
         let bestCandidate = null;
         let minOverlap = Infinity;
-        const orbSize = Math.max(80, Math.min(140, (s.votes / 3500) * 100 + 80));
+        const orbSize = Math.round(112 + (s.votes / maxVotes) * 46);
         
         // Try up to 50 times to find a non-overlapping spot
         for (let tries = 0; tries < 50; tries++) {
@@ -123,28 +161,37 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
 
   const selectedSuggestion = suggestions.find(s => s.id === selectedId);
 
-  const handleCast = () => {
-    if (!newTitle.trim()) return;
-    
-    const newSug: Suggestion = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: newTitle,
-      votes: 1,
-      category: 'User Post',
-      creator: '@you',
-      description: 'A new prophecy cast into the orbit by the community.'
-    };
-
-    setSuggestions(prev => [newSug, ...prev]);
+  const handleClose = () => {
+    setSelectedId(null);
     setIsCasting(false);
-    setNewTitle('');
-    
-    confetti({
-      particleCount: 150,
-      spread: 100,
-      origin: { y: 0.8 },
-      colors: ['#3b82f6', '#22c55e', '#f59e0b']
-    });
+    onClose();
+  };
+
+  const handleCast = async () => {
+    if (!newTitle.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await createSuggestion({ title: newTitle.trim() });
+      setIsCasting(false);
+      setNewTitle('');
+      setSubmittedNotice(
+        'Sent for review. It joins the orbit once it’s approved — we’ll message you.',
+      );
+      setQuota((q) =>
+        q ? { ...q, used: q.used + 1, canSuggest: q.used + 1 < q.limit } : q,
+      );
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.8 },
+        colors: ['#3b82f6', '#22c55e', '#f59e0b'],
+      });
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not send your suggestion.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -168,38 +215,56 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       <div
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          padding: '24px 20px',
+          top: 20,
+          left: 16,
+          right: 16,
+          padding: 10,
+          borderRadius: 22,
+          background: 'rgba(15, 23, 42, 0.42)',
+          border: '1px solid rgba(255,255,255,0.14)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 10
+          gap: 12,
+          zIndex: 300
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div 
-            style={{ 
-              width: 40, 
-              height: 40, 
-              borderRadius: '50%', 
-              background: 'linear-gradient(135deg, #2775d0, #1a5bb5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(39, 117, 208, 0.4)'
-            }}
-          >
-            <Sparkles size={20} color="#fff" />
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>Community</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Feed Page</div>
+        <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05 }}>Community</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.62)', fontWeight: 700, marginTop: 3 }}>Feed Page</div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                marginTop: 5,
+                padding: '3px 7px',
+                borderRadius: 99,
+                background: 'rgba(34,197,94,0.12)',
+                color: '#69eeb0',
+                fontSize: 9,
+                fontWeight: 900,
+                lineHeight: 1,
+              }}
+            >
+              live orbit
+            </div>
           </div>
         </div>
         <button
-          onClick={onClose}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleClose();
+          }}
+          onPointerUp={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleClose();
+          }}
           style={{
             background: 'rgba(255,255,255,0.1)',
             border: '1px solid rgba(255,255,255,0.2)',
@@ -210,7 +275,11 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            position: 'relative',
+            zIndex: 301,
+            pointerEvents: 'auto',
+            flexShrink: 0
           }}
         >
           <X size={20} />
@@ -218,8 +287,15 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
       </div>
 
       {/* ── Orbit Space ── */}
-      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-        {orbs.map((orb, idx) => (
+      <div
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleClose();
+        }}
+        style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}
+      >
+        {orbs.map((orb) => {
+          const sug = suggestions.find((s) => s.id === orb.id);
+          return (
           <div
             key={orb.id}
             onClick={() => setSelectedId(orb.id)}
@@ -242,8 +318,8 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                background: 'rgba(30, 41, 59, 0.4)',
-                border: '2.5px solid rgba(39, 117, 208, 0.4)',
+                background: 'rgba(15, 23, 42, 0.72)',
+                border: '2.5px solid rgba(96, 165, 250, 0.52)',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
                 display: 'flex',
@@ -257,30 +333,62 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
                 transform: selectedId === orb.id ? 'scale(1.2)' : 'scale(1)',
               }}
             >
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
-                {suggestions[idx]?.category ?? 'Other'}
+              <div style={{ fontSize: 9, fontWeight: 900, color: 'rgba(191,219,254,0.78)', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.03em' }}>
+                {sug?.category ?? 'other'}
               </div>
-              <div 
-                style={{ 
-                  fontSize: orb.size > 110 ? 12 : 10, 
-                  fontWeight: 700, 
-                  color: '#fff', 
+              <div
+                style={{
+                  // A circle's usable width is its inscribed square (~0.7×), so
+                  // the text box is bounded to that and breaks on word edges —
+                  // otherwise long titles run under the curve and cut mid-word.
+                  maxWidth: orb.size * 0.72,
+                  fontSize: orb.size > 130 ? 12 : 10.5,
+                  fontWeight: 800,
+                  color: '#fff',
                   lineHeight: 1.2,
+                  textShadow: '0 1px 8px rgba(0,0,0,0.72)',
                   display: '-webkit-box',
                   WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  overflowWrap: 'break-word',
+                  hyphens: 'auto',
                 }}
               >
-                {suggestions[idx]?.title ?? ''}
+                {sug?.title ?? ''}
               </div>
               <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <ArrowUpCircle size={10} color="#22c55e" />
-                <span style={{ fontSize: 10, fontWeight: 900, color: '#22c55e' }}>{suggestions[idx]?.votes ?? 0}</span>
+                <span style={{ fontSize: 10, fontWeight: 900, color: '#22c55e' }}>{sug?.votes ?? 0}</span>
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
+
+        {!loading && orbs.length === 0 && !isCasting && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '0 40px',
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
+              {error ? 'Couldn’t load the orbit' : 'No questions in orbit yet'}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.62)', fontWeight: 600, lineHeight: 1.5 }}>
+              {error ?? 'Be the first — ask the crowd what market Oro should run next.'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Detail Card ── */}
@@ -323,33 +431,31 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
-              onClick={() => {
-                confetti({
-                  particleCount: 100,
-                  spread: 70,
-                  origin: { y: 0.6 },
-                  colors: ['#22c55e', '#3b82f6', '#f59e0b']
-                });
-              }}
+              onClick={() => handleVote(selectedSuggestion.id)}
+              disabled={selectedSuggestion.votedByMe || voting}
               style={{
                 flex: 2,
-                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                background: selectedSuggestion.votedByMe
+                  ? 'var(--bg-secondary)'
+                  : 'linear-gradient(135deg, #22c55e, #16a34a)',
                 border: 'none',
                 borderRadius: 14,
                 padding: '14px',
-                color: '#fff',
+                color: selectedSuggestion.votedByMe ? 'var(--text-muted)' : '#fff',
                 fontSize: 14,
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                boxShadow: '0 8px 16px rgba(34, 197, 94, 0.25)',
-                cursor: 'pointer'
+                boxShadow: selectedSuggestion.votedByMe
+                  ? 'none'
+                  : '0 8px 16px rgba(34, 197, 94, 0.25)',
+                cursor: selectedSuggestion.votedByMe ? 'default' : 'pointer'
               }}
             >
               <ArrowUpCircle size={18} />
-              Back this Prophecy
+              {selectedSuggestion.votedByMe ? 'Backed' : 'Back this Prophecy'}
             </button>
             <button
               style={{
@@ -444,32 +550,66 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
 
       {/* ── Suggest New Button ── */}
       {!selectedId && !isCasting && (
-        <button
-          onClick={() => setIsCasting(true)}
+        <div
           style={{
             position: 'absolute',
-            bottom: 40,
-            padding: '16px 32px',
-            borderRadius: 30,
-            background: 'linear-gradient(135deg, #2775d0, #1a5bb5)',
-            border: 'none',
-            color: '#fff',
-            fontSize: 15,
-            fontWeight: 800,
-            boxShadow: '0 10px 25px rgba(39, 117, 208, 0.4)',
+            bottom: 34,
+            left: 16,
+            right: 16,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             gap: 10,
-            cursor: 'pointer',
-            animation: 'pulseGlow 2s ease-in-out infinite'
           }}
         >
-          <MessageCircle size={20} />
-          Ask the Crowd
-        </button>
+          {submittedNotice && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: 14,
+                background: 'rgba(34,197,94,0.14)',
+                border: '1px solid rgba(34,197,94,0.35)',
+                color: '#86efac',
+                fontSize: 12,
+                fontWeight: 700,
+                textAlign: 'center',
+                lineHeight: 1.45,
+              }}
+            >
+              {submittedNotice}
+            </div>
+          )}
+          <button
+            onClick={() => setIsCasting(true)}
+            disabled={quota ? !quota.canSuggest : false}
+            style={{
+              padding: '16px 32px',
+              borderRadius: 30,
+              background:
+                quota && !quota.canSuggest
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'linear-gradient(135deg, #2775d0, #1a5bb5)',
+              border: 'none',
+              color: quota && !quota.canSuggest ? 'rgba(255,255,255,0.6)' : '#fff',
+              fontSize: 15,
+              fontWeight: 800,
+              boxShadow:
+                quota && !quota.canSuggest
+                  ? 'none'
+                  : '0 10px 25px rgba(39, 117, 208, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              cursor: quota && !quota.canSuggest ? 'default' : 'pointer',
+            }}
+          >
+            <MessageCircle size={20} />
+            {quota && !quota.canSuggest
+              ? `Next suggestion ${formatResetDate(quota.resetsAt)}`
+              : 'Ask the Crowd'}
+          </button>
+        </div>
       )}
     </div>
   );
 };
-
-

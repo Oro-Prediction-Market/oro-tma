@@ -16,8 +16,9 @@ import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { GroupedMarketCard } from "@/components/GroupedMarketCard";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { OracleOrbit } from "@/components/OracleOrbit";
 import { Link } from "@/components/Link/Link";
-import { Flame, TrendingUp } from "lucide-react";
+import { Flame, TrendingUp, UsersRound, Vote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EplBanner } from "@shared/components/EplBanner";
 import { getCategoryVisual } from "@shared/helpers/visuals";
@@ -1513,6 +1514,7 @@ export const TmaFeedPage: FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [orbitOpen, setOrbitOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   // Hub banners follow their own category — those markets live in the hubs, so
   // filtering to Gaming should leave the esports banner as the entry point
@@ -1715,6 +1717,28 @@ export const TmaFeedPage: FC = () => {
           <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
             Check back later for new markets.
           </div>
+          <button
+            onClick={() => setOrbitOpen(true)}
+            style={{
+              marginTop: 4,
+              padding: "11px 20px",
+              borderRadius: 12,
+              border: "none",
+              background: "linear-gradient(135deg, #2775d0, #1a5bb5)",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              fontFamily: "var(--font-primary)",
+            }}
+          >
+            <Vote size={16} strokeWidth={2.4} />
+            Ask the Crowd
+          </button>
+          <OracleOrbit isOpen={orbitOpen} onClose={() => setOrbitOpen(false)} />
         </div>
       </Page>
     );
@@ -2215,6 +2239,105 @@ export const TmaFeedPage: FC = () => {
             </button>
           )}
         </div>
+
+        {/* ── Ask the Crowd: community market suggestions ── */}
+        <button
+          onClick={() => setOrbitOpen(true)}
+          style={{
+            width: "100%",
+            marginBottom: 16,
+            padding: "14px 16px",
+            borderRadius: 16,
+            border: "1px solid rgba(39,117,208,0.38)",
+            background:
+              "linear-gradient(135deg, rgba(39,117,208,0.18), rgba(39,117,208,0.06))",
+            boxShadow: "0 10px 24px rgba(39,117,208,0.12)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "var(--font-primary)",
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.16)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              position: "relative",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
+          >
+            <Vote size={18} color="rgba(255,255,255,0.82)" strokeWidth={2.4} />
+            <span
+              style={{
+                position: "absolute",
+                right: -5,
+                bottom: -5,
+                width: 18,
+                height: 18,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <UsersRound
+                size={10.5}
+                color="rgba(255,255,255,0.68)"
+                strokeWidth={2.5}
+              />
+            </span>
+          </div>
+          <span
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 14,
+              fontWeight: 800,
+              color: "var(--text-main)",
+            }}
+          >
+            <span style={{ display: "block" }}>Ask the Crowd</span>
+            <span
+              style={{
+                display: "block",
+                marginTop: 3,
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: "var(--text-muted)",
+              }}
+            >
+              Suggest a market for everyone to predict on
+            </span>
+          </span>
+          <span
+            style={{
+              padding: "5px 9px",
+              borderRadius: 999,
+              background: "rgba(39,117,208,0.16)",
+              color: "#60a5fa",
+              fontSize: 11,
+              fontWeight: 800,
+              flexShrink: 0,
+            }}
+          >
+            Open
+          </span>
+        </button>
+
+        <OracleOrbit isOpen={orbitOpen} onClose={() => setOrbitOpen(false)} />
 
         {/* ── Category Tabs ── */}
         <div
