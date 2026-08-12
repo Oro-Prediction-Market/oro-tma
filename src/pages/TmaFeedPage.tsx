@@ -2470,7 +2470,8 @@ export const TmaFeedPage: FC = () => {
         )}
 
         {/* ── English Premier League Banner Card ── */}
-        {showSportsBanners && (
+        {/* Hidden for now — remove `false &&` to bring it back */}
+        {false && showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <EplBanner onClick={() => navigate("/epl")} />
           </div>
