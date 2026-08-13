@@ -1,6 +1,6 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Flame, Target, Trophy } from "lucide-react";
+import { ArrowLeft, CalendarDays, Target, Trophy } from "lucide-react";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { getPublicProfile, type PublicProfile } from "@shared/api/client";
@@ -169,13 +169,17 @@ function getFeaturedBadges(profile: PublicProfile) {
 
 function getStatCards(profile: PublicProfile) {
   return [
-    {
-      icon: <Flame size={14} />,
-      title: profile.streak > 0 ? `${profile.streak}-day run` : "Run starts fresh",
-      text: `${profile.streak}-day streak`,
-      color: "#f97316",
-      bg: "rgba(249,115,22,.14)",
-    },
+    ...((profile.betStreak ?? 0) > 0
+      ? [
+          {
+            icon: <CalendarDays size={14} />,
+            title: `${profile.betStreak}-day bet streak`,
+            text: "Consecutive days betting",
+            color: "#38bdf8",
+            bg: "rgba(56,189,248,.14)",
+          },
+        ]
+      : []),
     {
       icon: <Target size={14} />,
       title: "Sharp calls",

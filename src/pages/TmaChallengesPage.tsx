@@ -290,7 +290,7 @@ const CARD_CONFIG: Record<
   },
   shield: {
     label: "Shield",
-    desc: "Streak safe on loss",
+    desc: "Saves your daily streak after a missed day",
     color: "#3b82f6",
     bg: "#3b82f614",
     solidBg: "#010107",
@@ -538,7 +538,9 @@ function CardPicker({
         Equip a card (optional)
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {(["doubleDown", "shield", "ghost"] as CardType[]).map((key) => {
+        {/* Shield is excluded — it's a passive card that auto-saves your daily
+            bet streak, not something you equip on a duel. */}
+        {(["doubleDown", "ghost"] as CardType[]).map((key) => {
           const cfg = CARD_CONFIG[key];
           const count = inventory[key] ?? 0;
           const locked = count === 0;

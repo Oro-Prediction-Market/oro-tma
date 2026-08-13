@@ -85,6 +85,32 @@ function percentileLabel(rank: number, total: number) {
   return null;
 }
 
+// Inline daily-bet-streak chip shown next to a name. Hidden below 2 — a
+// "streak" of 1 is just "bet today" and would show on nearly everyone.
+function StreakBadge({ count }: { count?: number }) {
+  if (!count || count < 2) return null;
+  return (
+    <span
+      title={`${count}-day bet streak`}
+      style={{
+        flexShrink: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 2,
+        fontSize: 10,
+        fontWeight: 800,
+        color: "#f97316",
+        background: "rgba(249,115,22,0.14)",
+        padding: "1px 5px",
+        borderRadius: 99,
+      }}
+    >
+      <Flame size={10} color="#f97316" />
+      {count}
+    </span>
+  );
+}
+
 // ── Table helpers ─────────────────────────────────────────────────────────────
 
 const COL = "32px 26px 1fr 46px 54px 64px";
@@ -258,6 +284,7 @@ function TableRow({
               you
             </span>
           )}
+          <StreakBadge count={entry.betStreak} />
         </div>
         <div
           style={{
@@ -1314,6 +1341,7 @@ function PinnedSelfRow({
           >
             you
           </span>
+          <StreakBadge count={entry.betStreak} />
         </div>
         <div
           style={{

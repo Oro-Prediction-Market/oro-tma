@@ -176,6 +176,11 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
               description="Reach a 7-day streak for a 1.2× payout boost on all wins that day."
             />
             <BenefitRow
+              icon={<ShieldCheck size={20} color="#3b82f6" />}
+              title="Streak Shield"
+              description="Hold a Shield card and it's auto-spent to save your streak if you miss a single day."
+            />
+            <BenefitRow
               icon={<Trophy size={20} color="#60a5fa" />}
               title="Reputation Surge"
               description="Streaks accelerate your journey to Legendary status."

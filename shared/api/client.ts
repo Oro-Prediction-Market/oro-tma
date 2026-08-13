@@ -210,8 +210,6 @@ export interface AuthUser {
   contrarianBadge?: "bronze" | "silver" | "gold" | null;
   contrarianWins?: number;
   contrarianAttempts?: number;
-  // Win streak
-  telegramStreak?: number | null;
   // Daily bet streak
   betStreakCount?: number;
   dayInCycle?: number;
@@ -772,7 +770,7 @@ export interface PublicProfile {
   id: string; firstName: string | null; lastName: string | null; username: string | null;
   photoUrl: string | null; reputationTier: string; reputationScore: number | null;
   totalPredictions: number; correctPredictions: number; winRate: number; rank: number | null;
-  streak: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
+  betStreak?: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
   featuredAchievementIds?: string[];
   recentCalls?: Array<{ id: string; marketTitle: string; outcomeLabel: string; status: "won" | "lost" | "refunded"; payout: number | null; placedAt: string }>;
 }
@@ -840,6 +838,8 @@ export interface LeaderboardEntry {
   correctPredictions: number;
   winRate: number;
   totalBetAmount: number;
+  /** Effective daily-bet streak (0 when a day has been missed). */
+  betStreak?: number;
   weeklyPredictions?: number;
   weeklyWins?: number;
   isMe: boolean;
