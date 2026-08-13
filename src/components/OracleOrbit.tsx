@@ -153,7 +153,18 @@ export const OracleOrbit: React.FC<OracleOrbitProps> = ({ isOpen, onClose }) => 
     );
   }, []);
 
-  useSuggestionsSocket(isOpen, handleRemoteVote, handleRemoteAdd);
+  // An admin rejected or published the suggestion — drop it from the orbit.
+  const handleRemoteRemove = useCallback((e: { id: string }) => {
+    setSuggestions((prev) => prev.filter((s) => s.id !== e.id));
+    setSelectedId((cur) => (cur === e.id ? null : cur));
+  }, []);
+
+  useSuggestionsSocket(
+    isOpen,
+    handleRemoteVote,
+    handleRemoteAdd,
+    handleRemoteRemove,
+  );
 
   useEffect(() => {
     if (isOpen) {

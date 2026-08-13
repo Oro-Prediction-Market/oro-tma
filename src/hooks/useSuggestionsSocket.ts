@@ -13,19 +13,26 @@ export interface SuggestionVoted {
 
 export type SuggestionAdded = Omit<MarketSuggestion, "votedByMe">;
 
+export interface SuggestionRemoved {
+  id: string;
+}
+
 export function useSuggestionsSocket(
   enabled: boolean,
   onVoted: (e: SuggestionVoted) => void,
   onAdded: (e: SuggestionAdded) => void,
+  onRemoved?: (e: SuggestionRemoved) => void,
 ): void {
   const socketRef = useRef<Socket | null>(null);
   const onVotedRef = useRef(onVoted);
   const onAddedRef = useRef(onAdded);
+  const onRemovedRef = useRef(onRemoved);
 
   useEffect(() => {
     onVotedRef.current = onVoted;
     onAddedRef.current = onAdded;
-  }, [onVoted, onAdded]);
+    onRemovedRef.current = onRemoved;
+  }, [onVoted, onAdded, onRemoved]);
 
   const connect = useCallback(() => {
     if (socketRef.current) {
@@ -45,6 +52,9 @@ export function useSuggestionsSocket(
     });
     socket.on("suggestion_added", (payload: SuggestionAdded) => {
       onAddedRef.current(payload);
+    });
+    socket.on("suggestion_removed", (payload: SuggestionRemoved) => {
+      onRemovedRef.current?.(payload);
     });
     socket.on("connect_error", (err) => {
       console.warn(`[WS] suggestions connect_error: ${err.message}`);
