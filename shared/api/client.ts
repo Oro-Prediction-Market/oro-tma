@@ -1174,3 +1174,49 @@ export interface UclBracket {
 export function getUclBracket(): Promise<UclBracket> {
   return request<UclBracket>("/ucl/bracket");
 }
+
+// ── Market suggestions ("Ask the Crowd") ─────────────────────────────────────
+
+export interface MarketSuggestion {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  votes: number;
+  creator: string;
+  createdAt: string;
+  votedByMe: boolean;
+  marketId: string | null;
+}
+
+export interface SuggestionQuota {
+  canSuggest: boolean;
+  used: number;
+  limit: number;
+  resetsAt: string;
+}
+
+export function getSuggestions(): Promise<MarketSuggestion[]> {
+  return request<MarketSuggestion[]>("/suggestions");
+}
+
+export function getSuggestionQuota(): Promise<SuggestionQuota> {
+  return request<SuggestionQuota>("/suggestions/quota");
+}
+
+export function createSuggestion(payload: {
+  title: string;
+  description?: string;
+  category?: string;
+}): Promise<{ id: string; status: string }> {
+  return request("/suggestions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function voteSuggestion(
+  id: string,
+): Promise<{ votes: number; votedByMe: boolean }> {
+  return request(`/suggestions/${id}/vote`, { method: "POST" });
+}

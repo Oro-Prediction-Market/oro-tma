@@ -1285,8 +1285,8 @@ export function TmaPaymentModal({
                     </div>
                   )}
 
-                  {/* Payout breakdown */}
-                  {isValidAmount && (
+                  {/* Payout breakdown — hidden for now, remove `false &&` to bring it back */}
+                  {false && isValidAmount && (
                     <PayoutBreakdown
                       market={market}
                       outcomeId={outcomeId}
@@ -1670,7 +1670,8 @@ export function TmaPaymentModal({
                     </div>
                   )}
 
-                  {isValidAmount && (
+                  {/* Payout breakdown hidden for now — remove `false &&` to bring it back */}
+                  {false && isValidAmount && (
                     <PayoutBreakdown
                       market={market}
                       outcomeId={outcomeId}
