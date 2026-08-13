@@ -11,6 +11,7 @@ import { MarketShareCard } from "@/components/MarketShareCard";
 
 const YES_COLOR = "#22c55e";
 const NO_COLOR = "#ef4444";
+const DEFAULT_VISIBLE_CANDIDATES = 4;
 
 function useCountdown(targetAt: string | null): string {
   const [label, setLabel] = useState("Open");
@@ -99,6 +100,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
   ({ markets, onBet, referralId }) => {
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
     const [shareOpen, setShareOpen] = useState(false);
+    const [showAll, setShowAll] = useState(false);
     const first = markets[0];
     const title = (first.groupTitle || first.title).trim();
     const vis = getCategoryVisual(first.category);
@@ -126,6 +128,10 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
         };
       })
       .sort((a, b) => b.pct - a.pct);
+    const visibleRows = showAll
+      ? rows
+      : rows.slice(0, DEFAULT_VISIBLE_CANDIDATES);
+    const hiddenRows = rows.length - DEFAULT_VISIBLE_CANDIDATES;
 
     const betButton = (
       m: Market,
@@ -273,7 +279,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
 
           {/* Candidate rows */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {rows.map(({ market: m, name, pct, yes, no }) => {
+            {visibleRows.map(({ market: m, name, pct, yes, no }) => {
               const avatarUrl = !imgErrors[m.id] ? m.imageUrl : null;
               const barWidth = Math.max(4, Math.min(100, pct));
               return (
@@ -397,6 +403,35 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                 </div>
               );
             })}
+            {rows.length > DEFAULT_VISIBLE_CANDIDATES && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAll(!showAll);
+                }}
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  padding: "5px 10px",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "0.7rem",
+                  color: "var(--text-muted)",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  textAlign: "center",
+                  width: "100%",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = "var(--text-subtle)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = "var(--border)")
+                }
+              >
+                {showAll ? "Show Less" : `+ ${hiddenRows} more`}
+              </button>
+            )}
           </div>
 
           {/* Settlement source */}
