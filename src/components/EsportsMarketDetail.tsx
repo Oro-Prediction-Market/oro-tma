@@ -161,6 +161,7 @@ export function EsportsMarketDetail({
   const cat = categoryMeta(esportsCategoryOf(market));
   const CatIcon = cat.Icon;
   const isFinal = isEsportsFinal(market.title);
+  const isChessFinal = cat.key === "chess" && isFinal;
 
   const locked =
     market.status === "closed" ||
@@ -261,11 +262,14 @@ export function EsportsMarketDetail({
         <div
           style={{
             position: "relative",
-            background: `linear-gradient(180deg, ${EWC.surface} 0%, ${EWC.bg} 100%)`,
-            border: `1px solid ${EWC.goldLine}`,
+            background: isChessFinal
+              ? "radial-gradient(circle at 50% 0%, rgba(239, 196, 81, 0.24), transparent 48%), linear-gradient(180deg, #252014 0%, #11110d 100%)"
+              : `linear-gradient(180deg, ${EWC.surface} 0%, ${EWC.bg} 100%)`,
+            border: `1px solid ${isChessFinal ? "rgba(236, 194, 89, 0.82)" : EWC.goldLine}`,
             clipPath: notch(12),
             padding: "18px 18px 16px",
             overflow: "hidden",
+            boxShadow: isChessFinal ? "0 16px 30px rgba(190, 140, 31, 0.16)" : undefined,
           }}
         >
           <CornerMark v="top" h="left" />
@@ -323,7 +327,7 @@ export function EsportsMarketDetail({
                   >
                     <Trophy size={11} />
                     <Label color={EWC.goldBright} size={9}>
-                      Grand Final
+                      {isChessFinal ? "Chess Championship Final" : "Grand Final"}
                     </Label>
                   </span>
                 )}
