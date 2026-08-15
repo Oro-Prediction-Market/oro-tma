@@ -1166,6 +1166,9 @@ export function EsportsHubPage() {
   const [loading, setLoading] = useState(true);
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [selected, setSelected] = useState<EsportsCategoryKey | "all">("all");
+  // A chess final spans two grid tracks — only meaningful once the grid
+  // actually has ≥2 columns (~560px+); on a phone it stays a single column.
+  const [wideGrid, setWideGrid] = useState(false);
 
   const loadMarkets = () =>
     getMarkets()
@@ -1192,6 +1195,15 @@ export function EsportsHubPage() {
     return () =>
       window.removeEventListener("oro:market-changed", onMarketChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Track whether the grid can fit at least two columns (two 260px tracks + gap).
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 560px)");
+    const update = () => setWideGrid(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, []);
 
   // Bucket once — every downstream list reads from this
@@ -1286,15 +1298,29 @@ export function EsportsHubPage() {
   }: {
     market: Market;
     categoryKey: EsportsCategoryKey;
-  }) =>
-    isMatchMarket(market) ? (
-      <EsportsMatchCard
-        key={market.id}
-        market={market}
-        categoryKey={categoryKey}
-        onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
-      />
-    ) : (
+  }) => {
+    if (isMatchMarket(market)) {
+      const card = (
+        <EsportsMatchCard
+          key={market.id}
+          market={market}
+          categoryKey={categoryKey}
+          onBet={(marketId, outcomeId) => setActiveBet({ marketId, outcomeId })}
+        />
+      );
+      // The chess final is the headline match — let it span two grid tracks
+      // wherever the grid is wide enough to have them.
+      const isChessFinal =
+        categoryKey === "chess" && isEsportsFinal(market.title);
+      return isChessFinal && wideGrid ? (
+        <div key={market.id} style={{ gridColumn: "span 2" }}>
+          {card}
+        </div>
+      ) : (
+        card
+      );
+    }
+    return (
       // Field/tournament markets are the headline — span the whole row
       <div key={market.id} style={{ gridColumn: "1 / -1" }}>
         <EsportsEventMarket
@@ -1304,6 +1330,7 @@ export function EsportsHubPage() {
         />
       </div>
     );
+  };
 
   const grid = (items: typeof tagged) => {
     // Headline field/tournament markets first, matches after (stable otherwise)
