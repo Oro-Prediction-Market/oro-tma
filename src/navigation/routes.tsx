@@ -10,8 +10,6 @@ import { EplHubPage } from "@/pages/EplHubPage";
 import { EsportsHubPage } from "@/pages/EsportsHubPage";
 // UCL hidden until the 2026/27 season starts — uncomment to re-enable
 // import { UclHubPage } from "@/pages/UclHubPage";
-// EPL hidden until the 2026/27 season starts — uncomment to re-enable
-// import { EplHubPage } from "@/pages/EplHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
