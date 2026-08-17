@@ -2767,8 +2767,8 @@ export const TmaFeedPage: FC = () => {
           </div>
         )}
 
-        {/* ── Esports Banner Card ── */}
-        {showEsportsBanner && (
+        {/* ── Esports Banner Card ── (hidden — remove `false &&` to bring it back) */}
+        {false && showEsportsBanner && (
           <div style={{ marginBottom: 16 }}>
             <EsportsBanner onClick={() => navigate("/esports")} />
           </div>

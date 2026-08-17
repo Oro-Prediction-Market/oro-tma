@@ -7,7 +7,8 @@ import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
 // import { BplHubPage } from "@/pages/BplHubPage";
 import { UfcHubPage } from "@/pages/UfcHubPage";
 import { EplHubPage } from "@/pages/EplHubPage";
-import { EsportsHubPage } from "@/pages/EsportsHubPage";
+// Esports hub hidden — uncomment to re-enable (also un-gate the feed banner in TmaFeedPage.tsx)
+// import { EsportsHubPage } from "@/pages/EsportsHubPage";
 // UCL hidden until the 2026/27 season starts — uncomment to re-enable
 // import { UclHubPage } from "@/pages/UclHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
@@ -89,7 +90,8 @@ export const routes: Route[] = [
   // { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
   { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
   { path: "/epl", Component: EplHubPage, title: "EPL Hub" },
-  { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
+  // Esports hub hidden — uncomment to re-enable
+  // { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
   { path: "/markets", Component: MarketsPage },
   { path: "/market/:id", Component: MarketDetailPage },
   { path: "/ton-bet/:id", Component: TONBetPage, title: "Trade with TON" },
