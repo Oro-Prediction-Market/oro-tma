@@ -817,6 +817,12 @@ function FieldBlock({
       return calcProb(market, b.id) - calcProb(market, a.id);
     });
   }, [market]);
+  // getEplCrest indexes into the ORIGINAL (unsorted) team order, so the crest
+  // must be looked up by the outcome's original position — not its sorted rank.
+  const teamOutcomes = useMemo(
+    () => (market.outcomes ?? []).filter((o) => !isDrawOutcome(o.label ?? "")),
+    [market],
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -852,7 +858,7 @@ function FieldBlock({
             >
               {idx + 1}
             </div>
-            <EplCrest src={getEplCrest(market, idx)} label={outcome.label} size={40} />
+            <EplCrest src={getEplCrest(market, teamOutcomes.indexOf(outcome))} label={outcome.label} size={40} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
