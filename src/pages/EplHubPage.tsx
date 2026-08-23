@@ -681,11 +681,15 @@ export function EplHubPage() {
     (m) => !/\bvs\b/i.test(m.title) && !isEplStatMarket(m),
   );
 
-  const upcomingMatches = matchMarkets.filter(
-    (m) => m.status === "open" || m.status === "upcoming",
+  // A match stays in the active list while it is still playing out — open,
+  // betting-closed, or resolving — and only drops to "Previous" once the
+  // result is final (resolved/settled). The active-side card already shows a
+  // "Closed"/"Resolving" badge for those in-between states.
+  const upcomingMatches = matchMarkets.filter((m) =>
+    ["open", "upcoming", "closed", "resolving"].includes(m.status),
   );
   const previousMatches = matchMarkets
-    .filter((m) => ["closed", "resolving", "resolved", "settled"].includes(m.status))
+    .filter((m) => ["resolved", "settled"].includes(m.status))
     .sort((a, b) => kickoffOf(b) - kickoffOf(a));
 
   // Featured matches are admin-pinned only — there is NO automatic fallback.
