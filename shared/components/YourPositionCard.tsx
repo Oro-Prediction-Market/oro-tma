@@ -116,7 +116,7 @@ export const YourPositionCard: React.FC<{
             fontWeight: 600,
           }}
         >
-          Net from bets:{" "}
+          Net from predictions:{" "}
           <b style={{ color: net >= 0 ? GREEN : RED }}>
             {net >= 0 ? "+" : "−"}
             {nu(Math.abs(net))}

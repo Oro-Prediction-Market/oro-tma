@@ -294,7 +294,7 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
-            title: "My Oro Bet",
+            title: "My Oro Prediction",
             text: shareText,
           });
           return;

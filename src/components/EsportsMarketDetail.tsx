@@ -408,7 +408,7 @@ export function EsportsMarketDetail({
               {resolved
                 ? "This market has been resolved"
                 : isResolving
-                  ? "Resolving — betting is closed"
+                  ? "Resolving — predictions are closed"
                   : "Predictions are locked"}
             </Label>
           </div>

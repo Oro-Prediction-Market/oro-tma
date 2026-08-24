@@ -428,7 +428,7 @@ export function UfcMarketDetail({
               {resolved
                 ? "This fight has been settled"
                 : isResolving
-                  ? "Resolving — betting is closed"
+                  ? "Resolving — predictions are closed"
                   : "Predictions are locked"}
             </span>
           </div>

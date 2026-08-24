@@ -102,7 +102,7 @@ export function PayoutBreakdown({ market, outcomeId, betAmount }: {
             <div style={{ fontSize: 10, color: '#6b7280', lineHeight: 1.6 }}>
               This is an <strong>estimate</strong>, not a fixed payout. The winning
               pool is shared among all winners, so your final amount changes as
-              more people bet and is settled from the total pool at close.
+              more people predict and is settled from the total pool at close.
             </div>
           </div>
         </div>

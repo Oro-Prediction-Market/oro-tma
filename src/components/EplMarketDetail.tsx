@@ -343,7 +343,7 @@ export function EplMarketDetail({
               {resolved
                 ? "This market has been settled"
                 : isResolving
-                  ? "Resolving — betting is closed"
+                  ? "Resolving — predictions are closed"
                   : "Predictions are locked"}
             </span>
           </div>

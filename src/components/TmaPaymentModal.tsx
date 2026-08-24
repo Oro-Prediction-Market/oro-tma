@@ -1475,7 +1475,7 @@ export function TmaPaymentModal({
                             letterSpacing: "0.06em",
                           }}
                         >
-                          After bet
+                          After prediction
                         </div>
                         <div
                           style={{

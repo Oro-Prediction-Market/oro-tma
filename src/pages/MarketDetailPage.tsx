@@ -126,7 +126,7 @@ function TerPricePanel({ market }: { market: Market }) {
               color: refLocked ? "var(--text-main)" : "var(--text-subtle)",
             }}
           >
-            {refLocked ? `Nu ${refPrice.toFixed(4)}` : "🔒 Locks at bet close"}
+            {refLocked ? `Nu ${refPrice.toFixed(4)}` : "🔒 Locks at prediction close"}
           </div>
         </div>
         <div style={{ fontSize: 22, color: "var(--text-subtle)" }}>→</div>
@@ -1094,7 +1094,7 @@ export const MarketDetailPage: FC = () => {
                         fontWeight: 700,
                       }}
                     >
-                      Only bettors with an active position in this market can
+                      Only predictors with an active position in this market can
                       join its objection.
                     </span>
                   </div>

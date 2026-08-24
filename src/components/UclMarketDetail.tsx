@@ -353,7 +353,7 @@ export function UclMarketDetail({
           >
             <ShieldAlert size={15} color={GOLD} />
             <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {resolved ? "This market has been settled" : isResolving ? "Resolving — betting is closed" : "Predictions are locked"}
+              {resolved ? "This market has been settled" : isResolving ? "Resolving — predictions are closed" : "Predictions are locked"}
             </span>
           </div>
         )}

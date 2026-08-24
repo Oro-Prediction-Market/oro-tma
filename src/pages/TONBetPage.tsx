@@ -225,7 +225,7 @@ export const TONBetPage: FC = () => {
                 level="2"
                 style={{ marginTop: "0.5rem", display: "block" }}
               >
-                Platform fee: {market.houseEdgePct}% · Min bet: 0.1 TON
+                Platform fee: {market.houseEdgePct}% · Min prediction: 0.1 TON
               </Caption>
               <Button
                 size="l"
