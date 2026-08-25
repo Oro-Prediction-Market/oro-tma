@@ -540,7 +540,17 @@ function EplSeasonMarket({
   const settleEta = useClosesAt(resolving ? market.disputeDeadlineAt : null);
   const [expanded, setExpanded] = useState(false);
   const VISIBLE = 5;
-  const outcomes = market.outcomes ?? [];
+  // Draw-filtered originals, kept for crest lookup: getEplCrest indexes into
+  // this ORIGINAL order, so a sorted row must resolve its crest by the outcome's
+  // original position, not its sorted rank.
+  const teamOutcomes = (market.outcomes ?? []).filter(
+    (o) => !isDrawOutcome(o.label ?? ""),
+  );
+  // Sort by win probability (pool share) so the favourite leads — matching the
+  // order the market-detail page already shows.
+  const outcomes = [...(market.outcomes ?? [])].sort(
+    (a, b) => calcProb(market, b.id) - calcProb(market, a.id),
+  );
   const shown = expanded ? outcomes : outcomes.slice(0, VISIBLE);
   return (
     <div>
@@ -568,7 +578,7 @@ function EplSeasonMarket({
         )}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {shown.map((outcome, idx) => {
+        {shown.map((outcome) => {
           const prob = calcProb(market, outcome.id);
           const odds = calcOdds(market, outcome.id);
           return (
@@ -586,7 +596,7 @@ function EplSeasonMarket({
                 cursor: "pointer",
               }}
             >
-              <EplCrest src={getEplCrest(market, idx)} label={outcome.label} size={38} />
+              <EplCrest src={getEplCrest(market, teamOutcomes.indexOf(outcome))} label={outcome.label} size={38} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #fff)", marginBottom: 2 }}>{outcome.label}</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 600 }}>
