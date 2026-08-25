@@ -40,17 +40,35 @@ function useLiveTerPrice(active: boolean) {
         );
       })
       .catch(() => {});
-    const fetch_ = () =>
+    // Self-scheduling poll with backoff: POLL_MS while healthy, but on repeated
+    // failures we back off (up to ~60s) instead of hammering a failing endpoint
+    // every few seconds — that request storm flooded the console and the server.
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let failures = 0;
+    const run = () => {
       getTerPrice()
         .then((p) => {
+          failures = 0;
           setLive(p);
           // Buy price — matches the TER portal's display convention
           setHistory((h) => [...h.slice(-59), p.buyPrice]);
         })
-        .catch(() => {});
-    fetch_();
-    const id = setInterval(fetch_, POLL_MS);
-    return () => clearInterval(id);
+        .catch(() => {
+          failures = Math.min(failures + 1, 4);
+        })
+        .finally(() => {
+          if (stopped) return;
+          const delay =
+            failures === 0 ? POLL_MS : Math.min(POLL_MS * 2 ** failures, 60_000);
+          timer = setTimeout(run, delay);
+        });
+    };
+    run();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [active]);
   return { live, history };
 }
