@@ -249,16 +249,17 @@ function findStatOutcome(market: Market, player: string): Outcome | undefined {
 
 const STAT_TABS: {
   id: StatCategory;
-  label: string; // full heading, e.g. "Top Scorers"
+  heading: string; // section heading shown to users — frames it as a season-long prediction
+  label: string; // plain noun used in empty-state copy, e.g. "Top Scorers"
   short: string; // tile label
   unit: string;
   color: string;
   renderIcon: (size: number) => React.ReactNode;
 }[] = [
-  { id: "goals", label: "Top Scorers", short: "Goals", unit: "Goals", color: "#00ff85", renderIcon: (n) => <Goal size={n} /> },
-  { id: "assists", label: "Top Assists", short: "Assists", unit: "Assists", color: "#38bdf8", renderIcon: (n) => <Handshake size={n} /> },
-  { id: "yellow", label: "Yellow Cards", short: "Yellow", unit: "Cards", color: "#facc15", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
-  { id: "red", label: "Red Cards", short: "Red", unit: "Cards", color: "#ef4444", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
+  { id: "goals", heading: "Top Scorer This Season?", label: "Top Scorers", short: "Goals", unit: "Goals", color: "#00ff85", renderIcon: (n) => <Goal size={n} /> },
+  { id: "assists", heading: "Most Assists This Season?", label: "Top Assists", short: "Assists", unit: "Assists", color: "#38bdf8", renderIcon: (n) => <Handshake size={n} /> },
+  { id: "yellow", heading: "Most Yellow Cards This Season?", label: "Yellow Cards", short: "Yellow", unit: "Cards", color: "#facc15", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
+  { id: "red", heading: "Most Red Cards This Season?", label: "Red Cards", short: "Red", unit: "Cards", color: "#ef4444", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
 ];
 
 const STAT_META: Record<StatCategory, { subcategory: string; title: string }> = {
@@ -997,7 +998,7 @@ export function EplHubPage() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ display: "flex", color: cat.color }}>{cat.renderIcon(17)}</span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{cat.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{cat.heading}</span>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)" }}>
                       {market ? `Nu ${Number(market.totalPool).toLocaleString()} pool` : "Live · this season"}
