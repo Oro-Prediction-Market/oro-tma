@@ -20,6 +20,7 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   BadgeGrid,
   buildBadges,
+  CURRENT_FOOTBALL_SEASON,
   type CollectibleBadge,
 } from "@/components/BadgeGrid";
 import {
@@ -77,6 +78,7 @@ export const TmaProfilePage: FC = () => {
           !!u.isPhoneVerified,
           !!u.dkCid,
           u.referralCount ?? 0,
+          u.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
         );
         const unlocked = currentBadges.filter((b) => b.unlocked);
 
@@ -205,6 +207,7 @@ export const TmaProfilePage: FC = () => {
     !!user?.isPhoneVerified,
     !!user?.dkCid,
     user?.referralCount ?? 0,
+    user?.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
   );
  
   const unlockedBadges = badges.filter((b) => b.unlocked);
@@ -1139,6 +1142,7 @@ export const TmaProfilePage: FC = () => {
                 hasPhone={!!user?.isPhoneVerified}
                 hasDKBank={!!user?.dkCid}
                 referralCount={user?.referralCount ?? 0}
+                seasonStats={user?.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON]}
                 featuredIds={featuredIds}
                 onToggleFeatured={toggleFeatured}
               />

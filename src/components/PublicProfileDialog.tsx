@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Trophy, Target } from "lucide-react";
 import { getPublicProfile, type PublicProfile } from "@shared/api/client";
-import { buildBadges } from "@/components/BadgeGrid";
+import { buildBadges, CURRENT_FOOTBALL_SEASON } from "@/components/BadgeGrid";
 
 export function PublicProfileDialog({ userId, onClose }: { userId: string | null; onClose: () => void }) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -14,7 +14,7 @@ export function PublicProfileDialog({ userId, onClose }: { userId: string | null
 
   if (!userId) return null;
   const name = profile?.username ? `@${profile.username}` : `${profile?.firstName ?? "Predictor"}${profile?.lastName ? ` ${profile.lastName}` : ""}`;
-  const badges = profile && buildBadges(profile.totalPredictions, profile.correctPredictions, profile.reputationTier, Number(profile.reputationScore ?? 0), false, false, 0);
+  const badges = profile && buildBadges(profile.totalPredictions, profile.correctPredictions, profile.reputationTier, Number(profile.reputationScore ?? 0), false, false, 0, profile.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON]);
 
   return <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 16 }}>
     <div onClick={(event) => event.stopPropagation()} style={{ width: "min(390px,100%)", maxHeight: "calc(100vh - 32px)", overflowY: "auto", background: "linear-gradient(145deg,#182235,#0d1421)", border: "1px solid var(--glass-border)", borderRadius: 22, padding: 22, position: "relative" }}>

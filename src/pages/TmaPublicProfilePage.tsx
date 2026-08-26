@@ -6,6 +6,7 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { getPublicProfile, type PublicProfile } from "@shared/api/client";
 import {
   buildBadges,
+  CURRENT_FOOTBALL_SEASON,
   type CollectibleBadge,
 } from "@/components/BadgeGrid";
 
@@ -157,6 +158,7 @@ function getFeaturedBadges(profile: PublicProfile) {
     false,
     false,
     0,
+    profile.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
   ).filter((badge) => featuredIds.includes(badge.id));
 
   const priority = ["duel_oracle", "duel_master", "duel_on_fire"];

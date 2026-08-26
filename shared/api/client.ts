@@ -218,6 +218,12 @@ export interface AuthUser {
   // Referrals
   referralCount?: number;
   featuredAchievementIds?: string[];
+  // Season-scoped EPL/UCL tallies for the season collectible badges, keyed by
+  // season (e.g. "2026-27"). Counts only that season's settled predictions.
+  seasonBadgeStats?: Record<
+    string,
+    { eplSettled: number; eplWins: number; uclSettled: number; uclWins: number }
+  >;
 }
 
 export interface AuthResponse {
@@ -772,6 +778,10 @@ export interface PublicProfile {
   totalPredictions: number; correctPredictions: number; winRate: number; rank: number | null;
   betStreak?: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
   featuredAchievementIds?: string[];
+  seasonBadgeStats?: Record<
+    string,
+    { eplSettled: number; eplWins: number; uclSettled: number; uclWins: number }
+  >;
   recentCalls?: Array<{ id: string; marketTitle: string; outcomeLabel: string; status: "won" | "lost" | "refunded"; payout: number | null; placedAt: string }>;
 }
 export function getPublicProfile(id: string): Promise<PublicProfile> {

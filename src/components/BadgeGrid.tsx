@@ -43,6 +43,9 @@ import imgDuelMaster from "@shared/assets/collectibles/duelbadges/duelmaster.png
 import imgDeadEye from "@shared/assets/collectibles/duelbadges/deadeye.png";
 import imgPackLeader from "@shared/assets/collectibles/duelbadges/packleader.png";
 import imgDuelOracle from "@shared/assets/collectibles/duelbadges/dueloracle.png";
+// Season events (one badge per competition per season — new image + entry each year)
+import imgEplSeason from "@shared/assets/collectibles/eventbadges/premierleague-2026-27.png";
+import imgUclSeason from "@shared/assets/collectibles/eventbadges/championsleague-2026-27.png";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,6 +60,27 @@ export type CollectibleBadge = {
   legendary?: boolean; // special styling for the impossible one
 };
 
+/**
+ * Season-scoped EPL/UCL prediction tallies for the season collectible badges,
+ * from the backend's `seasonBadgeStats["<season>"]`. Counts only that season's
+ * settled predictions, so a badge reflects one season and can't be topped up
+ * later. Undefined = no data available (badge stays locked).
+ */
+export type SeasonBadgeStats = {
+  eplSettled: number;
+  eplWins: number;
+  uclSettled: number;
+  uclWins: number;
+};
+
+/** The season whose badges are currently earnable. Bump + add badges next year. */
+export const CURRENT_FOOTBALL_SEASON = "2026-27";
+
+// Season badge unlock: enough settled predictions AND a high win-rate, within
+// the season window (the window is already enforced by the backend counting).
+const SEASON_MIN_SETTLED = 15;
+const SEASON_MIN_WINRATE = 0.6;
+
 // ── Badge definitions ─────────────────────────────────────────────────────────
 
 export function buildBadges(
@@ -67,8 +91,23 @@ export function buildBadges(
   hasPhone: boolean,
   hasDK: boolean,
   referrals: number,
+  season?: SeasonBadgeStats,
 ): CollectibleBadge[] {
   const acc = total > 0 ? correct / total : 0;
+
+  // Season football badges (2026/27). Win-rate only counts settled predictions.
+  const eplWinRate =
+    season && season.eplSettled > 0 ? season.eplWins / season.eplSettled : 0;
+  const uclWinRate =
+    season && season.uclSettled > 0 ? season.uclWins / season.uclSettled : 0;
+  const eplSeasonUnlocked =
+    !!season &&
+    season.eplSettled >= SEASON_MIN_SETTLED &&
+    eplWinRate >= SEASON_MIN_WINRATE;
+  const uclSeasonUnlocked =
+    !!season &&
+    season.uclSettled >= SEASON_MIN_SETTLED &&
+    uclWinRate >= SEASON_MIN_WINRATE;
 
   return [
     // ── Volume ──
@@ -353,6 +392,25 @@ export function buildBadges(
       requirement: "Get 25 correct predictions",
       unlocked: correct >= 25,
     },
+    // ── Season events (per competition, per season) ──
+    {
+      id: "epl_season_2026_27",
+      img: imgEplSeason,
+      icon: <Medal size={18} color="#37003c" />,
+      name: "Premier League 2026/27",
+      requirement:
+        "Win 60%+ of 15+ Premier League predictions in the 2026/27 season",
+      unlocked: eplSeasonUnlocked,
+    },
+    {
+      id: "ucl_season_2026_27",
+      img: imgUclSeason,
+      icon: <Medal size={18} color="#1e3a8a" />,
+      name: "Champions League 2026/27",
+      requirement:
+        "Win 60%+ of 15+ Champions League predictions in the 2026/27 season",
+      unlocked: uclSeasonUnlocked,
+    },
   ];
 }
 
@@ -367,6 +425,8 @@ interface BadgeGridProps {
   hasDKBank: boolean;
   /** Total accepted referrals — requires backend field `referralCount` on AuthUser */
   referralCount?: number;
+  /** Season EPL/UCL tallies from `seasonBadgeStats["2026-27"]` (season badges). */
+  seasonStats?: SeasonBadgeStats;
   featuredIds?: string[];
   onToggleFeatured?: (id: string) => void;
 }
@@ -379,6 +439,7 @@ export function BadgeGrid({
   hasPhone,
   hasDKBank,
   referralCount = 0,
+  seasonStats,
   featuredIds = [],
   onToggleFeatured,
 }: BadgeGridProps) {
@@ -390,6 +451,7 @@ export function BadgeGrid({
     hasPhone,
     hasDKBank,
     referralCount,
+    seasonStats,
   );
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;
