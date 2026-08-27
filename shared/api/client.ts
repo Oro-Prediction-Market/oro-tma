@@ -722,6 +722,8 @@ export interface Bet {
   placedAt: string;
   marketId: string;
   outcomeId: string;
+  /** Currency the stake was placed in — "BTN" (default) or "USDT". */
+  currency?: "BTN" | "USDT";
   market?: Market;
   outcome?: Outcome;
 }

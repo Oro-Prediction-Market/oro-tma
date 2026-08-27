@@ -956,8 +956,8 @@ export function EplHubPage() {
                 : [];
               return (
                 <>
-                  {/* Category selector — four icon tiles */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 16 }}>
+                  {/* Category selector — one tile per stat, split evenly */}
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${STAT_TABS.length}, 1fr)`, gap: 6, marginBottom: 16 }}>
                     {STAT_TABS.map((s) => {
                       const active = statCat === s.id;
                       return (
