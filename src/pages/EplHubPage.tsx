@@ -11,7 +11,7 @@ import {
   type EplStats,
   type EplSeason,
 } from "@shared/api/client";
-import { Clock, Trophy, CalendarDays, ListOrdered, BarChart3, Goal, Handshake, RectangleVertical } from "lucide-react";
+import { Clock, Trophy, CalendarDays, ListOrdered, BarChart3, Goal, Handshake } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
@@ -213,7 +213,7 @@ export function PlayerFace({
 
 // ── Stats & standings data ────────────────────────────────────────────────────
 
-type StatCategory = "goals" | "assists" | "yellow" | "red";
+type StatCategory = "goals" | "assists";
 
 // hex → rgba string so one accent hex drives all its tinted backgrounds/borders
 function hexA(hex: string, a: number): string {
@@ -258,15 +258,11 @@ const STAT_TABS: {
 }[] = [
   { id: "goals", heading: "Top Scorer This Season?", label: "Top Scorers", short: "Goals", unit: "Goals", color: "#00ff85", renderIcon: (n) => <Goal size={n} /> },
   { id: "assists", heading: "Most Assists This Season?", label: "Top Assists", short: "Assists", unit: "Assists", color: "#38bdf8", renderIcon: (n) => <Handshake size={n} /> },
-  { id: "yellow", heading: "Most Yellow Cards This Season?", label: "Yellow Cards", short: "Yellow", unit: "Cards", color: "#facc15", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
-  { id: "red", heading: "Most Red Cards This Season?", label: "Red Cards", short: "Red", unit: "Cards", color: "#ef4444", renderIcon: (n) => <RectangleVertical size={n} fill="currentColor" strokeWidth={1.5} /> },
 ];
 
 const STAT_META: Record<StatCategory, { subcategory: string; title: string }> = {
   goals: { subcategory: "epl-topscorer", title: "Premier League — Top Scorer 2026/27" },
   assists: { subcategory: "epl-assists", title: "Premier League — Most Assists 2026/27" },
-  yellow: { subcategory: "epl-yellowcards", title: "Premier League — Most Yellow Cards 2026/27" },
-  red: { subcategory: "epl-redcards", title: "Premier League — Most Red Cards 2026/27" },
 };
 
 const STAT_SUBCATS = Object.values(STAT_META).map((m) => m.subcategory);
@@ -1013,10 +1009,10 @@ export function EplHubPage() {
                           {cat.renderIcon(26)}
                         </div>
                         <div style={{ fontWeight: 700, fontSize: 15, color: "#fff" }}>
-                          {statCat === "yellow" || statCat === "red" ? `${cat.label} coming soon` : `No ${cat.label.toLowerCase()} yet`}
+                          {`No ${cat.label.toLowerCase()} yet`}
                         </div>
                         <div style={{ fontSize: 12, marginTop: 4, color: "rgba(255,255,255,0.35)" }}>
-                          {statCat === "yellow" || statCat === "red" ? "Disciplinary stats will be added soon" : "Live stats appear once the season is underway"}
+                          Live stats appear once the season is underway
                         </div>
                       </div>
                     ) : (
