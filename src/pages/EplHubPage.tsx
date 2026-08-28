@@ -543,10 +543,15 @@ function EplSeasonMarket({
   const teamOutcomes = (market.outcomes ?? []).filter(
     (o) => !isDrawOutcome(o.label ?? ""),
   );
-  // Sort by win probability (pool share) so the favourite leads — matching the
-  // order the market-detail page already shows.
+  // Order by the money on each club — the "Nu X pool" figure shown on the row —
+  // so the favourite leads. calcProb can't drive this on an outright market
+  // whose market.totalPool comes through unpopulated: every club then rounds to
+  // the same share and the sort is a no-op. Sort by the actual pool, with
+  // probability only as a tiebreak.
   const outcomes = [...(market.outcomes ?? [])].sort(
-    (a, b) => calcProb(market, b.id) - calcProb(market, a.id),
+    (a, b) =>
+      Number(b.totalBetAmount ?? 0) - Number(a.totalBetAmount ?? 0) ||
+      calcProb(market, b.id) - calcProb(market, a.id),
   );
   const shown = expanded ? outcomes : outcomes.slice(0, VISIBLE);
   return (
