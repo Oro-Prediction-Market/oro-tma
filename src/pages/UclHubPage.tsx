@@ -660,7 +660,7 @@ const NODE_COL_W = 72;
 const CENTER_W = 128;
 const KO_GAP = 16;
 const KO_BODY_H = 640;
-const KO_HEADER_H = 22;
+const KO_HEADER_H = 24;
 
 type PathKind = "dim" | "blue" | "gold";
 
@@ -783,8 +783,10 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
         </div>
         <span
           style={{
-            width: "100%",
-            height: 24,
+            width: "calc(100% + 8px)",
+            minHeight: 28,
+            padding: "4px 5px",
+            boxSizing: "border-box",
             fontSize: 9.5,
             lineHeight: 1.2,
             textAlign: "center",
@@ -793,7 +795,22 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
             letterSpacing: "0.02em",
             color: finalist ? GOLD : advancing ? "#eaf1ff" : "rgba(170,182,214,0.6)",
             textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+            borderRadius: 7,
+            border: finalist
+              ? "1px solid rgba(232,199,102,0.35)"
+              : advancing
+                ? "1px solid rgba(104,156,255,0.23)"
+                : "1px solid rgba(170,182,214,0.1)",
+            background: finalist
+              ? "linear-gradient(180deg, rgba(232,199,102,0.15), rgba(13,21,53,0.72))"
+              : advancing
+                ? "linear-gradient(180deg, rgba(56,111,255,0.16), rgba(8,17,48,0.76))"
+                : "rgba(8,17,48,0.5)",
+            boxShadow: finalist ? "0 5px 14px rgba(232,199,102,0.14)" : "0 4px 10px rgba(0,0,0,0.18)",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
           }}
+          title={club?.short ?? "TBD"}
         >
           {club ? club.short : "TBD"}
         </span>
@@ -820,17 +837,64 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
       <div style={{ fontSize: 11, color: SILVER, marginTop: -6, marginBottom: 12 }}>
         {bracket.decided ? "The road to Munich" : "The road to Munich · swipe to explore"}
       </div>
-      {/* Modern stage: layered navy, centre glow, a light beam and a faint grid. */}
+      {/* A Champions-League-night stage: deep navy, star field and a brighter
+          route to the final.  The tree itself remains entirely data-driven. */}
       <div
         style={{
           position: "relative",
           borderRadius: 20,
           overflow: "hidden",
-          border: "1px solid rgba(43,107,255,0.28)",
-          background: "linear-gradient(180deg, #0b1750 0%, #081130 55%, #060b22 100%)",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+          border: "1px solid rgba(91,138,255,0.42)",
+          background: "linear-gradient(145deg, #101f64 0%, #0a1543 40%, #050a21 100%)",
+          boxShadow: "0 22px 46px rgba(0,0,0,0.48), 0 0 0 1px rgba(16,35,104,0.55) inset, inset 0 1px 0 rgba(255,255,255,0.1)",
         }}
       >
+        {/* Competition lock-up */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            minHeight: 58,
+            padding: "12px 14px 10px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            borderBottom: "1px solid rgba(129,164,255,0.18)",
+            background: "linear-gradient(90deg, rgba(12,29,92,0.94), rgba(9,20,61,0.74) 58%, rgba(17,31,86,0.9))",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+            <div
+              aria-hidden
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                color: "#fff",
+                background: "radial-gradient(circle at 35% 30%, #6c9cff, #173b9d 62%, #0a1749)",
+                border: "1px solid rgba(183,211,255,0.65)",
+                boxShadow: "0 0 16px rgba(59,113,255,0.55), inset 0 1px 3px rgba(255,255,255,0.5)",
+              }}
+            >
+              <Star size={15} fill="currentColor" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: "#b9cdfd", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+                UEFA Champions League
+              </div>
+              <div style={{ color: "#fff", fontSize: 14, fontWeight: 900, letterSpacing: "0.03em", marginTop: 2 }}>
+                Knockout Stage
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ color: GOLD, fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase" }}>Road to the Final</div>
+            <div style={{ color: SILVER, fontSize: 9, fontWeight: 700, marginTop: 3 }}>Munich · 2027</div>
+          </div>
+        </div>
         {/* faint grid */}
         <div
           aria-hidden
@@ -839,8 +903,8 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
             inset: 0,
             pointerEvents: "none",
             backgroundImage:
-              "linear-gradient(rgba(90,120,200,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(90,120,200,0.06) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
+              "radial-gradient(circle at 12% 18%, rgba(210,226,255,0.55) 0 1px, transparent 1.5px), radial-gradient(circle at 78% 30%, rgba(182,209,255,0.45) 0 1px, transparent 1.5px), radial-gradient(circle at 62% 76%, rgba(182,209,255,0.38) 0 1px, transparent 1.5px), linear-gradient(rgba(90,120,200,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(90,120,200,0.06) 1px, transparent 1px)",
+            backgroundSize: "136px 154px, 184px 171px, 211px 193px, 28px 28px, 28px 28px",
             WebkitMaskImage: "radial-gradient(120% 100% at 50% 40%, #000 38%, transparent 82%)",
             maskImage: "radial-gradient(120% 100% at 50% 40%, #000 38%, transparent 82%)",
           }}
@@ -876,7 +940,7 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
             position: "relative",
             overflowX: "auto",
             overflowY: "hidden",
-            padding: "16px 10px 14px",
+            padding: "19px 10px 18px",
             display: "flex",
             justifyContent: "safe center",
             WebkitOverflowScrolling: "touch",
@@ -943,8 +1007,8 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
                           color: "#bcd2ff",
                           letterSpacing: "0.16em",
                           textTransform: "uppercase",
-                          background: "linear-gradient(180deg, rgba(43,107,255,0.22), rgba(43,107,255,0.08))",
-                          border: "1px solid rgba(97,140,255,0.4)",
+                          background: "linear-gradient(180deg, rgba(76,128,255,0.34), rgba(24,63,162,0.14))",
+                          border: "1px solid rgba(127,165,255,0.52)",
                           borderRadius: 20,
                           padding: "4px 11px",
                           boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
@@ -968,14 +1032,15 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
                               width: 176,
                               height: 176,
                               borderRadius: "50%",
-                              background: "radial-gradient(circle, rgba(232,199,102,0.4), rgba(43,107,255,0.12) 44%, transparent 68%)",
+                            background: "radial-gradient(circle, rgba(255,239,177,0.62), rgba(232,199,102,0.28) 28%, rgba(43,107,255,0.16) 50%, transparent 70%)",
+                            boxShadow: "0 0 54px rgba(49,103,255,0.22)",
                             }}
                           />
                           <img
                             src="/ucl-trophy.webp"
                             alt="Champions League trophy"
                             decoding="async"
-                            style={{ position: "relative", height: 168, width: "auto", filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.55))" }}
+                            style={{ position: "relative", height: 176, width: "auto", filter: "drop-shadow(0 14px 28px rgba(0,0,0,0.64)) drop-shadow(0 0 12px rgba(232,199,102,0.16))" }}
                           />
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
