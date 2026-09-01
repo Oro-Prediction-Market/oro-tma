@@ -273,108 +273,231 @@ function outcomeShares(m: Market): number[] {
   );
 }
 
+// A match leaves "Upcoming" only once its result is FINAL — resolved or
+// settled. Open, betting-closed and resolving all stay in the active list (the
+// card shows a "Closed"/"Resolving" badge for those in-between states).
+const isMatchFinal = (m: Market) =>
+  m.status === "resolved" || m.status === "settled";
+
+const WIN_GREEN = "#3ddc97";
+
+// Big card for an upcoming or in-progress match (open / betting-closed / resolving).
+function MatchCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) {
+  const colors = [BLUE, SILVER, "#e0457b"];
+  const outs = m.outcomes ?? [];
+  const home = outs[0];
+  const away = outs[outs.length - 1];
+  const probs = outcomeShares(m);
+  const labels = outs.map((o) => o.label);
+  const kickoff = m.bettingClosesAt ?? m.closesAt;
+  const when = kickoff
+    ? new Date(kickoff).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "";
+  const locked = m.status === "closed" || m.status === "resolving";
+  const badge = m.status === "resolving" ? "Resolving…" : m.status === "closed" ? "Closed" : "Champions League";
+  return (
+    <div
+      onClick={() => onOpen(m.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onOpen(m.id)}
+      style={{
+        borderRadius: 16,
+        overflow: "hidden",
+        border: "1px solid rgba(43,107,255,0.22)",
+        background: NAVY,
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "rgba(43,107,255,0.08)" }}>
+        <span style={{ fontSize: 10.5, fontWeight: 800, color: SILVER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          {badge}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: SILVER }}>
+          <Clock size={11} /> {when}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 10, padding: "16px 16px 12px" }}>
+        <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Crest src={home?.imageUrl ?? ""} label={home?.label ?? ""} size={46} />
+          </div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{home?.label}</div>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 900, color: SILVER, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "4px 10px", flexShrink: 0 }}>VS</div>
+        <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <Crest src={away?.imageUrl ?? ""} label={away?.label ?? ""} size={46} />
+          </div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{away?.label}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", height: 4 }}>
+        {probs.map((p, i) => (
+          <div key={i} style={{ width: `${p}%`, background: i === 1 ? "rgba(170,182,214,0.5)" : colors[Math.min(i, 2)] }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, padding: "12px 12px 14px" }}>
+        {outs.map((o, i) => (
+          <div
+            key={o.id}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: "10px 4px",
+              background: `${colors[Math.min(i, 2)]}14`,
+              border: `1px solid ${colors[Math.min(i, 2)]}55`,
+              borderRadius: 11,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 18, fontWeight: 900, color: i === 1 ? "#c8d2e0" : colors[Math.min(i, 2)], lineHeight: 1 }}>{probs[i]}%</div>
+            <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{labels[i]}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", fontSize: 10.5, fontWeight: 800, color: BLUE, padding: "0 0 12px" }}>
+        {locked ? "View market »" : "Tap to predict »"}
+      </div>
+    </div>
+  );
+}
+
+// Compact finished-match row — mirrors the EPL hub's result cards. Shows the
+// settled winner (or Draw), the date, and an "FT" tag.
+function UclResultCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) {
+  const outs = m.outcomes ?? [];
+  const home = outs[0];
+  const away = outs[outs.length - 1];
+  const winner = outs.find(
+    (o) => o.isWinner || (m.resolvedOutcomeId != null && o.id === m.resolvedOutcomeId),
+  );
+  const resultLabel = winner
+    ? /draw/i.test(winner.label ?? "")
+      ? "Draw"
+      : `${winner.label} won`
+    : "Awaiting result";
+  const when = m.resolvedAt ?? m.bettingClosesAt ?? m.closesAt;
+  const whenLabel = when
+    ? new Date(when).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
+  return (
+    <div
+      onClick={() => onOpen(m.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && onOpen(m.id)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: NAVY,
+        border: "1px solid rgba(43,107,255,0.22)",
+        borderRadius: 14,
+        padding: "10px 12px",
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+        <Crest src={home?.imageUrl ?? ""} label={home?.label ?? ""} size={30} />
+        <div style={{ marginLeft: -8 }}>
+          <Crest src={away?.imageUrl ?? ""} label={away?.label ?? ""} size={30} />
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {home?.label} vs {away?.label}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(170,182,214,0.6)", marginTop: 2 }}>{whenLabel}</div>
+      </div>
+      <div style={{ textAlign: "right", flexShrink: 0, maxWidth: 130 }}>
+        <div style={{ display: "inline-block", fontSize: 9, fontWeight: 800, color: NAVY, background: WIN_GREEN, borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          FT
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: WIN_GREEN, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {resultLabel}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MatchesTab({ matches, onOpen }: { matches: Market[]; onOpen: (id: string) => void }) {
-  // Live match markets when the keeper has created them; otherwise a dummy
-  // preview so the tab is never blank in the off-season.
-  if (matches.length > 0) {
-    const colors = [BLUE, SILVER, "#e0457b"];
+  const [matchView, setMatchView] = useState<"upcoming" | "previous">("upcoming");
+  // `matches` arrives sorted soonest-first. Upcoming keeps that order; previous
+  // (resolved/settled) reads best most-recent first.
+  const upcoming = matches.filter((m) => !isMatchFinal(m));
+  const kickoffMs = (m: Market) => new Date(m.bettingClosesAt ?? m.closesAt ?? 0).getTime();
+  const previous = matches.filter(isMatchFinal).sort((a, b) => kickoffMs(b) - kickoffMs(a));
+
+  if (upcoming.length === 0 && previous.length === 0) {
     return (
       <div>
-        <Heading>Upcoming Matches</Heading>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {matches.map((m) => {
-            const outs = m.outcomes ?? [];
-            const home = outs[0];
-            const away = outs[outs.length - 1];
-            const probs = outcomeShares(m);
-            const labels = outs.map((o) => o.label);
-            const kickoff = m.bettingClosesAt ?? m.closesAt;
-            const when = kickoff
-              ? new Date(kickoff).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-              : "";
-            const locked = m.status === "closed" || m.status === "resolving" || m.status === "resolved" || m.status === "settled";
-            return (
-              <div
-                key={m.id}
-                onClick={() => onOpen(m.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && onOpen(m.id)}
-                style={{
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  border: "1px solid rgba(43,107,255,0.22)",
-                  background: NAVY,
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "rgba(43,107,255,0.08)" }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 800, color: SILVER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    {locked ? "Closed" : "Champions League"}
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: SILVER }}>
-                    <Clock size={11} /> {when}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", gap: 10, padding: "16px 16px 12px" }}>
-                  <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      <Crest src={home?.imageUrl ?? ""} label={home?.label ?? ""} size={46} />
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{home?.label}</div>
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 900, color: SILVER, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "4px 10px", flexShrink: 0 }}>VS</div>
-                  <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "center" }}>
-                      <Crest src={away?.imageUrl ?? ""} label={away?.label ?? ""} size={46} />
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", marginTop: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{away?.label}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", height: 4 }}>
-                  {probs.map((p, i) => (
-                    <div key={i} style={{ width: `${p}%`, background: i === 1 ? "rgba(170,182,214,0.5)" : colors[Math.min(i, 2)] }} />
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: 8, padding: "12px 12px 14px" }}>
-                  {outs.map((o, i) => (
-                    <div
-                      key={o.id}
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        padding: "10px 4px",
-                        background: `${colors[Math.min(i, 2)]}14`,
-                        border: `1px solid ${colors[Math.min(i, 2)]}55`,
-                        borderRadius: 11,
-                        textAlign: "center",
-                      }}
-                    >
-                      <div style={{ fontSize: 18, fontWeight: 900, color: i === 1 ? "#c8d2e0" : colors[Math.min(i, 2)], lineHeight: 1 }}>{probs[i]}%</div>
-                      <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{labels[i]}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ textAlign: "center", fontSize: 10.5, fontWeight: 800, color: BLUE, padding: "0 0 12px" }}>
-                  {locked ? "View market »" : "Tap to predict »"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <Heading>Matches</Heading>
+        <EmptyState>
+          No live match markets right now.
+          <br />
+          Match markets are created automatically as Champions League fixtures are
+          announced — check back when the next round is scheduled.
+        </EmptyState>
       </div>
     );
   }
 
   return (
     <div>
-      <Heading>Upcoming Matches</Heading>
-      <EmptyState>
-        No live match markets right now.
-        <br />
-        Match markets are created automatically as Champions League fixtures are
-        announced — check back when the next round is scheduled.
-      </EmptyState>
+      {/* Upcoming / Previous toggle */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {(
+          [
+            ["upcoming", `Upcoming (${upcoming.length})`],
+            ["previous", `Previous (${previous.length})`],
+          ] as ["upcoming" | "previous", string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setMatchView(id)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: `1px solid ${matchView === id ? "rgba(43,107,255,0.5)" : "rgba(255,255,255,0.12)"}`,
+              background: matchView === id ? "rgba(43,107,255,0.14)" : "transparent",
+              color: matchView === id ? "#fff" : SILVER,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {matchView === "upcoming" ? (
+        upcoming.length === 0 ? (
+          <EmptyState>
+            No upcoming matches right now — check back when the next round is scheduled.
+          </EmptyState>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {upcoming.map((m) => (
+              <MatchCard key={m.id} m={m} onOpen={onOpen} />
+            ))}
+          </div>
+        )
+      ) : previous.length === 0 ? (
+        <EmptyState>
+          No finished matches yet.
+          <br />
+          Results will show here after the first matchday.
+        </EmptyState>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {previous.map((m) => (
+            <UclResultCard key={m.id} m={m} onOpen={onOpen} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
