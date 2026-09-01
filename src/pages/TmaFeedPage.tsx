@@ -2781,8 +2781,8 @@ export const TmaFeedPage: FC = () => {
           </div>
         )}
 
-        {/* ── UEFA Champions League Banner Card ── (hidden until 2026/27 season) */}
-        {false && showSportsBanners && (
+        {/* ── UEFA Champions League Banner Card ── */}
+        {showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <UclBanner onClick={() => navigate("/ucl")} />
           </div>

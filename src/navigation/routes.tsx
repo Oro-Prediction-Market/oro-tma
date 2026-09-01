@@ -9,8 +9,7 @@ import { UfcHubPage } from "@/pages/UfcHubPage";
 import { EplHubPage } from "@/pages/EplHubPage";
 // Esports hub hidden — uncomment to re-enable (also un-gate the feed banner in TmaFeedPage.tsx)
 // import { EsportsHubPage } from "@/pages/EsportsHubPage";
-// UCL hidden until the 2026/27 season starts — uncomment to re-enable
-// import { UclHubPage } from "@/pages/UclHubPage";
+import { UclHubPage } from "@/pages/UclHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
@@ -90,6 +89,7 @@ export const routes: Route[] = [
   // { path: "/bpl", Component: BplHubPage, title: "Premier League Hub" },
   { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
   { path: "/epl", Component: EplHubPage, title: "EPL Hub" },
+  { path: "/ucl", Component: UclHubPage, title: "Champions League Hub" },
   // Esports hub hidden — uncomment to re-enable
   // { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
   { path: "/markets", Component: MarketsPage },
