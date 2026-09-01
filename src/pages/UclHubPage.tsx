@@ -282,7 +282,8 @@ const isMatchFinal = (m: Market) =>
 const WIN_GREEN = "#3ddc97";
 
 // Big card for an upcoming or in-progress match (open / betting-closed / resolving).
-function MatchCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) {
+// `featured` cards span the full width of the grid and carry a gold accent.
+function MatchCard({ m, onOpen, featured }: { m: Market; onOpen: (id: string) => void; featured?: boolean }) {
   const colors = [BLUE, SILVER, "#e0457b"];
   const outs = m.outcomes ?? [];
   const home = outs[0];
@@ -294,7 +295,13 @@ function MatchCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) {
     ? new Date(kickoff).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
     : "";
   const locked = m.status === "closed" || m.status === "resolving";
-  const badge = m.status === "resolving" ? "Resolving…" : m.status === "closed" ? "Closed" : "Champions League";
+  const badge = featured
+    ? "★ Featured"
+    : m.status === "resolving"
+      ? "Resolving…"
+      : m.status === "closed"
+        ? "Closed"
+        : "Champions League";
   return (
     <div
       onClick={() => onOpen(m.id)}
@@ -304,13 +311,14 @@ function MatchCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) {
       style={{
         borderRadius: 16,
         overflow: "hidden",
-        border: "1px solid rgba(43,107,255,0.22)",
+        border: `1px solid ${featured ? "rgba(232,199,102,0.4)" : "rgba(43,107,255,0.22)"}`,
         background: NAVY,
         cursor: "pointer",
+        height: "100%",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "rgba(43,107,255,0.08)" }}>
-        <span style={{ fontSize: 10.5, fontWeight: 800, color: SILVER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: featured ? "rgba(232,199,102,0.12)" : "rgba(43,107,255,0.08)" }}>
+        <span style={{ fontSize: 10.5, fontWeight: 800, color: featured ? GOLD : SILVER, textTransform: "uppercase", letterSpacing: "0.06em" }}>
           {badge}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: SILVER }}>
@@ -479,11 +487,25 @@ function MatchesTab({ matches, onOpen }: { matches: Market[]; onOpen: (id: strin
             No upcoming matches right now — check back when the next round is scheduled.
           </EmptyState>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {upcoming.map((m) => (
-              <MatchCard key={m.id} m={m} onOpen={onOpen} />
-            ))}
-          </div>
+          (() => {
+            // Featured matches span both columns; the rest sit two-up (one-up on
+            // narrow screens), mirroring the EPL hub's match grid.
+            const featured = upcoming.filter((m) => m.isFeatured);
+            const featuredIds = new Set(featured.map((m) => m.id));
+            const rest = upcoming.filter((m) => !featuredIds.has(m.id));
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+                {featured.map((m) => (
+                  <div key={m.id} style={{ gridColumn: "1 / -1" }}>
+                    <MatchCard m={m} onOpen={onOpen} featured />
+                  </div>
+                ))}
+                {rest.map((m) => (
+                  <MatchCard key={m.id} m={m} onOpen={onOpen} />
+                ))}
+              </div>
+            );
+          })()
         )
       ) : previous.length === 0 ? (
         <EmptyState>
