@@ -35,17 +35,17 @@ const STEPS = [
   {
     emoji: <User />,
     title: "Open the app",
-    desc: "Launch Oro in Telegram and your account is created automatically from your Telegram profile — no sign-up needed. The same account also works on the web at oro.fun.",
+    desc: "Open Oro in Telegram or on the web at oro.fun — same account either way. Telegram signs you in automatically; no sign-up needed.",
   },
   {
     emoji: <Building2 />,
     title: "Link your Account",
-    desc: "Go to Wallet → Enter your 11-digit CID. This links your real bank account so you can top up and cash out in ngultrum. Prefer crypto? Verify your identity once and fund a separate USDT wallet from your own crypto wallet instead — the two balances are never converted into each other.",
+    desc: "Wallet → enter your 11-digit CID to link your bank for ngultrum. Prefer crypto? Verify your ID once and use a separate USDT wallet — the two never convert.",
   },
   {
     emoji: <Coins />,
     title: "Add funds to your wallet",
-    desc: "Tap Wallet → Top Up and pay via DK Bank. Your Oro credits top up instantly. Minimum top up is Nu 50. For USDT, use the Deposit tab in your USDT wallet and send to the address shown — it credits once the network confirms it.",
+    desc: "Wallet → Top Up, pay via DK Bank; credits land instantly (min Nu 50). USDT: send to the address shown — credits once the network confirms.",
   },
   {
     emoji: <Target />,
