@@ -49,7 +49,7 @@ export function UclBanner({
         backgroundSize: "cover",
         backgroundPosition: "center 46%",
         backgroundColor: "#070d29",
-        border: "1px solid rgba(43,107,255,0.4)",
+        // No outline — the poster edge reads cleaner without a border line.
         boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
         display: "flex",
         flexDirection: "column",
@@ -120,7 +120,7 @@ export function UclBanner({
               whiteSpace: "nowrap",
             }}
           >
-            Champions League · 2026/27
+            2026/27 League
           </span>
         </div>
       </div>
