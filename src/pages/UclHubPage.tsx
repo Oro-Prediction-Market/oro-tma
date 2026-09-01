@@ -172,11 +172,9 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 
 function SeasonTab({
   outrightMarkets,
-  topScorer,
   onOpen,
 }: {
   outrightMarkets: Market[];
-  topScorer: StatRow | null;
   onOpen: (id: string) => void;
 }) {
   return (
@@ -226,36 +224,6 @@ function SeasonTab({
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* Top scorer (live) */}
-      <div>
-        <Heading>Top Scorer</Heading>
-        {topScorer ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "13px 14px",
-              borderRadius: 14,
-              background: NAVY,
-              border: "1px solid rgba(232,199,102,0.35)",
-            }}
-          >
-            <Crest src={topScorer.crest} label={topScorer.clubShort} size={42} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{topScorer.player}</div>
-              <div style={{ fontSize: 11.5, color: SILVER, marginTop: 1 }}>{topScorer.clubShort}</div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, color: GOLD, flexShrink: 0 }}>
-              <Goal size={16} />
-              <span style={{ fontSize: 20, fontWeight: 900 }}>{topScorer.value}</span>
-            </div>
-          </div>
-        ) : (
-          <EmptyState>Leaderboard loads once the competition is underway.</EmptyState>
         )}
       </div>
     </div>
@@ -1295,8 +1263,6 @@ export function UclHubPage() {
       (m.status === "open" || m.status === "upcoming"),
   );
 
-  const topScorer = boards.find((b) => b.id === "goals")?.rows[0] ?? null;
-
   const openMarket = (id: string) => navigate(`/market/${id}`);
 
   return (
@@ -1425,7 +1391,7 @@ export function UclHubPage() {
           </div>
 
           {tab === "season" && (
-            <SeasonTab outrightMarkets={outrightMarkets} topScorer={topScorer} onOpen={openMarket} />
+            <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} />
           )}
           {tab === "matches" && <MatchesTab matches={matchMarkets} onOpen={openMarket} />}
           {tab === "bracket" && <BracketTab bracket={bracket} />}
