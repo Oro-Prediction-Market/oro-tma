@@ -1277,7 +1277,7 @@ export function UclHubPage() {
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
-            backgroundImage: "url('/ucl-banner-wide.webp')",
+            backgroundImage: "url('/ucl.jpeg')",
             backgroundSize: "cover",
             backgroundPosition: "center 28%",
             backgroundColor: NAVY,

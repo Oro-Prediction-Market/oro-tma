@@ -45,9 +45,9 @@ export function UclBanner({
         overflow: "hidden",
         position: "relative",
         // The poster carries the branding; chrome sits on top of it.
-        backgroundImage: "url('/ucl-hero.webp')",
+        backgroundImage: "url('/ucl.jpeg')",
         backgroundSize: "cover",
-        backgroundPosition: "center 28%",
+        backgroundPosition: "center 46%",
         backgroundColor: "#070d29",
         border: "1px solid rgba(43,107,255,0.4)",
         boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
