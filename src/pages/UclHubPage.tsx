@@ -361,12 +361,9 @@ function MatchCard({
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 14px 12px" }}>
+      <div style={{ padding: "0 14px 12px" }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, color: SILVER }}>
           Nu {pool.toLocaleString()} pool
-        </span>
-        <span style={{ fontSize: 10.5, fontWeight: 800, color: BLUE }}>
-          {locked ? "View market »" : "Tap to predict »"}
         </span>
       </div>
     </div>
