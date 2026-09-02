@@ -98,6 +98,21 @@ export function syncAchievements(
     });
 }
 
+/**
+ * Relay a support message through the backend, which forwards it to Oro's
+ * support inbox. The destination address lives only on the server — it never
+ * appears in the frontend, so it can't be scraped or reveal the operator.
+ */
+export async function sendFeedback(
+  email: string,
+  message: string,
+): Promise<{ ok: true }> {
+  return request<{ ok: true }>("/feedback", {
+    method: "POST",
+    body: JSON.stringify({ email, message }),
+  });
+}
+
 // ─── In-memory GET cache (stale-while-revalidate, 15s TTL) ───────────────────
 const _cache = new Map<
   string,

@@ -2,7 +2,7 @@ import { FC, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Page } from "@/components/Page";
 import { useAuth } from "@shared/hooks/useAuth";
-import { linkDKBank, getMe, setPwaPassword, type AuthUser } from "@shared/api/client";
+import { linkDKBank, getMe, setPwaPassword, sendFeedback, type AuthUser } from "@shared/api/client";
 import {
   ChevronLeft,
   Check,
@@ -14,7 +14,6 @@ import {
   XCircle,
   Loader2,
   MessageCircle,
-  ExternalLink,
   Smartphone,
   Calendar,
   BookOpen,
@@ -310,6 +309,206 @@ function SettingsRow({
   );
 }
 
+// ── Contact support modal ─────────────────────────────────────────────────────
+// The user types their own email + a message; on send it POSTs to /feedback and
+// the BACKEND relays it to Oro's support inbox. Oro's address deliberately
+// appears nowhere in the frontend, so it can't be scraped.
+function ContactSupportModal({ onClose }: { onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSend =
+    emailLooksValid && message.trim().length > 0 && status !== "sending";
+
+  async function handleSend() {
+    if (!canSend) return;
+    setStatus("sending");
+    setError(null);
+    try {
+      await sendFeedback(email.trim(), message.trim());
+      setStatus("sent");
+    } catch (err: any) {
+      setStatus("idle");
+      setError(err?.message || "Couldn't send your message. Please try again.");
+    }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "12px 14px",
+    borderRadius: 10,
+    background: "var(--bg-secondary)",
+    border: "1px solid var(--glass-border)",
+    color: "var(--text-main)",
+    fontSize: 14,
+    outline: "none",
+  };
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--text-muted)",
+    marginBottom: 6,
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1100,
+        background: "rgba(0,0,0,0.7)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--bg-card)",
+          borderRadius: "20px 20px 0 0",
+          maxHeight: "88vh",
+          overflowY: "auto",
+          padding: "14px 16px calc(env(safe-area-inset-bottom) + 24px)",
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: "var(--glass-border)",
+            margin: "0 auto 14px",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ fontSize: 17, fontWeight: 900, color: "var(--text-main)" }}>
+            Contact Support
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "var(--bg-secondary)",
+              border: "none",
+              borderRadius: 8,
+              width: 30,
+              height: 30,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--text-muted)",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {status === "sent" ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 12,
+              padding: "20px 4px 8px",
+              textAlign: "center",
+            }}
+          >
+            <CheckCircle2 size={40} color="#22c55e" strokeWidth={2.5} />
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main)" }}>
+              Message sent
+            </div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              Thanks — support will get back to you by email.
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                marginTop: 6,
+                width: "100%",
+                padding: "13px 16px",
+                borderRadius: 12,
+                border: "none",
+                background: "var(--accent, #2b6bff)",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--text-muted)" }}>
+              Send us your feedback or a question — we'll reply to the email you
+              give below.
+            </p>
+            <label style={labelStyle}>Your email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              style={inputStyle}
+            />
+            <label style={{ ...labelStyle, marginTop: 14 }}>Message</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value.slice(0, 4000))}
+              placeholder="How can we help?"
+              rows={5}
+              style={{ ...inputStyle, resize: "vertical", minHeight: 96, fontFamily: "inherit" }}
+            />
+            {error && (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#ef4444" }}>
+                {error}
+              </p>
+            )}
+            <button
+              onClick={handleSend}
+              disabled={!canSend}
+              style={{
+                marginTop: 18,
+                width: "100%",
+                padding: "13px 16px",
+                borderRadius: 12,
+                border: "none",
+                background: "var(--accent, #2b6bff)",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: canSend ? "pointer" : "not-allowed",
+                opacity: canSend ? 1 : 0.5,
+              }}
+            >
+              {status === "sending" ? "Sending…" : "Send"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export const TmaSettingsPage: FC = () => {
   const navigate = useNavigate();
@@ -322,6 +521,7 @@ export const TmaSettingsPage: FC = () => {
   >("idle");
   const [linkError, setLinkError] = useState("");
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
 
   // PWA Password state
   const [showPwaForm, setShowPwaForm] = useState(false);
@@ -966,12 +1166,14 @@ export const TmaSettingsPage: FC = () => {
             <SettingsRow
               icon={<MessageCircle size={17} />}
               label="Support"
-              value="oro@21.tech.bt"
-              onClick={() => {
-                window.open("https://mail.google.com/mail/?view=cm&to=oro@21.tech.bt", "_blank");
-              }}
+              value="Contact our support team"
+              onClick={() => setShowSupport(true)}
             >
-              <ExternalLink size={15} color="var(--text-subtle)" />
+              <ChevronLeft
+                size={15}
+                color="var(--text-subtle)"
+                style={{ transform: "rotate(180deg)" }}
+              />
             </SettingsRow>
 
             <SettingsRow
@@ -992,6 +1194,9 @@ export const TmaSettingsPage: FC = () => {
 
       {showHowItWorks && (
         <HowItWorksModal onClose={() => setShowHowItWorks(false)} />
+      )}
+      {showSupport && (
+        <ContactSupportModal onClose={() => setShowSupport(false)} />
       )}
     </Page>
   );

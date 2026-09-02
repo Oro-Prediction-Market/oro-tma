@@ -64,7 +64,7 @@ const DEFINITIONS: { term: string; def: string }[] = [
 const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   {
     heading: "1. Introduction",
-    body: 'ORO is a collective intelligence and consensus forecasting platform operated by 21 Tech Gelephu Pte. Limited ("ORO," "we," "us," or "the Company"), a company incorporated in Gelephu Mindfulness City Authority (GMCA) and operating under the regulatory framework of the GMCA. ORO enables users to express probabilistic views on future events through structured prediction markets, and aggregates those views into consensus forecasts intended to surface distributed human knowledge. These Terms of Use, together with the Privacy Policy, Community Standards, Prediction Market Rules, Responsible Participation Policy, and any other policy referenced herein (collectively, the "Policies"), form a single binding agreement (the "Agreement") between ORO and each person who accesses or uses ORO (a "User" or "you").',
+    body: 'ORO is a collective intelligence and consensus forecasting platform operated by ORO ("ORO," "we," "us," or "the Company"), operating under the regulatory framework of the Gelephu Mindfulness City Authority (GMCA). ORO enables users to express probabilistic views on future events through structured prediction markets, and aggregates those views into consensus forecasts intended to surface distributed human knowledge. These Terms of Use, together with the Privacy Policy, Community Standards, Prediction Market Rules, Responsible Participation Policy, and any other policy referenced herein (collectively, the "Policies"), form a single binding agreement (the "Agreement") between ORO and each person who accesses or uses ORO (a "User" or "you").',
   },
   {
     heading: "2. Acceptance of Terms",
@@ -149,14 +149,14 @@ const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   },
   {
     heading: "22. Contact",
-    body: "Legal notices: oro@21.tech.bt | General support: support@21.tech.bt | Registered address: 21 Tech Gelephu Pte. Limited.",
+    body: "For legal notices, general support, or any question for the ORO team, use the in-app Contact Support (Settings → Support).",
   },
 ];
 
 const PRIVACY_SECTIONS = [
   {
     heading: "1. Introduction",
-    body: "This Privacy Policy explains how 21Tech (Oro) collects, uses, stores, shares, and protects personal data when you use Oro services, including web, app, Telegram integrations, wallet/payment features, and related support channels. By using the Platform, you acknowledge this Privacy Policy.",
+    body: "This Privacy Policy explains how ORO collects, uses, stores, shares, and protects personal data when you use Oro services, including web, app, Telegram integrations, wallet/payment features, and related support channels. By using the Platform, you acknowledge this Privacy Policy.",
   },
   {
     heading: "2. Data We Collect",
@@ -184,15 +184,15 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "8. Security Controls",
-    body: "21Tech applies administrative, technical, and organizational safeguards including access controls, encryption where appropriate, audit logging, and incident-response practices. Identity documents are encrypted before storage and are accessible only to authorised reviewers through audited internal tooling, and USDT withdrawals can only be sent to an address registered to the Account in advance, so a compromised session cannot redirect funds to an unknown address. No system is absolutely secure. Users should also protect their credentials and devices.",
+    body: "ORO applies administrative, technical, and organizational safeguards including access controls, encryption where appropriate, audit logging, and incident-response practices. Identity documents are encrypted before storage and are accessible only to authorised reviewers through audited internal tooling, and USDT withdrawals can only be sent to an address registered to the Account in advance, so a compromised session cannot redirect funds to an unknown address. No system is absolutely secure. Users should also protect their credentials and devices.",
   },
   {
     heading: "9. User Rights",
-    body: "Subject to applicable law, you may request access to personal data, correction of inaccurate data, deletion where retention is no longer required, restriction or objection to certain processing, and withdrawal of consent where consent is legal basis. Requests can be sent to oro@21.tech.bt",
+    body: "Subject to applicable law, you may request access to personal data, correction of inaccurate data, deletion where retention is no longer required, restriction or objection to certain processing, and withdrawal of consent where consent is legal basis. Requests can be made through the in-app Contact Support (Settings → Support).",
   },
   {
     heading: "10. Restrictions",
-    body: "Oro is not intended for anyone under 18, or for any person in a jurisdiction where use of the Platform is unlawful. Access to funding methods differs by account type: BTN funding requires a DK Bank account, and USDT funding requires completed identity verification. Where an account is found to be using a funding method it is not eligible for, or is otherwise ineligible, 21Tech may suspend account access and take required compliance actions.",
+    body: "Oro is not intended for anyone under 18, or for any person in a jurisdiction where use of the Platform is unlawful. Access to funding methods differs by account type: BTN funding requires a DK Bank account, and USDT funding requires completed identity verification. Where an account is found to be using a funding method it is not eligible for, or is otherwise ineligible, ORO may suspend account access and take required compliance actions.",
   },
   {
     heading: "11. Policy Updates",
@@ -200,7 +200,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "12. Contact",
-    body: "For privacy requests, compliance inquiries, or complaints: Email oro@21.tech.bt | Operator: 21Tech",
+    body: "For privacy requests, compliance inquiries, or complaints, use the in-app Contact Support (Settings → Support). Operator: ORO.",
   },
 ];
 
@@ -371,9 +371,8 @@ export const TermsPage = ({ onBack }: { onBack?: () => void }) => {
                   margin: 0,
                 }}
               >
-                ORO — Terms of Use, operated by 21 Tech Gelephu Pte. Limited
-                under the jurisdiction of the Gelephu Mindfulness City
-                Authority (GMCA). By creating an Account, clicking "I Agree,"
+                ORO — Terms of Use, operated by ORO under the jurisdiction of
+                the Gelephu Mindfulness City Authority (GMCA). By creating an Account, clicking "I Agree,"
                 or otherwise accessing or using ORO, you confirm that you have
                 read, understood, and agree to be bound by this Agreement in
                 its entirety. If you do not agree, you must not create an
