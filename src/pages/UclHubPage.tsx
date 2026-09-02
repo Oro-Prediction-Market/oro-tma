@@ -171,12 +171,113 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+// A single outright market with its contenders shown inline (favourite first),
+// mirroring the EPL hub's season market. Top 5 by default, expandable — so the
+// Season tab shows the actual options to bet on, not a collapsed one-liner.
+function UclSeasonMarket({
+  market,
+  onOpen,
+  onBet,
+}: {
+  market: Market;
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const VISIBLE = 5;
+  const locked = market.status === "closed" || market.status === "resolving";
+  const closesRaw = market.bettingClosesAt ?? market.closesAt;
+  const when = closesRaw
+    ? new Date(closesRaw).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
+
+  // Share is computed off the ORIGINAL outcome order, so resolve each row's
+  // win% by id after we sort the display list by pool (favourite first).
+  const shareByIndex = outcomeShares(market);
+  const originalOrder = market.outcomes ?? [];
+  const shareOf = (id: string) => {
+    const idx = originalOrder.findIndex((o) => o.id === id);
+    return idx >= 0 ? shareByIndex[idx] : 0;
+  };
+  const outcomes = [...originalOrder].sort(
+    (a, b) => Number(b.totalBetAmount ?? 0) - Number(a.totalBetAmount ?? 0),
+  );
+  const shown = expanded ? outcomes : outcomes.slice(0, VISIBLE);
+
+  return (
+    <div style={{ background: NAVY, border: "1px solid rgba(232,199,102,0.28)", borderRadius: 16, overflow: "hidden" }}>
+      {/* Header: title + close time / status */}
+      <div
+        onClick={() => onOpen(market.id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onOpen(market.id)}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "11px 14px", background: "rgba(232,199,102,0.10)", cursor: "pointer" }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+          <Trophy size={15} color={GOLD} style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{market.title}</span>
+        </span>
+        {locked ? (
+          <span style={{ fontSize: 9, fontWeight: 800, color: GOLD, background: "rgba(232,199,102,0.14)", border: "1px solid rgba(232,199,102,0.3)", borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", flexShrink: 0 }}>
+            {market.status === "resolving" ? "Resolving" : "Closed"}
+          </span>
+        ) : when ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: SILVER, flexShrink: 0 }}>
+            <Clock size={10} /> {when}
+          </span>
+        ) : null}
+      </div>
+      {/* Contenders — favourite first */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 12 }}>
+        {shown.map((o) => (
+          <div
+            key={o.id}
+            onClick={() => onOpen(market.id)}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 12, background: "rgba(43,107,255,0.06)", border: "1px solid rgba(43,107,255,0.16)", cursor: "pointer" }}
+          >
+            <Crest src={o.imageUrl ?? ""} label={o.label} size={34} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.label}</div>
+              <div style={{ fontSize: 10.5, color: SILVER, fontWeight: 600, marginTop: 1 }}>Nu {Number(o.totalBetAmount ?? 0).toLocaleString()} pool</div>
+            </div>
+            <div style={{ textAlign: "center", minWidth: 40, flexShrink: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: BLUE, lineHeight: 1 }}>{shareOf(o.id)}%</div>
+              <div style={{ fontSize: 8.5, color: SILVER, fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>win</div>
+            </div>
+            {!locked && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onBet(market.id, o.id); }}
+                style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 9, padding: "7px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer", flexShrink: 0 }}
+              >
+                Predict
+              </button>
+            )}
+          </div>
+        ))}
+        {outcomes.length > VISIBLE && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            style={{ marginTop: 2, padding: "9px 0", background: "rgba(43,107,255,0.10)", border: "1px solid rgba(43,107,255,0.25)", borderRadius: 12, color: BLUE, fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+          >
+            {expanded ? "Show less" : `Show all ${outcomes.length} contenders`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SeasonTab({
   outrightMarkets,
   onOpen,
+  onBet,
 }: {
   outrightMarkets: Market[];
   onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -190,40 +291,10 @@ function SeasonTab({
             Season markets (e.g. “Who lifts the trophy?”) appear here once created.
           </EmptyState>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {outrightMarkets.map((m) => {
-              const pool = Number(m.totalPool) || 0;
-              return (
-                <div
-                  key={m.id}
-                  onClick={() => onOpen(m.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === "Enter" && onOpen(m.id)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 11,
-                    padding: "13px 14px",
-                    borderRadius: 14,
-                    cursor: "pointer",
-                    background: `linear-gradient(135deg, rgba(43,107,255,0.08) 0%, ${NAVY} 65%)`,
-                    border: "1px solid rgba(232,199,102,0.35)",
-                  }}
-                >
-                  <Trophy size={20} color={GOLD} style={{ flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {m.title}
-                    </div>
-                    <div style={{ fontSize: 11, color: SILVER, marginTop: 2 }}>
-                      {(m.outcomes ?? []).length} contenders · Nu {pool.toLocaleString()} pool
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: BLUE, flexShrink: 0 }}>Predict »</span>
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {outrightMarkets.map((m) => (
+              <UclSeasonMarket key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
+            ))}
           </div>
         )}
       </div>
@@ -1441,7 +1512,7 @@ export function UclHubPage() {
           </div>
 
           {tab === "season" && (
-            <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} />
+            <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} onBet={openBet} />
           )}
           {tab === "matches" && (
             <MatchesTab matches={matchMarkets} onOpen={openMarket} onBet={openBet} />
