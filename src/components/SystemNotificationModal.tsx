@@ -19,9 +19,18 @@ export const SystemNotificationModal: FC = () => {
     let cancelled = false;
     getMyNotifications()
       .then((list) => {
-        // Achievement badges have their own dedicated popup on the profile
-        // page, so this generic modal only handles the rest (e.g. prizes).
-        const shown = list.filter((n) => n.type !== "achievement");
+        // This generic modal only celebrates high-signal events (e.g. season
+        // prizes). Achievements have their own popup on the profile page, and
+        // market win/loss + transaction notifications are routine — they live
+        // in the notification center (bell) rather than interrupting with a
+        // popup. Excluded here means they stay unread in the center, not seen.
+        const POPUP_MUTED = new Set([
+          "achievement",
+          "market_won",
+          "market_lost",
+          "transaction",
+        ]);
+        const shown = list.filter((n) => !POPUP_MUTED.has(n.type));
         if (!cancelled && shown.length) setQueue(shown);
       })
       .catch(() => {});
