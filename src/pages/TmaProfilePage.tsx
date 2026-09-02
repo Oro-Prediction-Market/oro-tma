@@ -214,8 +214,10 @@ export const TmaProfilePage: FC = () => {
   const featuredBadges = featuredIds
     .map((id) => unlockedBadges.find((badge) => badge.id === id))
     .filter((badge): badge is CollectibleBadge => !!badge);
-  const profileBadges =
-    featuredBadges.length > 0 ? featuredBadges : unlockedBadges.slice(-3);
+  // Only what the user explicitly features — no auto-fallback — so the own
+  // profile matches what visitors see on the public profile (nothing until a
+  // collectible is picked).
+  const profileBadges = featuredBadges;
   const unlockedCount = unlockedBadges.length;
   const toggleFeatured = async (id: string) => { const next=featuredIds.includes(id)?featuredIds.filter(x=>x!==id):featuredIds.length<3?[...featuredIds,id]:featuredIds; if(next===featuredIds)return; setFeaturedIds(next); try{await setFeaturedAchievements(next)}catch{setFeaturedIds(featuredIds)} };
 
