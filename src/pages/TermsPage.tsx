@@ -28,6 +28,22 @@ const DEFINITIONS: { term: string; def: string }[] = [
     def: "BTN, stablecoins, or other blockchain-based assets ORO supports for deposits, withdrawals, or in-Platform use from time to time.",
   },
   {
+    term: "USDT",
+    def: "Tether (USDT), a US-dollar-denominated stablecoin issued by a third party unaffiliated with ORO, supported on the Platform as a Digital Asset for deposits, withdrawals, and participation in USDT-denominated Markets.",
+  },
+  {
+    term: "Supported Network",
+    def: "A blockchain network on which ORO accepts or sends USDT, as published on the Platform at the time of the transaction.",
+  },
+  {
+    term: "Deposit Address",
+    def: "A blockchain address issued to a User for a single deposit on a specified Supported Network, valid only for a limited period.",
+  },
+  {
+    term: "Whitelisted Address",
+    def: "A blockchain address a User has registered to their Account in advance and to which USDT withdrawals may be sent.",
+  },
+  {
     term: "Platform",
     def: "The ORO website, mobile applications, APIs, and related services.",
   },
@@ -65,7 +81,7 @@ const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   },
   {
     heading: "5. Account Registration & Identity Verification (KYC)",
-    body: 'You agree to provide accurate, current, and complete information during registration and to keep it up to date. ORO may require identity verification ("KYC"), source-of-funds information, and ongoing due diligence, consistent with our AML/CFT & KYC Policy, before permitting deposits, withdrawals, or participation in certain Markets. You are solely responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your Account — notify ORO immediately of any unauthorized use. One natural person or legal entity may hold only one Account, except where ORO expressly authorizes otherwise (see Section 8 on Prohibited Conduct).',
+    body: 'You agree to provide accurate, current, and complete information during registration and to keep it up to date. ORO may require identity verification ("KYC"), source-of-funds information, and ongoing due diligence, consistent with our AML/CFT & KYC Policy, before permitting deposits, withdrawals, or participation in certain Markets. You are solely responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your Account — notify ORO immediately of any unauthorized use. One natural person or legal entity may hold only one Account, except where ORO expressly authorizes otherwise (see Section 8 on Prohibited Conduct). Identity verification is a precondition of USDT use: no USDT deposit may be made until identity documents have been submitted and approved, and ORO may decline verification or suspend USDT functionality on an Account without being required to give reasons beyond those required by applicable law.',
   },
   {
     heading: "6. Platform Services",
@@ -85,7 +101,7 @@ const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   },
   {
     heading: "10. Fees & Wallets",
-    body: "ORO may charge fees for Market creation, trading, withdrawals, or other Services. Current fees are published on the Platform and may change with reasonable prior notice. ORO initially supports BTN as its native transactional unit. Support for additional Digital Assets or stablecoins will be governed by the Digital Asset Policy (Volume VIII) and does not require amendment of these Terms to take effect. Users are responsible for any taxes arising from their use of ORO.",
+    body: "ORO may charge fees for Market creation, trading, withdrawals, or other Services. Current fees are published on the Platform and may change with reasonable prior notice. ORO initially supports BTN as its native transactional unit. Support for additional Digital Assets or stablecoins will be governed by the Digital Asset Policy (Volume VIII) and does not require amendment of these Terms to take effect. USDT deposits must be sent as the USDT token on a Supported Network, to the Deposit Address issued for that deposit and within the validity period shown; a Deposit Address is single-use and must not be reused, and deposits credit only once the transaction confirms on the relevant network. Blockchain transfers are irreversible and cannot be recalled by ORO — assets sent on the wrong network, as the wrong token, or to an expired, reused, or unissued address may be permanently and unrecoverably lost, and ORO has no obligation to recover them. USDT withdrawals may be sent only to a Whitelisted Address on a Supported Network, and ORO may apply minimum amounts, holding periods, or additional verification, or decline or delay a withdrawal where required for compliance, security, or fraud prevention. Blockchain network fees are set by the relevant network rather than by ORO, are separate from any ORO fee, and are borne by the sending party. BTN and USDT balances are held and accounted for separately: ORO does not operate an exchange, does not convert between them, and publishes no exchange rate, so a position staked in one unit is resolved and settled in that same unit. Wallet balances are not deposits or interest-bearing accounts, and ORO offers no custody, staking, lending, or yield services in respect of any Digital Asset. Users are responsible for any taxes arising from their use of ORO.",
   },
   {
     heading: "11. Responsible Participation",
@@ -93,7 +109,7 @@ const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   },
   {
     heading: "12. Risk Disclosure",
-    body: "Participation in prediction markets involves risk of total loss of funds committed to a position. Past accuracy of consensus forecasts on ORO does not guarantee future accuracy. ORO does not provide investment, financial, legal, or tax advice — nothing on the Platform, including aggregated forecasts or AI-generated insights, should be treated as a recommendation to take any action. Digital Assets are volatile and subject to risks including price fluctuation, regulatory change, and technical failure; ORO is not responsible for losses arising from these risks.",
+    body: "Participation in prediction markets involves risk of total loss of funds committed to a position. Past accuracy of consensus forecasts on ORO does not guarantee future accuracy. ORO does not provide investment, financial, legal, or tax advice — nothing on the Platform, including aggregated forecasts or AI-generated insights, should be treated as a recommendation to take any action. Digital Assets are volatile and subject to risks including price fluctuation, regulatory change, and technical failure; ORO is not responsible for losses arising from these risks. USDT is issued and administered by a third party over which ORO has no control: a stablecoin may lose its peg to the US dollar, and its issuer may freeze or blacklist addresses, become unable or unwilling to honour redemptions, or cease operations. ORO does not insure, guarantee, or underwrite the value or redeemability of USDT. Blockchain transactions are irreversible and outside ORO's control once broadcast, and networks may congest, fork, halt, reorganise, or fail, delaying or preventing deposits and withdrawals. The regulatory treatment of stablecoins continues to evolve, and changes in law or in the requirements of ORO's partners may require ORO to restrict, suspend, or withdraw USDT functionality — including in a particular jurisdiction or for a particular User — with such notice as is reasonably practicable.",
   },
   {
     heading: "13. AI & Collective Intelligence",
@@ -117,7 +133,7 @@ const TERMS_SECTIONS: { heading: string; body?: string; table?: boolean }[] = [
   },
   {
     heading: "18. Limitation of Liability & Indemnification",
-    body: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, ORO WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, DATA, OR GOODWILL, ARISING FROM YOUR USE OF THE PLATFORM. ORO's aggregate liability arising from this Agreement will not exceed the greater of (a) the fees you paid to ORO in the twelve (12) months preceding the claim, or (b) the GMCA-equivalent minimum amount specified by applicable law, except where such limitation is unenforceable under mandatory law. You agree to indemnify and hold ORO harmless from claims, losses, or expenses (including reasonable legal fees) arising from your breach of this Agreement, your violation of law, or your Market participation.",
+    body: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, ORO WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR LOST PROFITS, DATA, OR GOODWILL, ARISING FROM YOUR USE OF THE PLATFORM. ORO's aggregate liability arising from this Agreement will not exceed the greater of (a) the fees you paid to ORO in the twelve (12) months preceding the claim, or (b) the GMCA-equivalent minimum amount specified by applicable law, except where such limitation is unenforceable under mandatory law. You are solely responsible for the accuracy of every address, network, and amount you enter or confirm, and ORO is not liable for any loss arising from a transfer you sent to an incorrect, mistyped, outdated, expired, or third-party address, sent on a network other than the one displayed, sent as a token other than USDT, or sent from or to a wallet you do not control — including where the error results from a typing mistake, a copy-and-paste failure, clipboard-altering malware, a phishing message, or an address supplied to you by any person other than ORO. Blockchain transactions are final on confirmation and cannot be reversed, cancelled, or redirected by ORO; ORO does not hold the receiving keys for any address other than its own, has no ability to recover assets that reached an address it does not control, and is under no obligation to attempt recovery, trace a transfer, or credit, reimburse, or replace the amount lost. Any assistance ORO chooses to offer in such a case is a courtesy, creates no obligation or admission of liability, and carries no guarantee of success. You agree to indemnify and hold ORO harmless from claims, losses, or expenses (including reasonable legal fees) arising from your breach of this Agreement, your violation of law, or your Market participation.",
   },
   {
     heading: "19. Governing Law & Dispute Resolution",
@@ -144,7 +160,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "2. Data We Collect",
-    body: "We collect Account and Identity Data (name, username, profile information, CID, platform identifiers, verification information), Contact Data (email address, phone number, support communications), Authentication and Security Data (login timestamps, access logs, session metadata, device metadata, fraud risk signals), Transaction and Wallet Data (top up and cash out records, prediction payments, winnings, refunds, balance events, payment references), and Participation Data (market entries, outcomes, prediction history).",
+    body: "We collect Account and Identity Data (name, username, profile information, CID, platform identifiers, verification information), Contact Data (email address, phone number, support communications), Authentication and Security Data (login timestamps, access logs, session metadata, device metadata, fraud risk signals), Transaction and Wallet Data (top up and cash out records, prediction payments, winnings, refunds, balance events, payment references), Participation Data (market entries, outcomes, prediction history), Digital Asset Data (deposit addresses issued to you, blockchain network, transaction hashes, on-chain amounts and confirmation status, and the withdrawal addresses you whitelist), and Identity Verification Data (document type, number, issuing country, document image, and the review decision, reviewer, and timestamp). We do not hold your private keys, seed phrase, or wallet credentials, and we never ask for them.",
   },
   {
     heading: "3. Sources of Data",
@@ -160,15 +176,15 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "6. Data Sharing and Disclosure",
-    body: "We may share personal data with banking/payment partners including DK Bank-related channels, identity and authentication partners, cloud hosting, analytics, security, messaging, and support vendors, and law enforcement, regulators, courts, and competent authorities where legally required. We do not sell personal data.",
+    body: "We may share personal data with banking/payment partners including DK Bank-related channels, identity and authentication partners, cloud hosting, analytics, security, messaging, and support vendors, our digital asset payment processor, which receives the data needed to issue deposit addresses, monitor incoming transfers, and send withdrawals to your whitelisted address, and law enforcement, regulators, courts, and competent authorities where legally required. USDT deposits and withdrawals are also recorded on public blockchain networks: addresses, amounts, and timestamps are visible to anyone, permanently, and cannot be edited or deleted by us or by you, so rights of correction and erasure apply to the data in our own systems and cannot be applied to on-chain records. We do not sell personal data.",
   },
   {
     heading: "7. Data Retention",
-    body: "We retain personal data for durations necessary to deliver services, fulfill legal, tax, audit, AML/CFT, and regulatory obligations, resolve disputes and enforce rights, and support fraud prevention investigations. Data no longer required is deleted, anonymized, or securely archived.",
+    body: "We retain personal data for durations necessary to deliver services, fulfill legal, tax, audit, AML/CFT, and regulatory obligations, resolve disputes and enforce rights, and support fraud prevention investigations. Identity verification documents are retained for the duration of the account plus five years to meet AML/CFT obligations, and are encrypted before storage. Data no longer required is deleted, anonymized, or securely archived, save for records already written to a public blockchain, which cannot be erased.",
   },
   {
     heading: "8. Security Controls",
-    body: "21Tech applies administrative, technical, and organizational safeguards including access controls, encryption where appropriate, audit logging, and incident-response practices. No system is absolutely secure. Users should also protect their credentials and devices.",
+    body: "21Tech applies administrative, technical, and organizational safeguards including access controls, encryption where appropriate, audit logging, and incident-response practices. Identity documents are encrypted before storage and are accessible only to authorised reviewers through audited internal tooling, and USDT withdrawals can only be sent to an address registered to the Account in advance, so a compromised session cannot redirect funds to an unknown address. No system is absolutely secure. Users should also protect their credentials and devices.",
   },
   {
     heading: "9. User Rights",
@@ -176,7 +192,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     heading: "10. Restrictions",
-    body: "Oro is not intended for persons which has no DK Bank Account. If person without DK Bank Account use is detected, 21Tech may suspend account access and take required compliance actions.",
+    body: "Oro is not intended for anyone under 18, or for any person in a jurisdiction where use of the Platform is unlawful. Access to funding methods differs by account type: BTN funding requires a DK Bank account, and USDT funding requires completed identity verification. Where an account is found to be using a funding method it is not eligible for, or is otherwise ineligible, 21Tech may suspend account access and take required compliance actions.",
   },
   {
     heading: "11. Policy Updates",
