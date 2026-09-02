@@ -318,6 +318,16 @@ function ContactSupportModal({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  // Slide the sheet up on mount; on close, slide it back down before unmounting.
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  const handleClose = () => {
+    setEntered(false);
+    window.setTimeout(onClose, 260);
+  };
 
   const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canSend =
@@ -363,12 +373,13 @@ function ContactSupportModal({ onClose }: { onClose: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1100,
-        background: "rgba(0,0,0,0.7)",
+        background: entered ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0)",
+        transition: "background 0.26s ease",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -378,6 +389,9 @@ function ContactSupportModal({ onClose }: { onClose: () => void }) {
           maxHeight: "88vh",
           overflowY: "auto",
           padding: "14px 16px calc(env(safe-area-inset-bottom) + 24px)",
+          transform: entered ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)",
+          willChange: "transform",
         }}
       >
         <div
@@ -401,7 +415,7 @@ function ContactSupportModal({ onClose }: { onClose: () => void }) {
             Contact Support
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: "var(--bg-secondary)",
               border: "none",
@@ -438,7 +452,7 @@ function ContactSupportModal({ onClose }: { onClose: () => void }) {
               Thanks — support will get back to you by email.
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 marginTop: 6,
                 width: "100%",
