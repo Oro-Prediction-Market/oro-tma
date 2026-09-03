@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Target, Trophy } from "lucide-react";
 import { Page } from "@/components/Page";
@@ -248,139 +248,61 @@ function Metric({
 }
 
 function SignatureCrest({ badges }: { badges: CollectibleBadge[] }) {
-  const [main, ...supporting] = badges;
-
   return (
     <section
       style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0,1fr) 104px",
-        gap: 16,
+        display: "flex",
         alignItems: "center",
+        gap: 10,
         marginTop: 18,
-        padding: 14,
-        borderRadius: 22,
+        padding: 10,
+        borderRadius: 16,
         border: "1px solid rgba(255,255,255,0.13)",
         background: "rgba(3,7,18,0.22)",
+        color: "#fff",
       }}
     >
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            color: "#fbbf24",
-            fontSize: 10,
-            fontWeight: 900,
-            textTransform: "uppercase",
-          }}
-        >
-          Signature badge
-        </div>
-        <h2 style={{ margin: "5px 0 0", fontSize: 18, lineHeight: 1.1 }}>
-          {main.name}
-        </h2>
-        <p
-          style={{
-            margin: "7px 0 0",
-            color: "rgba(255,255,255,0.66)",
-            fontSize: 11,
-            lineHeight: 1.35,
-          }}
-        >
-          {supporting.length > 0
-            ? `Backed by ${supporting.map((badge) => badge.name).join(" and ")}.`
-            : main.requirement}
-        </p>
-      </div>
-      <div style={{ position: "relative", width: 104, height: 112 }}>
-        {supporting.slice(0, 2).map((badge, index) => (
-          <BadgeFrame
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        {badges.slice(0, 3).map((badge) => (
+          <div
             key={badge.id}
-            badge={badge}
-            size={34}
             style={{
-              position: "absolute",
-              left: 2,
-              top: index === 0 ? 10 : undefined,
-              bottom: index === 1 ? 6 : undefined,
-              zIndex: 1,
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              background: badge.tint && !badge.img ? badge.tint : "var(--bg-secondary)",
+              border: `1.5px solid ${badge.legendary ? "rgba(255,215,0,0.8)" : "rgba(245,158,11,0.68)"}`,
+              boxShadow: badge.legendary ? "0 0 16px rgba(255,215,0,0.5)" : "0 0 8px rgba(245,158,11,0.18)",
             }}
-          />
+          >
+            {badge.img ? (
+              <img src={badge.img} alt={badge.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ) : (
+              badge.icon
+            )}
+            {(badge.count ?? 0) > 1 && (
+              <span style={{ position: "absolute", right: 1, top: 1, minWidth: 14, height: 14, padding: "0 3px", borderRadius: 7, background: "#111827", color: "#fbbf24", fontSize: 9, fontWeight: 900, lineHeight: "14px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>
+                ×{badge.count}
+              </span>
+            )}
+          </div>
         ))}
-        <BadgeFrame
-          badge={main}
-          size={86}
-          style={{ position: "absolute", right: 0, top: 8, zIndex: 2 }}
-        />
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.2 }}>
+          Featured collectibles
+        </div>
+        <div style={{ marginTop: 3, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.62)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {badges.slice(0, 3).map((badge) => badge.name).join(", ")}
+        </div>
       </div>
     </section>
   );
-}
-
-function BadgeFrame({
-  badge,
-  size,
-  style,
-}: {
-  badge: CollectibleBadge;
-  size: number;
-  style?: CSSProperties;
-}) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size > 60 ? 24 : 11,
-        padding: badge.tint && !badge.img ? 0 : size > 60 ? 7 : 3,
-        background:
-          badge.tint && !badge.img ? badge.tint : "#050812",
-        border: `1.5px solid ${badgeBorderColor(badge.id)}`,
-        boxShadow: "0 12px 26px rgba(0,0,0,0.32)",
-        display: "grid",
-        placeItems: "center",
-        overflow: "hidden",
-        ...style,
-      }}
-    >
-      {badge.img ? (
-        <img
-          src={badge.img}
-          alt={badge.name}
-          style={{ width: "100%", height: "100%", objectFit: "contain" }}
-        />
-      ) : (
-        badge.icon
-      )}
-      {(badge.count ?? 0) > 1 && (
-        <span
-          style={{
-            position: "absolute",
-            right: 3,
-            top: 3,
-            minWidth: size > 60 ? 18 : 13,
-            height: size > 60 ? 18 : 13,
-            padding: "0 3px",
-            borderRadius: 9,
-            background: "#111827",
-            color: "#fbbf24",
-            fontSize: size > 60 ? 11 : 8,
-            fontWeight: 900,
-            lineHeight: size > 60 ? "18px" : "13px",
-            textAlign: "center",
-            boxShadow: "0 1px 4px rgba(0,0,0,.5)",
-          }}
-        >
-          ×{badge.count}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function badgeBorderColor(id: string) {
-  if (id === "duel_on_fire") return "rgba(249,115,22,.78)";
-  if (id === "duel_oracle") return "rgba(155,92,255,.78)";
-  return "rgba(247,185,40,.68)";
 }
 
 function CompactStatCard({

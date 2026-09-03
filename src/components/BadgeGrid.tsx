@@ -46,6 +46,10 @@ import imgDuelOracle from "@shared/assets/collectibles/duelbadges/dueloracle.png
 // Season events (one badge per competition per season — new image + entry each year)
 import imgEplSeason from "@shared/assets/collectibles/eventbadges/premierleague-2026-27.png";
 import imgUclSeason from "@shared/assets/collectibles/eventbadges/championsleague-2026-27.png";
+// Monthly leaderboard podium
+import imgMonthlyChampion from "@shared/assets/collectibles/monthlypodiumbadges/monthly-champion.png";
+import imgMonthlyRunnerUp from "@shared/assets/collectibles/monthlypodiumbadges/monthly-runner-up.png";
+import imgMonthlyThird from "@shared/assets/collectibles/monthlypodiumbadges/monthly-third.png";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -437,6 +441,7 @@ export function buildBadges(
     // ── Monthly leaderboard podium (earned by finishing top-3 in a month) ──
     {
       id: "monthly_champion",
+      img: imgMonthlyChampion,
       icon: <Crown size={24} color="#7c4a03" fill="#fde68a" />,
       name: "Monthly Champion",
       requirement: "Finish #1 on the monthly leaderboard",
@@ -446,6 +451,7 @@ export function buildBadges(
     },
     {
       id: "monthly_runner_up",
+      img: imgMonthlyRunnerUp,
       icon: <Medal size={24} color="#475569" fill="#f1f5f9" />,
       name: "Monthly Runner-Up",
       requirement: "Finish #2 on the monthly leaderboard",
@@ -455,6 +461,7 @@ export function buildBadges(
     },
     {
       id: "monthly_third",
+      img: imgMonthlyThird,
       icon: <Medal size={24} color="#5b2c0d" fill="#f5cfa8" />,
       name: "Monthly Third",
       requirement: "Finish #3 on the monthly leaderboard",
