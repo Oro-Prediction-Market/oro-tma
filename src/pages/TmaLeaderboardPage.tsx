@@ -17,7 +17,7 @@ import {
   type Season,
   type Transaction,
 } from "@shared/api/client";
-import { BetShareCard } from "@shared/components/BetShareCard";
+import { ProfileShareCard } from "@/components/ProfileShareCard";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   Trophy,
@@ -1496,8 +1496,6 @@ export const TmaLeaderboardPage: FC = () => {
       .finally(() => setLoading(false));
   }, [selectedPeriod]);
 
-  const won = bets.filter((b) => b.status === "won");
-  const lost = bets.filter((b) => b.status === "lost");
   const winRate =
     (me?.totalPredictions ?? 0) > 0
       ? Math.round(
@@ -1515,6 +1513,8 @@ export const TmaLeaderboardPage: FC = () => {
   const userName = authUser?.username
     ? `@${authUser.username}`
     : (authUser?.firstName ?? "Predictor");
+  // The signed-in predictor, for the profile-style share & invite card.
+  const shareUser = me ?? authUser ?? null;
 
   if (loading) return <LoadingScreen message="Calculating standings…" />;
 
@@ -1859,7 +1859,8 @@ export const TmaLeaderboardPage: FC = () => {
         seasonHistory={seasonHistory}
       />
 
-      {/* ── Share record modal ── */}
+      {/* ── Share record modal — same profile-style share & invite card as
+             the Profile page's "Share your stats & invite friends". ── */}
       {showShareModal && (
         <div
           onClick={() => setShowShareModal(false)}
@@ -1867,9 +1868,9 @@ export const TmaLeaderboardPage: FC = () => {
             position: "fixed",
             inset: 0,
             zIndex: 2000,
-            background: "rgba(0,0,0,0.85)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
+            background: "rgba(0,0,0,0.88)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -1878,48 +1879,81 @@ export const TmaLeaderboardPage: FC = () => {
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: 560,
+              maxWidth: 520,
               position: "relative",
+              padding: 20,
+              borderRadius: 24,
+              background:
+                "linear-gradient(155deg, rgba(25,35,58,0.98) 0%, rgba(10,15,27,0.98) 100%)",
+              border: "1px solid rgba(148,163,184,0.2)",
+              boxShadow:
+                "0 28px 80px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.06)",
+              maxHeight: "calc(100dvh - 32px)",
+              overflowY: "auto",
               animation: "shareIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowShareModal(false)}
               style={{
                 position: "absolute",
-                top: -36,
-                right: 0,
-                background: "transparent",
-                border: "none",
-                color: "rgba(255,255,255,0.7)",
+                top: 14,
+                right: 14,
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 12,
+                width: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(255,255,255,0.8)",
                 cursor: "pointer",
-                padding: 6,
               }}
             >
-              <X size={22} />
+              <X size={16} />
             </button>
-            <BetShareCard
+            <div style={{ marginBottom: 18, paddingRight: 42 }}>
+              <div
+                style={{
+                  color: "#60a5fa",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: 1.2,
+                  marginBottom: 6,
+                }}
+              >
+                PROFILE CARD
+              </div>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: "#fff",
+                  marginBottom: 4,
+                }}
+              >
+                Share Your Profile
+              </div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.56)" }}>
+                Challenge friends with your prediction record
+              </div>
+            </div>
+            <ProfileShareCard
               userName={userName}
-              userPhotoUrl={authUser?.photoUrl ?? null}
-              marketTitle={`${won.length}W – ${lost.length}L record · ${winRate}% win rate`}
-              outcomePicked={
-                percentile
-                  ? percentile.text
-                  : `#${rankToShow ?? "?"} ranked predictor`
-              }
-              stakeAmount={undefined}
-              totalPool={undefined}
-              outcomeColor={
-                winRate >= 65
-                  ? "#22c55e"
-                  : winRate >= 50
-                    ? "#3b82f6"
-                    : "#f59e0b"
-              }
-              referralId={String(authUser?.telegramId ?? authUser?.id ?? "")}
+              avatarInitial={shareUser?.firstName ?? shareUser?.username ?? null}
+              userPhotoUrl={shareUser?.photoUrl ?? null}
+              userId={shareUser?.photoUrl ? shareUser?.id : undefined}
+              reputationTier={shareUser?.reputationTier ?? "rookie"}
+              reputationScore={Number(shareUser?.reputationScore ?? 0)}
+              totalPredictions={shareUser?.totalPredictions ?? 0}
+              correctPredictions={shareUser?.correctPredictions ?? 0}
+              referralId={String(
+                shareUser?.telegramId ?? shareUser?.id ?? "",
+              )}
             />
           </div>
         </div>
