@@ -852,29 +852,54 @@ function buildColumns(rounds: UclBracketRound[]): BracketCol[] {
   const r16 = byKey.r16 ?? [];
   const qf = byKey.qf ?? [];
   const sf = byKey.sf ?? [];
+  const final = byKey.final ?? [];
   const at = (arr: UclBracketMatch[], i: number): UclBracketMatch | undefined => arr[i];
 
-  const leaf = (matches: UclBracketMatch[]): BNode[] => {
+  // Every club that LOST a decided tie, by round — so a team dims in the exact
+  // column of the round it went out (a team can be bright in R16 and dull in
+  // the QF it then lost). Undecided ties leave both teams bright (still alive).
+  const lostIn = (matches: UclBracketMatch[]): Set<string> => {
+    const s = new Set<string>();
+    for (const m of matches) {
+      if (m.winner === "a" && m.b) s.add(m.b.name);
+      else if (m.winner === "b" && m.a) s.add(m.a.name);
+    }
+    return s;
+  };
+  const r16Lost = lostIn(r16);
+  const qfLost = lostIn(qf);
+  const sfLost = lostIn(sf);
+  const finalLost = lostIn(final);
+
+  const leaf = (matches: UclBracketMatch[], lost: Set<string>): BNode[] => {
     const nodes: BNode[] = [];
     for (const m of matches) {
-      nodes.push({ club: m.a, out: m.winner === "b" });
-      nodes.push({ club: m.b, out: m.winner === "a" });
+      nodes.push({ club: m.a, out: !!m.a && lost.has(m.a.name) });
+      nodes.push({ club: m.b, out: !!m.b && lost.has(m.b.name) });
     }
     return nodes;
   };
-  const wins = (matches: (UclBracketMatch | undefined)[]): BNode[] =>
-    matches.map((m) => ({ club: winnerTeam(m), out: false }));
+  // Winners of `matches` are the participants of the next round; a participant
+  // dims once it loses that round (its name is in `lost`).
+  const advancers = (
+    matches: (UclBracketMatch | undefined)[],
+    lost: Set<string>,
+  ): BNode[] =>
+    matches.map((m) => {
+      const club = winnerTeam(m);
+      return { club, out: !!club && lost.has(club.name) };
+    });
 
   return [
-    { key: "lR16", label: "R16", nodes: leaf(r16.slice(0, 4)) },
-    { key: "lQF", label: "QF", nodes: wins([at(r16, 0), at(r16, 1), at(r16, 2), at(r16, 3)]) },
-    { key: "lSF", label: "SF", nodes: wins([at(qf, 0), at(qf, 1)]) },
-    { key: "lF", label: "", nodes: wins([at(sf, 0)]) },
+    { key: "lR16", label: "R16", nodes: leaf(r16.slice(0, 4), r16Lost) },
+    { key: "lQF", label: "QF", nodes: advancers([at(r16, 0), at(r16, 1), at(r16, 2), at(r16, 3)], qfLost) },
+    { key: "lSF", label: "SF", nodes: advancers([at(qf, 0), at(qf, 1)], sfLost) },
+    { key: "lF", label: "", nodes: advancers([at(sf, 0)], finalLost) },
     { key: "center", label: "", center: true, nodes: [] },
-    { key: "rF", label: "", nodes: wins([at(sf, 1)]) },
-    { key: "rSF", label: "SF", nodes: wins([at(qf, 2), at(qf, 3)]) },
-    { key: "rQF", label: "QF", nodes: wins([at(r16, 4), at(r16, 5), at(r16, 6), at(r16, 7)]) },
-    { key: "rR16", label: "R16", nodes: leaf(r16.slice(4, 8)) },
+    { key: "rF", label: "", nodes: advancers([at(sf, 1)], finalLost) },
+    { key: "rSF", label: "SF", nodes: advancers([at(qf, 2), at(qf, 3)], sfLost) },
+    { key: "rQF", label: "QF", nodes: advancers([at(r16, 4), at(r16, 5), at(r16, 6), at(r16, 7)], qfLost) },
+    { key: "rR16", label: "R16", nodes: leaf(r16.slice(4, 8), r16Lost) },
   ];
 }
 
@@ -1060,92 +1085,8 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
       <div style={{ fontSize: 11, color: SILVER, marginTop: -6, marginBottom: 12 }}>
         {bracket.decided ? "The road to Munich" : "The road to Munich · swipe to explore"}
       </div>
-      {/* A Champions-League-night stage: deep navy, star field and a brighter
-          route to the final.  The tree itself remains entirely data-driven. */}
-      <div
-        style={{
-          position: "relative",
-          borderRadius: 20,
-          overflow: "hidden",
-          border: "1px solid rgba(91,138,255,0.42)",
-          background: "linear-gradient(145deg, #101f64 0%, #0a1543 40%, #050a21 100%)",
-          boxShadow: "0 22px 46px rgba(0,0,0,0.48), 0 0 0 1px rgba(16,35,104,0.55) inset, inset 0 1px 0 rgba(255,255,255,0.1)",
-        }}
-      >
-        {/* Competition lock-up */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            minHeight: 58,
-            padding: "12px 14px 10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            borderBottom: "1px solid rgba(129,164,255,0.18)",
-            background: "linear-gradient(90deg, rgba(12,29,92,0.94), rgba(9,20,61,0.74) 58%, rgba(17,31,86,0.9))",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-            <div
-              aria-hidden
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                display: "grid",
-                placeItems: "center",
-                color: "#fff",
-                background: "radial-gradient(circle at 35% 30%, #6c9cff, #173b9d 62%, #0a1749)",
-                border: "1px solid rgba(183,211,255,0.65)",
-                boxShadow: "0 0 16px rgba(59,113,255,0.55), inset 0 1px 3px rgba(255,255,255,0.5)",
-              }}
-            >
-              <Star size={15} fill="currentColor" />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: "#b9cdfd", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase" }}>
-                UEFA Champions League
-              </div>
-              <div style={{ color: "#fff", fontSize: 14, fontWeight: 900, letterSpacing: "0.03em", marginTop: 2 }}>
-                Knockout Stage
-              </div>
-            </div>
-          </div>
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ color: GOLD, fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase" }}>Road to the Final</div>
-            <div style={{ color: SILVER, fontSize: 9, fontWeight: 700, marginTop: 3 }}>Munich · 2027</div>
-          </div>
-        </div>
-        {/* faint grid */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            backgroundImage:
-              "radial-gradient(circle at 12% 18%, rgba(210,226,255,0.55) 0 1px, transparent 1.5px), radial-gradient(circle at 78% 30%, rgba(182,209,255,0.45) 0 1px, transparent 1.5px), radial-gradient(circle at 62% 76%, rgba(182,209,255,0.38) 0 1px, transparent 1.5px), linear-gradient(rgba(90,120,200,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(90,120,200,0.06) 1px, transparent 1px)",
-            backgroundSize: "136px 154px, 184px 171px, 211px 193px, 28px 28px, 28px 28px",
-            WebkitMaskImage: "radial-gradient(120% 100% at 50% 40%, #000 38%, transparent 82%)",
-            maskImage: "radial-gradient(120% 100% at 50% 40%, #000 38%, transparent 82%)",
-          }}
-        />
-        {/* light beam */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: "-25%",
-            left: "50%",
-            width: 300,
-            height: "150%",
-            transform: "translateX(-50%) rotate(8deg)",
-            pointerEvents: "none",
-            background: "radial-gradient(closest-side, rgba(43,107,255,0.16), transparent)",
-          }}
-        />
+      {/* Sits directly on the page — no framed panel/grid/lock-up, just a glow. */}
+      <div style={{ position: "relative" }}>
         {/* centre glow */}
         <div
           aria-hidden
@@ -1159,6 +1100,7 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
         />
         <div
           ref={scrollRef}
+          className="ucl-ko-scroll"
           style={{
             position: "relative",
             overflowX: "auto",
@@ -1284,7 +1226,7 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
                     <div style={{ height: KO_BODY_H, display: "flex", flexDirection: "column" }}>
                       {col.nodes.map((n, i) => (
                         <div key={i} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {medallion(n, `${ci}-${i}`, finalist)}
+                          {medallion(n, `${ci}-${i}`, finalist && !n.out)}
                         </div>
                       ))}
                     </div>

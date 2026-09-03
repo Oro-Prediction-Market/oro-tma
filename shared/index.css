@@ -112,6 +112,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* UCL knockout bracket: still scrolls sideways, but with no visible scrollbar. */
+.ucl-ko-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.ucl-ko-scroll::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
 body {
   background: var(--bg-main);
   color: var(--text-main);
