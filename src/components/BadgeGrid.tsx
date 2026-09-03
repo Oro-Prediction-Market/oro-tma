@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Target, Swords, Lock, CheckCircle2, Medal } from "lucide-react";
+import { Target, Swords, Lock, CheckCircle2, Medal, Crown } from "lucide-react";
 
 // ── Collectible badge images ──────────────────────────────────────────────────
 // Volume
@@ -58,6 +58,23 @@ export type CollectibleBadge = {
   requirement: string;
   unlocked: boolean;
   legendary?: boolean; // special styling for the impossible one
+  /** Times earned — renders a ×N badge when > 1 (e.g. multi-month podiums). */
+  count?: number;
+  /** Fills the icon bubble when a badge has no artwork yet (icon-only badges),
+   *  so it reads as a finished medallion rather than a bare icon on grey. */
+  tint?: string;
+};
+
+/**
+ * Monthly leaderboard podium tallies from the backend's `monthlyPodiumStats`:
+ * how many months the user finished #1 / #2 / #3. Powers the Monthly
+ * Champion/Runner-Up/Third collectibles — these can't be computed client-side
+ * from the user's own stats, so the backend persists and serves the counts.
+ */
+export type MonthlyPodiumStats = {
+  gold: number;
+  silver: number;
+  bronze: number;
 };
 
 /**
@@ -92,8 +109,14 @@ export function buildBadges(
   hasDK: boolean,
   referrals: number,
   season?: SeasonBadgeStats,
+  podiums?: MonthlyPodiumStats,
 ): CollectibleBadge[] {
   const acc = total > 0 ? correct / total : 0;
+
+  // Monthly leaderboard podium finishes (server-persisted, not stat-derived).
+  const golds = podiums?.gold ?? 0;
+  const silvers = podiums?.silver ?? 0;
+  const bronzes = podiums?.bronze ?? 0;
 
   // Season football badges (2026/27). Win-rate only counts settled predictions.
   const eplWinRate =
@@ -411,6 +434,34 @@ export function buildBadges(
         "Win 60%+ of 15+ Champions League predictions in the 2026/27 season",
       unlocked: uclSeasonUnlocked,
     },
+    // ── Monthly leaderboard podium (earned by finishing top-3 in a month) ──
+    {
+      id: "monthly_champion",
+      icon: <Crown size={24} color="#7c4a03" fill="#fde68a" />,
+      name: "Monthly Champion",
+      requirement: "Finish #1 on the monthly leaderboard",
+      unlocked: golds > 0,
+      count: golds,
+      tint: "radial-gradient(circle at 32% 28%, #fef3c7, #fbbf24 45%, #b45309)",
+    },
+    {
+      id: "monthly_runner_up",
+      icon: <Medal size={24} color="#475569" fill="#f1f5f9" />,
+      name: "Monthly Runner-Up",
+      requirement: "Finish #2 on the monthly leaderboard",
+      unlocked: silvers > 0,
+      count: silvers,
+      tint: "radial-gradient(circle at 32% 28%, #f8fafc, #cbd5e1 45%, #64748b)",
+    },
+    {
+      id: "monthly_third",
+      icon: <Medal size={24} color="#5b2c0d" fill="#f5cfa8" />,
+      name: "Monthly Third",
+      requirement: "Finish #3 on the monthly leaderboard",
+      unlocked: bronzes > 0,
+      count: bronzes,
+      tint: "radial-gradient(circle at 32% 28%, #f3d3b3, #d08b52 45%, #8a5327)",
+    },
   ];
 }
 
@@ -427,6 +478,8 @@ interface BadgeGridProps {
   referralCount?: number;
   /** Season EPL/UCL tallies from `seasonBadgeStats["2026-27"]` (season badges). */
   seasonStats?: SeasonBadgeStats;
+  /** Monthly leaderboard podium counts from `monthlyPodiumStats`. */
+  podiumStats?: MonthlyPodiumStats;
   featuredIds?: string[];
   onToggleFeatured?: (id: string) => void;
 }
@@ -440,6 +493,7 @@ export function BadgeGrid({
   hasDKBank,
   referralCount = 0,
   seasonStats,
+  podiumStats,
   featuredIds = [],
   onToggleFeatured,
 }: BadgeGridProps) {
@@ -452,6 +506,7 @@ export function BadgeGrid({
     hasDKBank,
     referralCount,
     seasonStats,
+    podiumStats,
   );
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;
@@ -575,7 +630,9 @@ export function BadgeGrid({
                     ? "linear-gradient(135deg, #f59e0b, #ef4444, #8b5cf6)"
                     : "linear-gradient(135deg, #374151, #1f2937)"
                   : b.unlocked
-                    ? "var(--bg-secondary)"
+                    ? b.tint && !b.img
+                      ? b.tint
+                      : "var(--bg-secondary)"
                     : "var(--bg-secondary)",
                 border: featuredIds.includes(b.id) ? "2px solid #fbbf24" : b.legendary
                   ? b.unlocked
@@ -627,6 +684,7 @@ export function BadgeGrid({
                 <Lock size={14} color="#6b7280" />
               )}
               {featuredIds.includes(b.id) && <span style={{ position: "absolute", right: 2, bottom: 2, width: 15, height: 15, borderRadius: "50%", background: "#fbbf24", color: "#111827", fontSize: 11, fontWeight: 900, lineHeight: "15px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>✓</span>}
+              {b.unlocked && (b.count ?? 0) > 1 && <span style={{ position: "absolute", right: 1, top: 1, minWidth: 15, height: 15, padding: "0 3px", borderRadius: 8, background: "#111827", color: "#fbbf24", fontSize: 10, fontWeight: 900, lineHeight: "15px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,.5)" }}>×{b.count}</span>}
             </div>
 
             {/* Name — always readable, not faded out */}

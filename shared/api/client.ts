@@ -261,6 +261,9 @@ export interface AuthUser {
     string,
     { eplSettled: number; eplWins: number; uclSettled: number; uclWins: number }
   >;
+  // Monthly leaderboard podium counts (#1/#2/#3 finishes) for the Monthly
+  // Champion/Runner-Up/Third collectibles. Server-persisted, not stat-derived.
+  monthlyPodiumStats?: { gold: number; silver: number; bronze: number };
 }
 
 export interface AuthResponse {
@@ -821,6 +824,7 @@ export interface PublicProfile {
     string,
     { eplSettled: number; eplWins: number; uclSettled: number; uclWins: number }
   >;
+  monthlyPodiumStats?: { gold: number; silver: number; bronze: number };
   recentCalls?: Array<{ id: string; marketTitle: string; outcomeLabel: string; status: "won" | "lost" | "refunded"; payout: number | null; placedAt: string }>;
 }
 export function getPublicProfile(id: string): Promise<PublicProfile> {

@@ -80,6 +80,7 @@ export const TmaProfilePage: FC = () => {
           !!u.dkCid,
           u.referralCount ?? 0,
           u.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
+          u.monthlyPodiumStats,
         );
         const unlocked = currentBadges.filter((b) => b.unlocked);
 
@@ -209,8 +210,9 @@ export const TmaProfilePage: FC = () => {
     !!user?.dkCid,
     user?.referralCount ?? 0,
     user?.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
+    user?.monthlyPodiumStats,
   );
- 
+
   const unlockedBadges = badges.filter((b) => b.unlocked);
   const featuredBadges = featuredIds
     .map((id) => unlockedBadges.find((badge) => badge.id === id))
@@ -1147,6 +1149,7 @@ export const TmaProfilePage: FC = () => {
                 hasDKBank={!!user?.dkCid}
                 referralCount={user?.referralCount ?? 0}
                 seasonStats={user?.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON]}
+                podiumStats={user?.monthlyPodiumStats}
                 featuredIds={featuredIds}
                 onToggleFeatured={toggleFeatured}
               />
@@ -1528,7 +1531,9 @@ function ProfileBadgeDock({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "var(--bg-secondary)",
+              position: "relative",
+              background:
+                badge.tint && !badge.img ? badge.tint : "var(--bg-secondary)",
               border: `1.5px solid ${
                 badge.legendary
                   ? "rgba(255,215,0,0.8)"
@@ -1561,6 +1566,28 @@ function ProfileBadgeDock({
               >
                 {badge.icon}
               </div>
+            )}
+            {(badge.count ?? 0) > 1 && (
+              <span
+                style={{
+                  position: "absolute",
+                  right: 1,
+                  top: 1,
+                  minWidth: 14,
+                  height: 14,
+                  padding: "0 3px",
+                  borderRadius: 7,
+                  background: "#111827",
+                  color: "#fbbf24",
+                  fontSize: 9,
+                  fontWeight: 900,
+                  lineHeight: "14px",
+                  textAlign: "center",
+                  boxShadow: "0 1px 4px rgba(0,0,0,.5)",
+                }}
+              >
+                ×{badge.count}
+              </span>
             )}
           </div>
         ))}

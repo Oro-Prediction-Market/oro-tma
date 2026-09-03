@@ -160,6 +160,7 @@ function getFeaturedBadges(profile: PublicProfile) {
     false,
     0,
     profile.seasonBadgeStats?.[CURRENT_FOOTBALL_SEASON],
+    profile.monthlyPodiumStats,
   ).filter((badge) => featuredIds.includes(badge.id));
 
   const priority = ["duel_oracle", "duel_master", "duel_on_fire"];
@@ -330,8 +331,9 @@ function BadgeFrame({
         width: size,
         height: size,
         borderRadius: size > 60 ? 24 : 11,
-        padding: size > 60 ? 7 : 3,
-        background: "#050812",
+        padding: badge.tint && !badge.img ? 0 : size > 60 ? 7 : 3,
+        background:
+          badge.tint && !badge.img ? badge.tint : "#050812",
         border: `1.5px solid ${badgeBorderColor(badge.id)}`,
         boxShadow: "0 12px 26px rgba(0,0,0,0.32)",
         display: "grid",
@@ -348,6 +350,28 @@ function BadgeFrame({
         />
       ) : (
         badge.icon
+      )}
+      {(badge.count ?? 0) > 1 && (
+        <span
+          style={{
+            position: "absolute",
+            right: 3,
+            top: 3,
+            minWidth: size > 60 ? 18 : 13,
+            height: size > 60 ? 18 : 13,
+            padding: "0 3px",
+            borderRadius: 9,
+            background: "#111827",
+            color: "#fbbf24",
+            fontSize: size > 60 ? 11 : 8,
+            fontWeight: 900,
+            lineHeight: size > 60 ? "18px" : "13px",
+            textAlign: "center",
+            boxShadow: "0 1px 4px rgba(0,0,0,.5)",
+          }}
+        >
+          ×{badge.count}
+        </span>
       )}
     </div>
   );
