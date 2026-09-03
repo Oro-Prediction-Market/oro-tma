@@ -50,6 +50,28 @@ export function avatarUrl(userId: string): string {
   return `${API_URL}/users/avatar/${encodeURIComponent(userId)}`;
 }
 
+/**
+ * `onError` for an avatar <img> whose `src` is the user's stored `photoUrl`.
+ *
+ * Stored photo URLs go stale — a Telegram Bot API file link dies after ~1hr and
+ * is only refreshed at login, which a long Mini App session never reaches — so
+ * a dead link would otherwise paint a broken-image icon. On failure we retry
+ * once through {@link avatarUrl}, which re-resolves the photo server-side and
+ * always answers with an image (falling back to generated initials).
+ *
+ * Deliberately a fallback rather than the primary `src`: pointing every avatar
+ * at our own backend puts a healthy photo behind an extra hop and makes ONE
+ * endpoint the single point of failure for every avatar in the app.
+ */
+export function avatarFallback(userId: string) {
+  return (event: { currentTarget: HTMLImageElement }) => {
+    const img = event.currentTarget;
+    if (img.dataset.avatarRetried) return; // proxy failed too — stop, no loop
+    img.dataset.avatarRetried = "1";
+    img.src = avatarUrl(userId);
+  };
+}
+
 // ─── In-app notifications ─────────────────────────────────────────────────────
 
 export interface UserNotification {
