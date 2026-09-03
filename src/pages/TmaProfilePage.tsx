@@ -1516,17 +1516,25 @@ function ProfileBadgeDock({
           <div
             key={badge.id}
             style={{
-              width: 38,
-              height: 38,
+              // Mirror the Collectibles modal's icon bubble so featured badges
+              // look identical inside and outside: cover-fit art, no padding,
+              // matching bubble background and amber glow.
+              width: 40,
+              height: 40,
               borderRadius: 12,
-              padding: 3,
-              background: "#050812",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "var(--bg-secondary)",
               border: `1.5px solid ${
                 badge.legendary
                   ? "rgba(255,215,0,0.8)"
                   : "rgba(245,158,11,0.68)"
               }`,
-              boxShadow: "0 8px 18px rgba(0,0,0,0.28)",
+              boxShadow: badge.legendary
+                ? "0 0 16px rgba(255,215,0,0.5)"
+                : "0 0 8px rgba(245,158,11,0.18)",
               flexShrink: 0,
             }}
           >
@@ -1537,7 +1545,7 @@ function ProfileBadgeDock({
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
+                  objectFit: "cover",
                   display: "block",
                 }}
               />
