@@ -9,6 +9,7 @@ import {
   getCurrentSeason,
   getSeasonHistory,
   getMyTransactions,
+  avatarUrl,
   type LeaderboardEntry,
   type LeaderboardResponse,
   type Bet,
@@ -236,7 +237,7 @@ function TableRow({
       >
         {entry.photoUrl ? (
           <img
-            src={entry.photoUrl}
+            src={avatarUrl(entry.id)}
             alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
@@ -1307,7 +1308,7 @@ function PinnedSelfRow({
       >
         {entry.photoUrl ? (
           <img
-            src={entry.photoUrl}
+            src={avatarUrl(entry.id)}
             alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
