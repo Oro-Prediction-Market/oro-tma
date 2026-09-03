@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Target, Trophy } from "lucide-react";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { getPublicProfile, avatarUrl, type PublicProfile } from "@shared/api/client";
+import { getPublicProfile, avatarFallback, type PublicProfile } from "@shared/api/client";
 import {
   buildBadges,
   CURRENT_FOOTBALL_SEASON,
@@ -78,7 +78,8 @@ export function TmaPublicProfilePage() {
             >
               {profile.photoUrl ? (
                 <img
-                  src={avatarUrl(profile.id)}
+                  src={profile.photoUrl}
+                  onError={avatarFallback(profile.id)}
                   alt=""
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />

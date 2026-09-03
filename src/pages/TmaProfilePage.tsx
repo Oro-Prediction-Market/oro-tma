@@ -9,7 +9,7 @@ import {
   syncAchievements,
   getMyNotifications,
   markNotificationsSeen,
-  avatarUrl,
+  avatarFallback,
   AuthUser,
   type Bet,
   type ReferralStats,
@@ -378,7 +378,8 @@ export const TmaProfilePage: FC = () => {
             <div style={{ position: "relative", flexShrink: 0 }}>
               {user?.photoUrl ? (
                 <img
-                  src={avatarUrl(user.id)}
+                  src={user.photoUrl}
+                  onError={avatarFallback(user.id)}
                   alt="avatar"
                   style={{
                     width: 60,
