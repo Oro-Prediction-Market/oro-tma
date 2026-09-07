@@ -655,8 +655,11 @@ function OpenPicksStrip({
             if (totalPool > 0) {
               currentPct =
                 (Number(liveOutcome.totalBetAmount) / totalPool) * 100;
-            } else if (liveOutcome.lmsrProbability != null) {
-              currentPct = liveOutcome.lmsrProbability * 100;
+            } else if (Number(liveOutcome.lmsrProbability) > 0) {
+              // `> 0`, not `!= null`: the column is NOT NULL DEFAULT 0 and the
+              // BTC/TER services never set it, so an unseeded outcome arrives
+              // as 0 and would render a confident "0%" instead of nothing.
+              currentPct = Number(liveOutcome.lmsrProbability) * 100;
             }
           }
 

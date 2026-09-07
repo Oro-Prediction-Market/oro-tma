@@ -192,8 +192,18 @@ export const PriceMarketDetail: FC<Props> = ({
   if (stakedPool > 0) {
     upProb = upStakeAmt / stakedPool;
   } else {
-    const upRaw = up?.lmsrProbability;
-    const downRaw = down?.lmsrProbability;
+    // `lmsrProbability` is NOT NULL DEFAULT 0, and the BTC/TER market services
+    // create their outcomes without setting it — so "no data" arrives as 0,
+    // not null, and `??` sails straight past it. That rendered every untouched
+    // BTC/TER market as 0% up / 100% down. A genuine two-outcome LMSR value is
+    // never 0 (an untouched book is 0.5/0.5), so treat any non-positive value
+    // as absent and fall back to an even split.
+    const lmsrOf = (o: (typeof outs)[number] | undefined) => {
+      const v = Number(o?.lmsrProbability);
+      return Number.isFinite(v) && v > 0 ? v : null;
+    };
+    const upRaw = lmsrOf(up);
+    const downRaw = lmsrOf(down);
     upProb = upRaw ?? (downRaw != null ? 1 - downRaw : 0.5);
   }
   if (!(upProb >= 0 && upProb <= 1)) upProb = 0.5;
