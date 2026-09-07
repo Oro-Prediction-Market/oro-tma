@@ -114,7 +114,7 @@ function StreakBadge({ count }: { count?: number }) {
 
 // ── Table helpers ─────────────────────────────────────────────────────────────
 
-const COL = "32px 26px 1fr 46px 54px 64px";
+const COL = "32px 26px 1fr 34px 48px 48px 44px";
 
 function fmtVol(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -135,7 +135,7 @@ function TableHeader() {
       style={{
         display: "grid",
         gridTemplateColumns: COL,
-        gap: 6,
+        gap: 4,
         padding: "8px 14px 8px",
         borderBottom: "1px solid var(--glass-border)",
         alignItems: "center",
@@ -146,6 +146,7 @@ function TableHeader() {
       <div style={cell}>User</div>
       <div style={{ ...cell, textAlign: "right" }}>Picks</div>
       <div style={{ ...cell, textAlign: "right" }}>Win %</div>
+      <div style={{ ...cell, textAlign: "right" }}>Insight</div>
       <div style={{ ...cell, textAlign: "right" }}>Vol</div>
     </div>
   );
@@ -185,7 +186,7 @@ function TableRow({
       style={{
         display: "grid",
         gridTemplateColumns: COL,
-        gap: 6,
+        gap: 4,
         padding: "9px 14px",
         alignItems: "center",
         borderBottom: "1px solid var(--glass-border)",
@@ -332,6 +333,25 @@ function TableRow({
           }}
         >
           {entry.winRate}%
+        </span>
+      </div>
+
+      {/* Insight Score — the value the board is actually ranked by, so it is
+          the one column that explains the ordering. Career-wide on both tabs,
+          unlike Win % which is window-scoped on the weekly tab. Null until a
+          user has a settled prediction. */}
+      <div style={{ textAlign: "right" }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: "var(--text-main)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {entry.reputationScore != null
+            ? Math.round(entry.reputationScore * 100)
+            : "—"}
         </span>
       </div>
 
