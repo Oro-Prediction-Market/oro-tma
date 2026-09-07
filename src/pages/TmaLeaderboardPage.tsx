@@ -19,13 +19,13 @@ import {
 } from "@shared/api/client";
 import { ProfileShareCard } from "@/components/ProfileShareCard";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
+import { tierLabel, tierColor, tierIcon } from "@shared/reputation/tiers";
+import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
 import {
   Trophy,
   Flame,
   TrendingUp,
   Share2,
-  Crosshair,
-  Sprout,
   Medal,
   Award,
   X,
@@ -43,32 +43,9 @@ import {
 
 // ── Tier helpers ──────────────────────────────────────────────────────────────
 
-function tierLabel(tier: string) {
-  return tier === "legend"
-    ? "Legend"
-    : tier === "hot_hand"
-      ? "Hot Hand"
-      : tier === "sharpshooter"
-        ? "Sharpshooter"
-        : "Rookie";
-}
-
-function tierColor(tier: string) {
-  return tier === "legend"
-    ? "#f59e0b"
-    : tier === "hot_hand"
-      ? "#22c55e"
-      : tier === "sharpshooter"
-        ? "#3b82f6"
-        : "#94a3b8";
-}
-
-function tierIcon(tier: string, size = 12) {
-  if (tier === "legend") return <Trophy size={size} color="#f59e0b" />;
-  if (tier === "hot_hand") return <Flame size={size} color="#22c55e" />;
-  if (tier === "sharpshooter") return <Crosshair size={size} color="#3b82f6" />;
-  return <Sprout size={size} color="#94a3b8" />;
-}
+// tierLabel / tierColor / tierIcon now come from @shared/reputation/tiers —
+// they were duplicated across four screens, which is how the ladder drifted
+// out of sync between them.
 
 function rankMedal(rank: number) {
   if (rank === 1) return <Trophy size={18} color="#f59e0b" />;
@@ -414,55 +391,11 @@ function MyStatsSheet({
   const correct = me?.correctPredictions ?? 0;
   const acc = total > 0 ? correct / total : 0;
 
-  type ProgressInfo = {
-    label: string;
-    nextColor: string;
-    progress: number;
-    hint: string;
-  } | null;
-  let tierProgress: ProgressInfo = null;
-  if (tier === "rookie") {
-    const left = Math.max(10 - total, 0);
-    tierProgress = {
-      label: "Rookie → Sharpshooter",
-      nextColor: "#3b82f6",
-      progress: Math.min(total / 10, 1),
-      hint:
-        left > 0 ? `${left} more picks to reach Sharpshooter` : "Almost there!",
-    };
-  } else if (tier === "sharpshooter") {
-    const predLeft = Math.max(50 - total, 0);
-    tierProgress = {
-      label: "Sharpshooter → Hot Hand",
-      nextColor: "#10b981",
-      progress: Math.min(
-        (Math.min(total / 50, 1) + Math.min(acc / 0.65, 1)) / 2,
-        1,
-      ),
-      hint:
-        predLeft > 0
-          ? `${predLeft} more picks · aim for 65%+ accuracy`
-          : acc < 0.65
-            ? `${Math.round((0.65 - acc) * 100)}% more accuracy`
-            : "Keep it up!",
-    };
-  } else if (tier === "hot_hand") {
-    const predLeft = Math.max(100 - total, 0);
-    tierProgress = {
-      label: "Hot Hand → Legend",
-      nextColor: "#f59e0b",
-      progress: Math.min(
-        (Math.min(total / 100, 1) + Math.min(acc / 0.75, 1)) / 2,
-        1,
-      ),
-      hint:
-        predLeft > 0
-          ? `${predLeft} more picks · aim for 75%+ accuracy`
-          : acc < 0.75
-            ? `${Math.round((0.75 - acc) * 100)}% more accuracy`
-            : "So close to Legend!",
-    };
-  }
+  // Requirements come from the shared ladder, so these hints can never quote a
+  // threshold the backend has stopped using — they were previously hardcoded
+  // here and on the profile page, against the old four-rung ladder.
+  const tierProgress = tierProgressFor(tier, total, acc);
+
 
   const recentSettled = bets.filter((b) => b.status !== "pending").slice(0, 6);
 

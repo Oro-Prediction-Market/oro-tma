@@ -17,6 +17,8 @@ import {
 import { Page } from "@/components/Page";
 import { StreakBenefitsModal } from "@/components/StreakBenefitsModal";
 import { ProfileShareCard } from "@/components/ProfileShareCard";
+import { tierChip } from "@shared/reputation/tiers";
+import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   BadgeGrid,
@@ -27,8 +29,6 @@ import {
 import {
   Trophy,
   Flame,
-  Swords,
-  Sprout,
   Settings,
   UserPlus,
   Medal,
@@ -136,48 +136,15 @@ export const TmaProfilePage: FC = () => {
   if (loading) return <LoadingScreen message="Loading profile…" />;
 
   const tier = user?.reputationTier ?? "rookie";
-  const tierLabel =
-    tier === "legend"
-      ? "Legend"
-      : tier === "hot_hand"
-        ? "Hot Hand"
-        : tier === "sharpshooter"
-          ? "Sharpshooter"
-          : "Rookie";
-  const tierBg =
-    tier === "legend"
-      ? "rgba(245,158,11,0.25)"
-      : tier === "hot_hand"
-        ? "rgba(16,185,129,0.25)"
-        : tier === "sharpshooter"
-          ? "rgba(59,130,246,0.25)"
-          : "rgba(255,255,255,0.12)";
-  const tierColor =
-    tier === "legend"
-      ? "#fbbf24"
-      : tier === "hot_hand"
-        ? "#6ee7b7"
-        : tier === "sharpshooter"
-          ? "#93c5fd"
-          : "rgba(255,255,255,0.6)";
-  const tierBorder =
-    tier === "legend"
-      ? "rgba(245,158,11,0.4)"
-      : tier === "hot_hand"
-        ? "rgba(16,185,129,0.4)"
-        : tier === "sharpshooter"
-          ? "rgba(59,130,246,0.4)"
-          : "rgba(255,255,255,0.2)";
-  const tierIcon =
-    tier === "legend" ? (
-      <Trophy size={11} />
-    ) : tier === "hot_hand" ? (
-      <Flame size={11} />
-    ) : tier === "sharpshooter" ? (
-      <Swords size={11} />
-    ) : (
-      <Sprout size={11} />
-    );
+  // Label, colour and the translucent fill/border all derive from one shared
+  // table, so a new rung on the ladder is styled automatically rather than
+  // silently falling through to the Rookie grey.
+  const chip = tierChip(tier);
+  const tierLabel = chip.label;
+  const tierBg = chip.bg;
+  const tierColor = chip.color;
+  const tierBorder = chip.border;
+  const tierIcon = <chip.Icon size={11} />;
 
   const badgeColor =
     user?.contrarianBadge === "gold"
@@ -224,55 +191,11 @@ export const TmaProfilePage: FC = () => {
   const unlockedCount = unlockedBadges.length;
   const toggleFeatured = async (id: string) => { const next=featuredIds.includes(id)?featuredIds.filter(x=>x!==id):featuredIds.length<3?[...featuredIds,id]:featuredIds; if(next===featuredIds)return; setFeaturedIds(next); try{await setFeaturedAchievements(next)}catch{setFeaturedIds(featuredIds)} };
 
-  type TierProgress = {
-    label: string;
-    nextColor: string;
-    progress: number;
-    hint: string;
-  } | null;
-  let tierProgress: TierProgress = null;
-  if (tier === "rookie") {
-    const left = Math.max(10 - total, 0);
-    tierProgress = {
-      label: "Rookie → Sharpshooter",
-      nextColor: "#3b82f6",
-      progress: Math.min(total / 10, 1),
-      hint:
-        left > 0 ? `${left} more picks to reach Sharpshooter` : "Almost there!",
-    };
-  } else if (tier === "sharpshooter") {
-    const left = Math.max(50 - total, 0);
-    tierProgress = {
-      label: "Sharpshooter → Hot Hand",
-      nextColor: "#10b981",
-      progress: Math.min(
-        (Math.min(total / 50, 1) + Math.min(acc / 0.65, 1)) / 2,
-        1,
-      ),
-      hint:
-        left > 0
-          ? `${left} more picks · aim for 65%+ accuracy`
-          : acc < 0.65
-            ? `${Math.round((0.65 - acc) * 100)}% more accuracy needed`
-            : "Keep it up!",
-    };
-  } else if (tier === "hot_hand") {
-    const left = Math.max(100 - total, 0);
-    tierProgress = {
-      label: "Hot Hand → Legend",
-      nextColor: "#f59e0b",
-      progress: Math.min(
-        (Math.min(total / 100, 1) + Math.min(acc / 0.75, 1)) / 2,
-        1,
-      ),
-      hint:
-        left > 0
-          ? `${left} more picks · aim for 75%+ accuracy`
-          : acc < 0.75
-            ? `${Math.round((0.75 - acc) * 100)}% more accuracy needed`
-            : "So close to Legend!",
-    };
-  }
+  // Requirements come from the shared ladder, so these hints can never quote a
+  // threshold the backend has stopped using — they were previously hardcoded
+  // here and in the leaderboard, against the old four-rung ladder.
+  const tierProgress = tierProgressFor(tier, total, acc);
+
 
   const closePopup = () => {
     if (newlyUnlockedQueue.length > 0) {

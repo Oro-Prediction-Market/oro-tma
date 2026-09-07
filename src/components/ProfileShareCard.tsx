@@ -1,6 +1,7 @@
 import { FC, useRef, useEffect, useState } from "react";
 import { Share2, Download } from "lucide-react";
 import { avatarUrl } from "@shared/api/client";
+import { tierLabel } from "@shared/reputation/tiers";
 
 interface ProfileShareCardProps {
   userName: string;
@@ -22,25 +23,26 @@ const CARD_H = 400;
 // Render at 2x so the exported PNG is crisp on retina screens and when re-shared.
 const SCALE = 2;
 
-function tierLabel(tier: string): string {
-  if (tier === "legend") return "Legend";
-  if (tier === "hot_hand") return "Hot Hand";
-  if (tier === "sharpshooter") return "Sharpshooter";
-  return "Rookie";
-}
-
 // Primary + secondary accent per tier — the secondary gives gradients depth.
+// Deliberately its own palette, warmer and higher-contrast than the in-app
+// badge colours in @shared/reputation/tiers: this is rendered to a canvas and
+// shared outside the app, where the UI's muted tones wash out. Only the labels
+// are shared, so a renamed tier can never disagree between here and the app.
+const TIER_GRADIENT: Record<string, [string, string]> = {
+  legend: ["#f5a623", "#fcd34d"],
+  prophet: ["#ec4899", "#f9a8d4"],
+  hot_hand: ["#10b981", "#34d399"],
+  analyst: ["#a78bfa", "#ddd6fe"],
+  sharpshooter: ["#3b82f6", "#60a5fa"],
+  scout: ["#14b8a6", "#5eead4"],
+  rookie: ["#818cf8", "#c4b5fd"], // a cool indigo instead of flat grey
+};
+
 function tierColor(tier: string): string {
-  if (tier === "legend") return "#f5a623";
-  if (tier === "hot_hand") return "#10b981";
-  if (tier === "sharpshooter") return "#3b82f6";
-  return "#818cf8"; // rookie — a cool indigo instead of flat grey
+  return (TIER_GRADIENT[tier] ?? TIER_GRADIENT.rookie)[0];
 }
 function tierColor2(tier: string): string {
-  if (tier === "legend") return "#fcd34d";
-  if (tier === "hot_hand") return "#34d399";
-  if (tier === "sharpshooter") return "#60a5fa";
-  return "#c4b5fd";
+  return (TIER_GRADIENT[tier] ?? TIER_GRADIENT.rookie)[1];
 }
 
 async function renderProfileCard(

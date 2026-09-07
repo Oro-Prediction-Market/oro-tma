@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Target, Swords, Lock, CheckCircle2, Medal, Crown } from "lucide-react";
+import { tierAtLeast } from "@shared/reputation/tiers";
 
 // ── Collectible badge images ──────────────────────────────────────────────────
 // Volume
@@ -283,7 +284,7 @@ export function buildBadges(
       icon: <Swords size={18} color="#3b82f6" />,
       name: "Sharpshooter",
       requirement: "Reach Sharpshooter tier",
-      unlocked: ["sharpshooter", "hot_hand", "legend"].includes(tier),
+      unlocked: tierAtLeast(tier, "sharpshooter"),
     },
     {
       id: "hot_hand",
@@ -291,7 +292,7 @@ export function buildBadges(
       icon: <Target size={18} color="#ef4444" />,
       name: "Hot Hand",
       requirement: "Reach Hot Hand tier",
-      unlocked: ["hot_hand", "legend"].includes(tier),
+      unlocked: tierAtLeast(tier, "hot_hand"),
     },
     {
       id: "legend",
@@ -299,7 +300,7 @@ export function buildBadges(
       icon: <Target size={18} color="#f59e0b" />,
       name: "Legend",
       requirement: "Reach Legend tier",
-      unlocked: tier === "legend",
+      unlocked: tierAtLeast(tier, "legend"),
     },
     // ── Profile ──
     {
