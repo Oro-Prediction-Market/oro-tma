@@ -1300,6 +1300,10 @@ export interface MarketCommentView {
   parentId: string | null;
   /** Live replies under this comment. Always 0 on a reply — depth is capped at 1. */
   replyCount: number;
+  /** Hearts on this comment. */
+  likeCount: number;
+  /** Whether you are one of them. False when signed out. */
+  hasLiked: boolean;
   /** True once the author has rewritten it. */
   edited: boolean;
   /**
@@ -1358,6 +1362,16 @@ export function deleteMarketComment(
   commentId: string,
 ): Promise<{ ok: true }> {
   return request(`/comments/${commentId}`, { method: "DELETE" });
+}
+
+/**
+ * Toggle your like. One endpoint rather than a like/unlike pair, so a double
+ * tap cannot leave the client and the server disagreeing about the state.
+ */
+export function likeMarketComment(
+  commentId: string,
+): Promise<{ liked: boolean; likeCount: number }> {
+  return request(`/comments/${commentId}/like`, { method: "POST" });
 }
 
 /** Rewrite your own comment. Only succeeds inside the edit window. */

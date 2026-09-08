@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  Heart,
   MessageSquare,
   MoreHorizontal,
   ShieldAlert,
@@ -13,6 +14,7 @@ import {
   flagMarketComment,
   getCommentReplies,
   getMarketComments,
+  likeMarketComment,
   postMarketComment,
   type CommentFlagReason,
   type MarketCommentView,
@@ -314,6 +316,53 @@ export default function MarketComments({
     [],
   );
 
+  /**
+   * Toggle a like, optimistically.
+   *
+   * The heart has to move on the tap — a spinner on a like is worse than a
+   * wrong count for 200ms. On failure it goes back exactly where it was,
+   * rather than being recomputed, so a stale server count cannot fight the
+   * rollback. On success the server's own count replaces the guess, which is
+   * what corrects the drift when someone else liked it at the same time.
+   */
+  const toggleLike = useCallback(
+    async (id: string, parentId: string | null) => {
+      const patch = (
+        fn: (c: MarketCommentView) => MarketCommentView,
+      ) => {
+        if (parentId) {
+          setReplies((prev) => ({
+            ...prev,
+            [parentId]: (prev[parentId] ?? []).map((r) =>
+              r.id === id ? fn(r) : r,
+            ),
+          }));
+        } else {
+          setComments((prev) => prev.map((c) => (c.id === id ? fn(c) : c)));
+        }
+      };
+
+      let before: { hasLiked: boolean; likeCount: number } | null = null;
+      patch((c) => {
+        before = { hasLiked: c.hasLiked, likeCount: c.likeCount };
+        const next = !c.hasLiked;
+        return {
+          ...c,
+          hasLiked: next,
+          likeCount: Math.max(0, c.likeCount + (next ? 1 : -1)),
+        };
+      });
+
+      try {
+        const res = await likeMarketComment(id);
+        patch((c) => ({ ...c, hasLiked: res.liked, likeCount: res.likeCount }));
+      } catch {
+        if (before) patch((c) => ({ ...c, ...before! }));
+      }
+    },
+    [],
+  );
+
   const flag = useCallback(
     async (
       id: string,
@@ -482,6 +531,7 @@ export default function MarketComments({
               onToggleMenu={() => setMenuFor(menuFor === c.id ? null : c.id)}
               onCloseMenu={() => setMenuFor(null)}
               onReport={() => setReportTarget({ id: c.id, parentId: null })}
+              onToggleLike={() => toggleLike(c.id, null)}
               onEdit={() => {
                 setMenuFor(null);
                 setEditingId(c.id);
@@ -513,6 +563,7 @@ export default function MarketComments({
                 setMenuFor(menuFor === rid ? null : rid)
               }
               onReportReply={(rid) => setReportTarget({ id: rid, parentId: c.id })}
+              onToggleLikeReply={(rid) => toggleLike(rid, c.id)}
               onDeleteReply={(rid) => remove(rid, c.id)}
             />
           ))}
@@ -744,6 +795,7 @@ function CommentRow({
   onToggleMenu,
   onCloseMenu,
   onReport,
+  onToggleLike,
   onDelete,
   onEdit,
   editing,
@@ -761,6 +813,7 @@ function CommentRow({
   replyMenuFor,
   onToggleReplyMenu,
   onReportReply,
+  onToggleLikeReply,
   onDeleteReply,
   editingId,
   onEditReply,
@@ -778,6 +831,8 @@ function CommentRow({
   /** Opens the report dialog for this comment. */
   onReport: () => void;
   onDelete: () => void;
+  /** Toggle the caller's like on this row. */
+  onToggleLike?: () => void;
   /** Put this row into edit mode. */
   onEdit: () => void;
   /** True while this row is the one being edited. */
@@ -797,6 +852,7 @@ function CommentRow({
   replyMenuFor?: string | null;
   onToggleReplyMenu?: (id: string) => void;
   onReportReply?: (id: string) => void;
+  onToggleLikeReply?: (id: string) => void;
   onDeleteReply?: (id: string) => void;
   /** Id of the row currently in edit mode, top-level or reply. */
   editingId?: string | null;
@@ -869,6 +925,7 @@ function CommentRow({
             replyMenuFor={replyMenuFor}
             onToggleReplyMenu={onToggleReplyMenu}
             onReportReply={onReportReply}
+            onToggleLikeReply={onToggleLikeReply}
             onDeleteReply={onDeleteReply}
             editingId={editingId}
             onEditReply={onEditReply}
@@ -1090,18 +1147,35 @@ function CommentRow({
           </>
         )}
 
-        {/* Replies hang off top-level comments only — depth is capped at one,
-            so a reply shows no Reply button of its own. */}
-        {!isReply && (
-          <>
-            {signedIn && !locked && (
+        {/* Heart then Reply, on one row. Hidden while editing — the editor has
+            its own Save/Cancel and a second set of controls under it reads as
+            belonging to the draft. */}
+        {!comment.deleted && !editing && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              marginTop: 8,
+            }}
+          >
+            <LikeButton
+              count={comment.likeCount}
+              liked={comment.hasLiked}
+              signedIn={signedIn}
+              accent={accent}
+              onToggle={onToggleLike}
+            />
+
+            {/* Replies hang off top-level comments only — depth is capped at
+                one, so a reply shows no Reply button of its own. */}
+            {!isReply && signedIn && !locked && (
               <button
                 onClick={onStartReply}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 5,
-                  marginTop: 8,
                   padding: 0,
                   fontSize: 12.5,
                   fontFamily: "inherit",
@@ -1115,7 +1189,11 @@ function CommentRow({
                 Reply
               </button>
             )}
+          </div>
+        )}
 
+        {!isReply && (
+          <>
             {replying && onSubmitReply && (
               <div style={{ marginTop: 8 }}>
                 <Composer
@@ -1143,6 +1221,7 @@ function CommentRow({
               replyMenuFor={replyMenuFor}
               onToggleReplyMenu={onToggleReplyMenu}
               onReportReply={onReportReply}
+              onToggleLikeReply={onToggleLikeReply}
               onDeleteReply={onDeleteReply}
               editingId={editingId}
               onEditReply={onEditReply}
@@ -1168,6 +1247,7 @@ function RepliesSection({
   replies,
   onToggleReplies,
   replyMenuFor,
+  onToggleLikeReply,
   editingId,
   onEditReply,
   onCancelEditReply,
@@ -1178,6 +1258,7 @@ function RepliesSection({
   onDeleteReply,
   onOpenProfile,
 }: {
+  onToggleLikeReply?: (id: string) => void;
   editingId?: string | null;
   onEditReply?: (id: string) => void;
   onCancelEditReply?: () => void;
@@ -1258,6 +1339,7 @@ function RepliesSection({
                 onToggleMenu={() => onToggleReplyMenu?.(r.id)}
                 onCloseMenu={() => onToggleReplyMenu?.("")}
                 onReport={() => onReportReply?.(r.id)}
+                onToggleLike={() => onToggleLikeReply?.(r.id)}
                 onEdit={() => onEditReply?.(r.id)}
                 editing={editingId === r.id}
                 onCancelEdit={onCancelEditReply}
@@ -1479,6 +1561,54 @@ function ReportDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The heart. Count hidden at zero rather than shown as "0" — an empty count
+ * reads as "be the first", a zero reads as "nobody liked this".
+ */
+function LikeButton({
+  count,
+  liked,
+  signedIn,
+  accent,
+  onToggle,
+}: {
+  count: number;
+  liked: boolean;
+  signedIn: boolean;
+  accent?: string;
+  onToggle?: () => void;
+}) {
+  const on = liked && signedIn;
+  const colour = on ? (accent ?? "var(--color-primary)") : "var(--text-subtle)";
+  return (
+    <button
+      onClick={signedIn ? onToggle : undefined}
+      disabled={!signedIn}
+      aria-pressed={on}
+      aria-label={on ? "Unlike this comment" : "Like this comment"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: 0,
+        fontSize: 12.5,
+        fontFamily: "inherit",
+        fontWeight: on ? 800 : 400,
+        color: colour,
+        background: "none",
+        border: "none",
+        // Signed out the heart is still worth showing — the count is public —
+        // but it does nothing, so it must not look pressable.
+        cursor: signedIn ? "pointer" : "default",
+        transition: "color 120ms ease",
+      }}
+    >
+      <Heart size={13} fill={on ? colour : "none"} />
+      {count > 0 && count}
+    </button>
   );
 }
 
