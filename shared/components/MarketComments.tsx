@@ -9,6 +9,7 @@ import {
 import {
   avatarFallback,
   deleteMarketComment,
+  editMarketComment,
   flagMarketComment,
   getCommentReplies,
   getMarketComments,
@@ -109,6 +110,8 @@ export default function MarketComments({
     id: string;
     parentId: string | null;
   } | null>(null);
+  /** The comment currently open in an inline editor, if any. */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Reply state, keyed by parent comment id.
   const [replies, setReplies] = useState<
@@ -268,6 +271,47 @@ export default function MarketComments({
       }
     },
     [comments, replies],
+  );
+
+  /**
+   * Save an edit. Returns false on failure so the editor keeps the text the
+   * user typed instead of discarding it into a toast.
+   */
+  const saveEdit = useCallback(
+    async (id: string, parentId: string | null, body: string) => {
+      setError(null);
+      setSubmitting(true);
+      try {
+        const updated = await editMarketComment(id, body);
+        if (parentId) {
+          setReplies((prev) => ({
+            ...prev,
+            [parentId]: (prev[parentId] ?? []).map((r) =>
+              r.id === id ? updated : r,
+            ),
+          }));
+        } else {
+          // Keep the local replyCount: the edit response carries the server's,
+          // which is right, but a reply added since the load would otherwise
+          // pop out of the "N Replies" toggle.
+          setComments((prev) =>
+            prev.map((c) =>
+              c.id === id ? { ...updated, replyCount: c.replyCount } : c,
+            ),
+          );
+        }
+        setEditingId(null);
+        return true;
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Couldn't save that edit.",
+        );
+        return false;
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [],
   );
 
   const flag = useCallback(
@@ -438,6 +482,20 @@ export default function MarketComments({
               onToggleMenu={() => setMenuFor(menuFor === c.id ? null : c.id)}
               onCloseMenu={() => setMenuFor(null)}
               onReport={() => setReportTarget({ id: c.id, parentId: null })}
+              onEdit={() => {
+                setMenuFor(null);
+                setEditingId(c.id);
+              }}
+              editing={editingId === c.id}
+              onCancelEdit={() => setEditingId(null)}
+              onSubmitEdit={(body) => saveEdit(c.id, null, body)}
+              editingId={editingId}
+              onEditReply={(rid) => {
+                setMenuFor(null);
+                setEditingId(rid);
+              }}
+              onCancelEditReply={() => setEditingId(null)}
+              onSubmitEditReply={(rid, body) => saveEdit(rid, c.id, body)}
               onDelete={() => remove(c.id, null)}
               onOpenProfile={onOpenProfile}
               // Reply wiring — top level only.
@@ -522,6 +580,8 @@ function Composer({
   autoFocus,
   compact,
   accent,
+  initial,
+  submitLabel,
   onSubmit,
   onCancel,
 }: {
@@ -530,10 +590,14 @@ function Composer({
   autoFocus?: boolean;
   compact?: boolean;
   accent?: string;
+  /** Pre-filled text, for editing an existing comment. */
+  initial?: string;
+  /** Defaults to "Post". */
+  submitLabel?: string;
   onSubmit: (body: string) => Promise<boolean | void> | void;
   onCancel?: () => void;
 }) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initial ?? "");
   const ref = useRef<HTMLTextAreaElement>(null);
   const remaining = MAX_LENGTH - draft.length;
 
@@ -546,7 +610,9 @@ function Composer({
 
   const send = async () => {
     const ok = await onSubmit(draft);
-    if (ok !== false) setDraft("");
+    // An editor keeps its text on success — it is about to unmount, and
+    // blanking it first makes the row flash empty.
+    if (ok !== false && initial === undefined) setDraft("");
   };
 
   return (
@@ -644,7 +710,7 @@ function Composer({
           opacity: submitting ? 0.6 : 1,
         }}
       >
-        {submitting ? "…" : compact ? "Reply" : "Post"}
+        {submitting ? "…" : (submitLabel ?? (compact ? "Reply" : "Post"))}
       </button>
     </div>
   );
@@ -679,6 +745,10 @@ function CommentRow({
   onCloseMenu,
   onReport,
   onDelete,
+  onEdit,
+  editing,
+  onCancelEdit,
+  onSubmitEdit,
   onOpenProfile,
   isReply,
   repliesOpen,
@@ -692,6 +762,10 @@ function CommentRow({
   onToggleReplyMenu,
   onReportReply,
   onDeleteReply,
+  editingId,
+  onEditReply,
+  onCancelEditReply,
+  onSubmitEditReply,
   accent,
 }: {
   comment: MarketCommentView;
@@ -704,6 +778,12 @@ function CommentRow({
   /** Opens the report dialog for this comment. */
   onReport: () => void;
   onDelete: () => void;
+  /** Put this row into edit mode. */
+  onEdit: () => void;
+  /** True while this row is the one being edited. */
+  editing?: boolean;
+  onCancelEdit?: () => void;
+  onSubmitEdit?: (body: string) => Promise<boolean | void> | void;
   onOpenProfile?: (userId: string) => void;
   /** Replies render smaller and carry none of the threading controls. */
   isReply?: boolean;
@@ -718,10 +798,27 @@ function CommentRow({
   onToggleReplyMenu?: (id: string) => void;
   onReportReply?: (id: string) => void;
   onDeleteReply?: (id: string) => void;
+  /** Id of the row currently in edit mode, top-level or reply. */
+  editingId?: string | null;
+  onEditReply?: (id: string) => void;
+  onCancelEditReply?: () => void;
+  onSubmitEditReply?: (
+    id: string,
+    body: string,
+  ) => Promise<boolean | void> | void;
   /** Market colour, forwarded to the reply composer. */
   accent?: string;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Recomputed every render and re-checked by the server on submit. The
+  // deadline is absolute, so it simply stops being true as the page sits open
+  // rather than offering an Edit that will be refused.
+  const canEdit =
+    comment.isMine &&
+    !comment.deleted &&
+    comment.editableUntil != null &&
+    new Date(comment.editableUntil).getTime() > Date.now();
 
   // Close on any outside tap — on a touch screen there is no other way out.
   useEffect(() => {
@@ -773,6 +870,10 @@ function CommentRow({
             onToggleReplyMenu={onToggleReplyMenu}
             onReportReply={onReportReply}
             onDeleteReply={onDeleteReply}
+            editingId={editingId}
+            onEditReply={onEditReply}
+            onCancelEditReply={onCancelEditReply}
+            onSubmitEditReply={onSubmitEditReply}
             onOpenProfile={onOpenProfile}
           />
         )}
@@ -885,6 +986,9 @@ function CommentRow({
 
           <span style={{ fontSize: 12, color: "var(--text-subtle)" }}>
             {timeAgo(comment.createdAt)}
+            {/* A comment someone has already argued with must not be able to
+                change out from under the reply quietly. */}
+            {comment.edited && " · edited"}
           </span>
 
           {signedIn && (
@@ -924,7 +1028,13 @@ function CommentRow({
                   }}
                 >
                   {comment.isMine ? (
-                    <MenuItem label="Delete comment" danger onClick={onDelete} />
+                    <>
+                      {/* The server sends an absolute deadline, so a page left
+                          open stops offering this by itself rather than
+                          failing on submit. */}
+                      {canEdit && <MenuItem label="Edit" onClick={onEdit} />}
+                      <MenuItem label="Delete comment" danger onClick={onDelete} />
+                    </>
                   ) : comment.hasFlagged ? (
                     <div
                       style={{
@@ -947,20 +1057,38 @@ function CommentRow({
           )}
         </div>
 
-        {/* Rendered as a text child, so React escapes it. This must never become
-            dangerouslySetInnerHTML — bodies are stored raw. */}
-        <p
-          style={{
-            margin: "5px 0 0",
-            fontSize: isReply ? 13.5 : 14,
-            lineHeight: 1.5,
-            color: "var(--text-main)",
-            whiteSpace: "pre-wrap",
-            overflowWrap: "anywhere",
-          }}
-        >
-          {comment.body}
-        </p>
+        {editing ? (
+          <div style={{ marginTop: 6 }}>
+            <Composer
+              compact
+              autoFocus
+              accent={accent}
+              initial={comment.body}
+              submitLabel="Save"
+              placeholder="Edit your comment..."
+              submitting={Boolean(submitting)}
+              onSubmit={(body) => onSubmitEdit?.(body)}
+              onCancel={onCancelEdit}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Rendered as a text child, so React escapes it. This must never
+                become dangerouslySetInnerHTML — bodies are stored raw. */}
+            <p
+              style={{
+                margin: "5px 0 0",
+                fontSize: isReply ? 13.5 : 14,
+                lineHeight: 1.5,
+                color: "var(--text-main)",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {comment.body}
+            </p>
+          </>
+        )}
 
         {/* Replies hang off top-level comments only — depth is capped at one,
             so a reply shows no Reply button of its own. */}
@@ -1016,6 +1144,10 @@ function CommentRow({
               onToggleReplyMenu={onToggleReplyMenu}
               onReportReply={onReportReply}
               onDeleteReply={onDeleteReply}
+              editingId={editingId}
+              onEditReply={onEditReply}
+              onCancelEditReply={onCancelEditReply}
+              onSubmitEditReply={onSubmitEditReply}
               onOpenProfile={onOpenProfile}
             />
           </>
@@ -1036,12 +1168,23 @@ function RepliesSection({
   replies,
   onToggleReplies,
   replyMenuFor,
+  editingId,
+  onEditReply,
+  onCancelEditReply,
+  onSubmitEditReply,
   accent,
   onToggleReplyMenu,
   onReportReply,
   onDeleteReply,
   onOpenProfile,
 }: {
+  editingId?: string | null;
+  onEditReply?: (id: string) => void;
+  onCancelEditReply?: () => void;
+  onSubmitEditReply?: (
+    id: string,
+    body: string,
+  ) => Promise<boolean | void> | void;
   /** Market colour, forwarded to the reply composer. */
   accent?: string;
   comment: MarketCommentView;
@@ -1115,6 +1258,10 @@ function RepliesSection({
                 onToggleMenu={() => onToggleReplyMenu?.(r.id)}
                 onCloseMenu={() => onToggleReplyMenu?.("")}
                 onReport={() => onReportReply?.(r.id)}
+                onEdit={() => onEditReply?.(r.id)}
+                editing={editingId === r.id}
+                onCancelEdit={onCancelEditReply}
+                onSubmitEdit={(body) => onSubmitEditReply?.(r.id, body)}
                 onDelete={() => onDeleteReply?.(r.id)}
                 onOpenProfile={onOpenProfile}
               />

@@ -1300,6 +1300,14 @@ export interface MarketCommentView {
   parentId: string | null;
   /** Live replies under this comment. Always 0 on a reply — depth is capped at 1. */
   replyCount: number;
+  /** True once the author has rewritten it. */
+  edited: boolean;
+  /**
+   * ISO deadline for editing YOUR OWN comment, or null if you cannot edit it.
+   * An absolute time rather than a flag, so a page left open stops offering
+   * Edit on its own instead of failing on submit.
+   */
+  editableUntil: string | null;
 }
 
 export type CommentFlagReason =
@@ -1350,6 +1358,17 @@ export function deleteMarketComment(
   commentId: string,
 ): Promise<{ ok: true }> {
   return request(`/comments/${commentId}`, { method: "DELETE" });
+}
+
+/** Rewrite your own comment. Only succeeds inside the edit window. */
+export function editMarketComment(
+  commentId: string,
+  body: string,
+): Promise<MarketCommentView> {
+  return request(`/comments/${commentId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ body }),
+  });
 }
 
 export function flagMarketComment(
