@@ -103,6 +103,12 @@ function StreakBadge({ count }: { count?: number }) {
 // Vol was previously 44px, which "Nu 94.2K" overflowed into the Insight column.
 // Total fixed width is 4px narrower than before, so the name column gained
 // room rather than losing it.
+//
+// Insight is the one column whose header is much wider than its values, so
+// right-aligning it left a 30px hole after Win % and pinned a two-digit score
+// against Vol. It is centred instead — the value sits under the middle of
+// "INSIGHT" with even air on both sides. Every other column stays right-aligned,
+// where the values are close to their header width and digits line up.
 const COL = "32px 26px 1fr 36px 36px 50px 48px";
 
 function fmtVol(n: number) {
@@ -135,7 +141,7 @@ function TableHeader() {
       <div style={cell}>User</div>
       <div style={{ ...cell, textAlign: "right" }}>Picks</div>
       <div style={{ ...cell, textAlign: "right" }}>Win %</div>
-      <div style={{ ...cell, textAlign: "right" }}>Insight</div>
+      <div style={{ ...cell, textAlign: "center" }}>Insight</div>
       <div style={{ ...cell, textAlign: "right" }}>Vol</div>
     </div>
   );
@@ -329,8 +335,8 @@ function TableRow({
       {/* Insight Score — the value the board is actually ranked by, so it is
           the one column that explains the ordering. Career-wide on both tabs,
           unlike Win % which is window-scoped on the weekly tab. Null until a
-          user has a settled prediction. */}
-      <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+          user has a settled prediction. Centred — see the COL comment. */}
+      <div style={{ textAlign: "center", whiteSpace: "nowrap" }}>
         <span
           style={{
             fontSize: 13,
