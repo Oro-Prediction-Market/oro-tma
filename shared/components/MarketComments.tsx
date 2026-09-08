@@ -52,6 +52,16 @@ export interface MarketCommentsProps {
   currentUserId?: string | null;
   /** Opens the author's public profile. Omit to make authors non-tappable. */
   onOpenProfile?: (userId: string) => void;
+  /**
+   * Render to fill the container instead of as its own centred column.
+   *
+   * Use this when the thread sits inside a page's scrolling left column, next
+   * to a sticky panel — the column already sets the width, and centring a
+   * narrower block inside it would leave the thread floating away from the
+   * content it belongs to. Standalone (the default) it keeps its own 760px
+   * measure so it lines up under the themed detail views, which set the same.
+   */
+  embedded?: boolean;
 }
 
 const FLAG_REASONS: Array<{ value: CommentFlagReason; label: string }> = [
@@ -66,6 +76,7 @@ export default function MarketComments({
   marketStatus,
   currentUserId,
   onOpenProfile,
+  embedded,
 }: MarketCommentsProps) {
   const [comments, setComments] = useState<MarketCommentView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,9 +278,9 @@ export default function MarketComments({
   return (
     <div
       style={{
-        maxWidth: 760,
-        margin: "0 auto",
-        padding: "20px 16px 8px",
+        maxWidth: embedded ? "none" : 760,
+        margin: embedded ? 0 : "0 auto",
+        padding: embedded ? "4px 0 8px" : "20px 16px 8px",
         boxSizing: "border-box",
       }}
     >
