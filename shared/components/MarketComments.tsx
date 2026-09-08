@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Flag, MessageSquare, Send, Trash2 } from "lucide-react";
+import { ChevronDown, MoreHorizontal, ShieldAlert } from "lucide-react";
 import {
   avatarFallback,
   deleteMarketComment,
@@ -14,6 +14,15 @@ import { timeAgo } from "@shared/helpers/relativeTime";
 
 const MAX_LENGTH = 500;
 const PAGE_SIZE = 30;
+
+/**
+ * The pagination cursor: the last row you saw, identified by both its timestamp
+ * and its id. The id half is what makes it exact when several comments share a
+ * millisecond — the server compares the pair as a tuple.
+ */
+const cursorOf = (c: MarketCommentView) => `${c.createdAt}|${c.id}`;
+
+type SortOrder = "newest" | "oldest";
 
 /**
  * Lives in shared/ but is hand-copied between oro-tma and oro-pwa — the two
@@ -52,10 +61,12 @@ export default function MarketComments({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [exhausted, setExhausted] = useState(false);
+  const [order, setOrder] = useState<SortOrder>("newest");
+  const [holdersOnly, setHoldersOnly] = useState(false);
   const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [flagging, setFlagging] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const settled = marketStatus === "settled";
@@ -63,48 +74,56 @@ export default function MarketComments({
   const locked = settled || cancelled;
   const signedIn = Boolean(currentUserId);
 
+  // Refetches whenever the sort or the holders filter changes — both are
+  // server-side, because paging a client-side filter would skip rows.
   useEffect(() => {
-    let cancelledLoad = false;
+    let stale = false;
     setLoading(true);
-    getMarketComments(marketId, { limit: PAGE_SIZE })
+    getMarketComments(marketId, {
+      limit: PAGE_SIZE,
+      order,
+      holders: holdersOnly,
+    })
       .then((rows) => {
-        if (cancelledLoad) return;
+        if (stale) return;
         setComments(rows);
         setExhausted(rows.length < PAGE_SIZE);
       })
       .catch(() => {
-        if (!cancelledLoad) setError("Couldn't load comments.");
+        if (!stale) setError("Couldn't load comments.");
       })
       .finally(() => {
-        if (!cancelledLoad) setLoading(false);
+        if (!stale) setLoading(false);
       });
     return () => {
-      cancelledLoad = true;
+      stale = true;
     };
-  }, [marketId]);
+  }, [marketId, order, holdersOnly]);
 
   const loadMore = useCallback(async () => {
-    const oldest = comments[comments.length - 1];
-    if (!oldest || loadingMore) return;
+    const last = comments[comments.length - 1];
+    if (!last || loadingMore) return;
     setLoadingMore(true);
     try {
       const older = await getMarketComments(marketId, {
         limit: PAGE_SIZE,
-        before: oldest.createdAt,
+        cursor: cursorOf(last),
+        order,
+        holders: holdersOnly,
       });
       setComments((prev) => {
-        // Guard against a duplicate arriving on the boundary — two comments can
-        // share a createdAt to the millisecond under load.
+        // Guard the page boundary — two comments can share a createdAt to the
+        // millisecond under load.
         const seen = new Set(prev.map((c) => c.id));
         return [...prev, ...older.filter((c) => !seen.has(c.id))];
       });
       setExhausted(older.length < PAGE_SIZE);
     } catch {
-      setError("Couldn't load older comments.");
+      setError("Couldn't load more comments.");
     } finally {
       setLoadingMore(false);
     }
-  }, [comments, marketId, loadingMore]);
+  }, [comments, marketId, loadingMore, order, holdersOnly]);
 
   const submit = useCallback(async () => {
     const body = draft.trim();
@@ -113,7 +132,10 @@ export default function MarketComments({
     setError(null);
     try {
       const created = await postMarketComment(marketId, body);
-      setComments((prev) => [created, ...prev]);
+      // A new comment belongs at the top only when the newest is on top.
+      setComments((prev) =>
+        order === "newest" ? [created, ...prev] : [...prev, created],
+      );
       setDraft("");
     } catch (e) {
       setError(
@@ -122,9 +144,10 @@ export default function MarketComments({
     } finally {
       setSubmitting(false);
     }
-  }, [draft, marketId, submitting]);
+  }, [draft, marketId, submitting, order]);
 
   const remove = useCallback(async (id: string) => {
+    setMenuFor(null);
     // Optimistic: drop it, put it back if the server disagrees.
     let removed: MarketCommentView | undefined;
     setComments((prev) => {
@@ -145,23 +168,20 @@ export default function MarketComments({
     }
   }, []);
 
-  const flag = useCallback(
-    async (id: string, reason: CommentFlagReason) => {
-      setFlagging(null);
+  const flag = useCallback(async (id: string, reason: CommentFlagReason) => {
+    setMenuFor(null);
+    setComments((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, hasFlagged: true } : c)),
+    );
+    try {
+      await flagMarketComment(id, reason);
+    } catch {
+      setError("Couldn't report that comment.");
       setComments((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, hasFlagged: true } : c)),
+        prev.map((c) => (c.id === id ? { ...c, hasFlagged: false } : c)),
       );
-      try {
-        await flagMarketComment(id, reason);
-      } catch {
-        setError("Couldn't report that comment.");
-        setComments((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, hasFlagged: false } : c)),
-        );
-      }
-    },
-    [],
-  );
+    }
+  }, []);
 
   // The composer sits inline at the end of a long page, so on focus it can be
   // under the Telegram keyboard. Same approach as OnboardingPage: wait out the
@@ -183,120 +203,167 @@ export default function MarketComments({
       style={{
         maxWidth: 760,
         margin: "0 auto",
-        padding: "24px 16px 8px",
+        padding: "20px 16px 8px",
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 12,
-        }}
-      >
-        <MessageSquare size={15} style={{ color: "var(--text-muted)" }} />
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            color: "var(--text-subtle)",
-          }}
-        >
-          Comments
-          {comments.length > 0 ? ` · ${comments.length}` : ""}
-        </span>
-      </div>
-
-      {/* Composer. Above the list so posting does not require scrolling past
-          every existing comment first. */}
+      {/* Composer — one rounded field with the action inside it. */}
       {locked ? (
         <LockedNotice settled={settled} />
       ) : signedIn ? (
-        <div style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 8,
+            padding: "8px 8px 8px 14px",
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--glass-border)",
+            borderRadius: 14,
+          }}
+        >
           <textarea
             ref={composerRef}
-            rows={3}
+            rows={1}
             value={draft}
             maxLength={MAX_LENGTH}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              // Grow with the text instead of showing a scrollbar in a 1-row box.
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+            }}
             onFocus={handleFocus}
-            placeholder="Why are you taking this side?"
+            placeholder="Add a comment..."
             style={{
-              width: "100%",
-              boxSizing: "border-box",
-              resize: "vertical",
-              padding: "10px 12px",
+              flex: 1,
+              minWidth: 0,
+              alignSelf: "center",
+              resize: "none",
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              padding: 0,
               fontSize: 14,
               fontFamily: "inherit",
-              lineHeight: 1.45,
+              lineHeight: 1.5,
               color: "var(--text-main)",
-              background: "var(--bg-secondary)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: 12,
-              outline: "none",
             }}
           />
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 8,
-              gap: 12,
-            }}
-          >
+          {remaining < 100 && (
             <span
               style={{
+                alignSelf: "center",
                 fontSize: 11,
                 color:
-                  remaining < 50 ? "var(--color-warning)" : "var(--text-subtle)",
+                  remaining < 20
+                    ? "var(--color-warning)"
+                    : "var(--text-subtle)",
               }}
             >
-              {remaining < 100 ? `${remaining} left` : ""}
+              {remaining}
             </span>
-            <button
-              onClick={submit}
-              disabled={!draft.trim() || submitting}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 16px",
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "inherit",
-                color: draft.trim() ? "#000" : "var(--text-subtle)",
-                background: draft.trim()
-                  ? "var(--color-primary)"
-                  : "var(--bg-secondary)",
-                border: "1px solid var(--glass-border)",
-                borderRadius: 10,
-                cursor: draft.trim() && !submitting ? "pointer" : "default",
-                opacity: submitting ? 0.6 : 1,
-              }}
-            >
-              <Send size={13} />
-              {submitting ? "Posting…" : "Post"}
-            </button>
-          </div>
+          )}
+          <button
+            onClick={submit}
+            disabled={!draft.trim() || submitting}
+            style={{
+              flexShrink: 0,
+              padding: "7px 16px",
+              fontSize: 13,
+              fontWeight: 700,
+              fontFamily: "inherit",
+              color: draft.trim() ? "#000" : "var(--text-subtle)",
+              background: draft.trim()
+                ? "var(--color-primary)"
+                : "var(--bg-main)",
+              border: "none",
+              borderRadius: 10,
+              cursor: draft.trim() && !submitting ? "pointer" : "default",
+              opacity: submitting ? 0.6 : 1,
+            }}
+          >
+            {submitting ? "Posting…" : "Post"}
+          </button>
         </div>
       ) : (
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
           Sign in to join the conversation.
         </p>
       )}
 
-      {error && (
-        <p
+      {/* Controls: sort on the left, safety notice on the right. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+          margin: "14px 0 4px",
+        }}
+      >
+        <button
+          onClick={() => setOrder(order === "newest" ? "oldest" : "newest")}
           style={{
-            fontSize: 12,
-            color: "var(--color-danger)",
-            marginBottom: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            padding: 0,
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: "inherit",
+            color: "var(--text-main)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
           }}
         >
+          {order === "newest" ? "Newest" : "Oldest"}
+          <ChevronDown size={14} />
+        </button>
+
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 13,
+            color: "var(--text-muted)",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={holdersOnly}
+            onChange={(e) => setHoldersOnly(e.target.checked)}
+            style={{ accentColor: "var(--color-primary)" }}
+          />
+          Holders
+        </label>
+
+        {/* Comments are the one place a stranger can put a link in front of
+            someone holding a balance. Say so where they will read it. */}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            marginLeft: "auto",
+            padding: "5px 11px",
+            borderRadius: 999,
+            fontSize: 11.5,
+            color: "var(--text-muted)",
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--glass-border)",
+          }}
+        >
+          <ShieldAlert size={12} />
+          Beware of external links.
+        </span>
+      </div>
+
+      {error && (
+        <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 8 }}>
           {error}
         </p>
       )}
@@ -306,28 +373,31 @@ export default function MarketComments({
       ) : comments.length === 0 ? (
         <div
           style={{
+            marginTop: 12,
             padding: "20px 16px",
             textAlign: "center",
             fontSize: 12.5,
             color: "var(--text-subtle)",
             border: "1px dashed var(--glass-border)",
             borderRadius: 12,
-            background: "var(--bg-secondary)",
           }}
         >
-          {locked
-            ? "Nobody commented on this one."
-            : "No comments yet — say why you're taking your side."}
+          {holdersOnly
+            ? "No comments from anyone holding a position yet."
+            : locked
+              ? "Nobody commented on this one."
+              : "No comments yet — say why you're taking your side."}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           {comments.map((c) => (
             <CommentRow
               key={c.id}
               comment={c}
               signedIn={signedIn}
-              flagOpen={flagging === c.id}
-              onOpenFlag={() => setFlagging(flagging === c.id ? null : c.id)}
+              menuOpen={menuFor === c.id}
+              onToggleMenu={() => setMenuFor(menuFor === c.id ? null : c.id)}
+              onCloseMenu={() => setMenuFor(null)}
               onFlag={(reason) => flag(c.id, reason)}
               onDelete={() => remove(c.id)}
               onOpenProfile={onOpenProfile}
@@ -338,8 +408,9 @@ export default function MarketComments({
               onClick={loadMore}
               disabled={loadingMore}
               style={{
-                marginTop: 8,
-                padding: "8px 12px",
+                alignSelf: "flex-start",
+                marginTop: 10,
+                padding: "8px 14px",
                 fontSize: 12.5,
                 fontWeight: 600,
                 fontFamily: "inherit",
@@ -350,7 +421,7 @@ export default function MarketComments({
                 cursor: "pointer",
               }}
             >
-              {loadingMore ? "Loading…" : "Older comments"}
+              {loadingMore ? "Loading…" : "Show more"}
             </button>
           )}
         </div>
@@ -363,13 +434,12 @@ function LockedNotice({ settled }: { settled: boolean }) {
   return (
     <div
       style={{
-        padding: "10px 12px",
-        marginBottom: 16,
+        padding: "10px 14px",
         fontSize: 12.5,
         color: "var(--text-muted)",
         background: "var(--bg-secondary)",
         border: "1px solid var(--glass-border)",
-        borderRadius: 10,
+        borderRadius: 12,
       }}
     >
       {settled
@@ -382,29 +452,46 @@ function LockedNotice({ settled }: { settled: boolean }) {
 function CommentRow({
   comment,
   signedIn,
-  flagOpen,
-  onOpenFlag,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
   onFlag,
   onDelete,
   onOpenProfile,
 }: {
   comment: MarketCommentView;
   signedIn: boolean;
-  flagOpen: boolean;
-  onOpenFlag: () => void;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+  onCloseMenu: () => void;
   onFlag: (reason: CommentFlagReason) => void;
   onDelete: () => void;
   onOpenProfile?: (userId: string) => void;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close on any outside tap — on a touch screen there is no other way out.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: Event) => {
+      if (!menuRef.current?.contains(e.target as Node)) onCloseMenu();
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [menuOpen, onCloseMenu]);
+
   if (comment.deleted) {
     return (
       <div
         style={{
-          padding: "10px 0",
+          padding: "14px 0 14px 52px",
           fontSize: 12.5,
           fontStyle: "italic",
           color: "var(--text-subtle)",
-          borderTop: "1px solid var(--glass-border)",
         }}
       >
         This comment was removed by a moderator.
@@ -415,69 +502,90 @@ function CommentRow({
   const a = comment.author;
   const chip = tierChip(a?.reputationTier);
   const name = a?.username
-    ? `@${a.username}`
+    ? a.username
     : [a?.firstName, a?.lastName].filter(Boolean).join(" ") || "Someone";
   const tappable = Boolean(onOpenProfile && a);
+  const openProfile = tappable ? () => onOpenProfile!(a!.id) : undefined;
 
   return (
-    <div
-      style={{
-        padding: "12px 0",
-        borderTop: "1px solid var(--glass-border)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", gap: 12, padding: "14px 0" }}>
+      <div
+        onClick={openProfile}
+        style={{
+          width: 40,
+          height: 40,
+          flexShrink: 0,
+          borderRadius: "50%",
+          overflow: "hidden",
+          background: "var(--bg-secondary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 15,
+          fontWeight: 800,
+          color: "var(--text-muted)",
+          cursor: tappable ? "pointer" : "default",
+        }}
+      >
+        {a?.photoUrl ? (
+          <img
+            src={a.photoUrl}
+            alt=""
+            onError={avatarFallback(a.id)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          name.charAt(0).toUpperCase()
+        )}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Name, position, and age all read as one line, the way the eye scans
+            it — the timestamp belongs next to the name, not pushed to the far
+            edge where it reads as a separate column. */}
         <div
-          onClick={tappable ? () => onOpenProfile!(a!.id) : undefined}
           style={{
             display: "flex",
             alignItems: "center",
             gap: 8,
-            minWidth: 0,
-            flex: 1,
-            cursor: tappable ? "pointer" : "default",
+            flexWrap: "wrap",
           }}
         >
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              flexShrink: 0,
-              borderRadius: "50%",
-              overflow: "hidden",
-              background: "var(--bg-secondary)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 11,
-              fontWeight: 800,
-              color: "var(--text-muted)",
-            }}
-          >
-            {a?.photoUrl ? (
-              <img
-                src={a.photoUrl}
-                alt=""
-                onError={avatarFallback(a.id)}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              name.replace("@", "").charAt(0).toUpperCase()
-            )}
-          </div>
-
           <span
+            onClick={openProfile}
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
               color: "var(--text-main)",
+              cursor: tappable ? "pointer" : "default",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              maxWidth: "50%",
             }}
           >
             {name}
           </span>
+
+          {/* Side only, never the stake — what someone is backing is context
+              for their argument; how much they staked is not anyone's business. */}
+          {comment.side && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                flexShrink: 0,
+                padding: "2px 8px",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--color-info)",
+                background: "var(--bg-secondary)",
+              }}
+            >
+              {comment.side.label}
+            </span>
+          )}
 
           <span
             style={{
@@ -485,149 +593,145 @@ function CommentRow({
               alignItems: "center",
               gap: 3,
               flexShrink: 0,
-              padding: "1px 6px",
-              borderRadius: 999,
-              fontSize: 9.5,
+              fontSize: 11,
               fontWeight: 700,
               color: chip.color,
-              background: chip.bg,
-              border: `1px solid ${chip.border}`,
             }}
           >
-            <chip.Icon size={9} />
+            <chip.Icon size={10} />
             {chip.label}
           </span>
-        </div>
 
-        <span
-          style={{
-            fontSize: 11,
-            color: "var(--text-subtle)",
-            flexShrink: 0,
-          }}
-        >
-          {timeAgo(comment.createdAt)}
-        </span>
-      </div>
+          <span style={{ fontSize: 12, color: "var(--text-subtle)" }}>
+            {timeAgo(comment.createdAt)}
+          </span>
 
-      {/* The author's position. Side only, never the stake — what someone is
-          backing is context for their argument; how much they staked is not
-          anyone else's business. */}
-      {comment.side && (
-        <div
-          style={{
-            marginTop: 6,
-            marginLeft: 32,
-            display: "inline-block",
-            padding: "2px 8px",
-            borderRadius: 999,
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--color-info)",
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--glass-border)",
-          }}
-        >
-          Backing {comment.side.label}
-        </div>
-      )}
+          {signedIn && (
+            <div
+              ref={menuRef}
+              style={{ position: "relative", marginLeft: "auto" }}
+            >
+              <button
+                onClick={onToggleMenu}
+                aria-label="Comment options"
+                style={{
+                  display: "flex",
+                  padding: 2,
+                  color: "var(--text-subtle)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <MoreHorizontal size={16} />
+              </button>
 
-      {/* Rendered as a text child, so React escapes it. This must never become
-          dangerouslySetInnerHTML — bodies are stored raw. */}
-      <p
-        style={{
-          margin: "6px 0 0 32px",
-          fontSize: 13.5,
-          lineHeight: 1.5,
-          color: "var(--text-main)",
-          whiteSpace: "pre-wrap",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {comment.body}
-      </p>
-
-      {signedIn && (
-        <div
-          style={{
-            display: "flex",
-            gap: 14,
-            margin: "8px 0 0 32px",
-            alignItems: "center",
-          }}
-        >
-          {comment.isMine ? (
-            <IconAction icon={Trash2} label="Delete" onClick={onDelete} />
-          ) : comment.hasFlagged ? (
-            <span style={{ fontSize: 11, color: "var(--text-subtle)" }}>
-              Reported
-            </span>
-          ) : (
-            <IconAction icon={Flag} label="Report" onClick={onOpenFlag} />
+              {menuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    zIndex: 20,
+                    minWidth: 190,
+                    marginTop: 4,
+                    padding: 4,
+                    borderRadius: 10,
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--glass-border)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  }}
+                >
+                  {comment.isMine ? (
+                    <MenuItem
+                      label="Delete comment"
+                      danger
+                      onClick={onDelete}
+                    />
+                  ) : comment.hasFlagged ? (
+                    <div
+                      style={{
+                        padding: "8px 10px",
+                        fontSize: 12,
+                        color: "var(--text-subtle)",
+                      }}
+                    >
+                      You reported this.
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          padding: "6px 10px 4px",
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                          textTransform: "uppercase",
+                          color: "var(--text-subtle)",
+                        }}
+                      >
+                        Report for
+                      </div>
+                      {FLAG_REASONS.map((r) => (
+                        <MenuItem
+                          key={r.value}
+                          label={r.label}
+                          onClick={() => onFlag(r.value)}
+                        />
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
 
-      {flagOpen && (
-        <div
+        {/* Rendered as a text child, so React escapes it. This must never become
+            dangerouslySetInnerHTML — bodies are stored raw. */}
+        <p
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 6,
-            margin: "8px 0 0 32px",
+            margin: "5px 0 0",
+            fontSize: 14,
+            lineHeight: 1.5,
+            color: "var(--text-main)",
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
           }}
         >
-          {FLAG_REASONS.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => onFlag(r.value)}
-              style={{
-                padding: "4px 10px",
-                fontSize: 11,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                color: "var(--text-muted)",
-                background: "var(--bg-secondary)",
-                border: "1px solid var(--glass-border)",
-                borderRadius: 999,
-                cursor: "pointer",
-              }}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      )}
+          {comment.body}
+        </p>
+      </div>
     </div>
   );
 }
 
-function IconAction({
-  icon: Icon,
+function MenuItem({
   label,
+  danger,
   onClick,
 }: {
-  icon: typeof Flag;
   label: string;
+  danger?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        padding: 0,
-        fontSize: 11,
+        display: "block",
+        width: "100%",
+        padding: "8px 10px",
+        fontSize: 12.5,
         fontFamily: "inherit",
-        color: "var(--text-subtle)",
+        textAlign: "left",
+        color: danger ? "var(--color-danger)" : "var(--text-main)",
         background: "none",
         border: "none",
+        borderRadius: 7,
         cursor: "pointer",
       }}
     >
-      <Icon size={11} />
       {label}
     </button>
   );

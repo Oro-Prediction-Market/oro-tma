@@ -1304,14 +1304,24 @@ export type CommentFlagReason =
   | "misinformation"
   | "other";
 
-/** Newest first. `before` is the createdAt of the last row you have. */
+export interface MarketCommentQuery {
+  limit?: number;
+  /** createdAt of the last row you have; the comparison flips with `order`. */
+  cursor?: string;
+  order?: "newest" | "oldest";
+  /** Only people with a position in this market. */
+  holders?: boolean;
+}
+
 export function getMarketComments(
   marketId: string,
-  opts: { limit?: number; before?: string } = {},
+  opts: MarketCommentQuery = {},
 ): Promise<MarketCommentView[]> {
   const qs = new URLSearchParams();
   if (opts.limit) qs.set("limit", String(opts.limit));
-  if (opts.before) qs.set("before", opts.before);
+  if (opts.cursor) qs.set("cursor", opts.cursor);
+  if (opts.order === "oldest") qs.set("order", "oldest");
+  if (opts.holders) qs.set("holders", "true");
   const suffix = qs.toString() ? `?${qs}` : "";
   return request<MarketCommentView[]>(`/markets/${marketId}/comments${suffix}`);
 }
