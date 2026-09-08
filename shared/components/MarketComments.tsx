@@ -102,6 +102,13 @@ export default function MarketComments({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // The comment the report dialog is open on. `parentId` is carried so the
+  // optimistic "You reported this" lands on the right list — replies live in
+  // their own map, keyed by parent.
+  const [reportTarget, setReportTarget] = useState<{
+    id: string;
+    parentId: string | null;
+  } | null>(null);
 
   // Reply state, keyed by parent comment id.
   const [replies, setReplies] = useState<
@@ -264,8 +271,14 @@ export default function MarketComments({
   );
 
   const flag = useCallback(
-    async (id: string, parentId: string | null, reason: CommentFlagReason) => {
+    async (
+      id: string,
+      parentId: string | null,
+      reason: CommentFlagReason,
+      note: string,
+    ) => {
       setMenuFor(null);
+      setReportTarget(null);
       const mark = (v: boolean) => {
         if (parentId) {
           setReplies((prev) => ({
@@ -282,7 +295,7 @@ export default function MarketComments({
       };
       mark(true);
       try {
-        await flagMarketComment(id, reason);
+        await flagMarketComment(id, reason, note.trim() || undefined);
       } catch {
         setError("Couldn't report that comment.");
         mark(false);
@@ -310,6 +323,17 @@ export default function MarketComments({
           : {}),
       }}
     >
+      {reportTarget && (
+        <ReportDialog
+          accent={accent}
+          submitting={submitting}
+          onCancel={() => setReportTarget(null)}
+          onSubmit={(reason, note) =>
+            flag(reportTarget.id, reportTarget.parentId, reason, note)
+          }
+        />
+      )}
+
       {locked ? (
         <LockedNotice settled={settled} />
       ) : signedIn ? (
@@ -413,7 +437,7 @@ export default function MarketComments({
               menuOpen={menuFor === c.id}
               onToggleMenu={() => setMenuFor(menuFor === c.id ? null : c.id)}
               onCloseMenu={() => setMenuFor(null)}
-              onFlag={(reason) => flag(c.id, null, reason)}
+              onReport={() => setReportTarget({ id: c.id, parentId: null })}
               onDelete={() => remove(c.id, null)}
               onOpenProfile={onOpenProfile}
               // Reply wiring — top level only.
@@ -430,7 +454,7 @@ export default function MarketComments({
               onToggleReplyMenu={(rid) =>
                 setMenuFor(menuFor === rid ? null : rid)
               }
-              onFlagReply={(rid, reason) => flag(rid, c.id, reason)}
+              onReportReply={(rid) => setReportTarget({ id: rid, parentId: c.id })}
               onDeleteReply={(rid) => remove(rid, c.id)}
             />
           ))}
@@ -653,7 +677,7 @@ function CommentRow({
   menuOpen,
   onToggleMenu,
   onCloseMenu,
-  onFlag,
+  onReport,
   onDelete,
   onOpenProfile,
   isReply,
@@ -666,7 +690,7 @@ function CommentRow({
   onSubmitReply,
   replyMenuFor,
   onToggleReplyMenu,
-  onFlagReply,
+  onReportReply,
   onDeleteReply,
   accent,
 }: {
@@ -677,7 +701,8 @@ function CommentRow({
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
-  onFlag: (reason: CommentFlagReason) => void;
+  /** Opens the report dialog for this comment. */
+  onReport: () => void;
   onDelete: () => void;
   onOpenProfile?: (userId: string) => void;
   /** Replies render smaller and carry none of the threading controls. */
@@ -691,7 +716,7 @@ function CommentRow({
   onSubmitReply?: (body: string) => Promise<boolean | void> | void;
   replyMenuFor?: string | null;
   onToggleReplyMenu?: (id: string) => void;
-  onFlagReply?: (id: string, reason: CommentFlagReason) => void;
+  onReportReply?: (id: string) => void;
   onDeleteReply?: (id: string) => void;
   /** Market colour, forwarded to the reply composer. */
   accent?: string;
@@ -746,7 +771,7 @@ function CommentRow({
             onToggleReplies={onToggleReplies}
             replyMenuFor={replyMenuFor}
             onToggleReplyMenu={onToggleReplyMenu}
-            onFlagReply={onFlagReply}
+            onReportReply={onReportReply}
             onDeleteReply={onDeleteReply}
             onOpenProfile={onOpenProfile}
           />
@@ -911,27 +936,10 @@ function CommentRow({
                       You reported this.
                     </div>
                   ) : (
-                    <>
-                      <div
-                        style={{
-                          padding: "6px 10px 4px",
-                          fontSize: 10.5,
-                          fontWeight: 700,
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
-                          color: "var(--text-subtle)",
-                        }}
-                      >
-                        Report for
-                      </div>
-                      {FLAG_REASONS.map((r) => (
-                        <MenuItem
-                          key={r.value}
-                          label={r.label}
-                          onClick={() => onFlag(r.value)}
-                        />
-                      ))}
-                    </>
+                    // One action. Picking a reason is the dialog's job — four
+                    // reason rows in a dropdown made the menu itself the form,
+                    // with no room for the note the backend already accepts.
+                    <MenuItem label="Report" onClick={onReport} />
                   )}
                 </div>
               )}
@@ -1006,7 +1014,7 @@ function CommentRow({
               onToggleReplies={onToggleReplies}
               replyMenuFor={replyMenuFor}
               onToggleReplyMenu={onToggleReplyMenu}
-              onFlagReply={onFlagReply}
+              onReportReply={onReportReply}
               onDeleteReply={onDeleteReply}
               onOpenProfile={onOpenProfile}
             />
@@ -1030,7 +1038,7 @@ function RepliesSection({
   replyMenuFor,
   accent,
   onToggleReplyMenu,
-  onFlagReply,
+  onReportReply,
   onDeleteReply,
   onOpenProfile,
 }: {
@@ -1046,7 +1054,7 @@ function RepliesSection({
   onToggleReplies?: () => void;
   replyMenuFor?: string | null;
   onToggleReplyMenu?: (id: string) => void;
-  onFlagReply?: (id: string, reason: CommentFlagReason) => void;
+  onReportReply?: (id: string) => void;
   onDeleteReply?: (id: string) => void;
   onOpenProfile?: (userId: string) => void;
 }) {
@@ -1106,7 +1114,7 @@ function RepliesSection({
                 menuOpen={replyMenuFor === r.id}
                 onToggleMenu={() => onToggleReplyMenu?.(r.id)}
                 onCloseMenu={() => onToggleReplyMenu?.("")}
-                onFlag={(reason) => onFlagReply?.(r.id, reason)}
+                onReport={() => onReportReply?.(r.id)}
                 onDelete={() => onDeleteReply?.(r.id)}
                 onOpenProfile={onOpenProfile}
               />
@@ -1114,6 +1122,215 @@ function RepliesSection({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Pick a reason, optionally say why, then submit.
+ *
+ * A dialog rather than more rows in the dropdown: reporting someone is worth a
+ * deliberate step, the note the backend already accepts has nowhere to live in
+ * a menu, and a menu row fires the instant it is touched — which on a phone is
+ * one mis-tap away from reporting a stranger for abuse.
+ */
+function ReportDialog({
+  accent,
+  submitting,
+  onCancel,
+  onSubmit,
+}: {
+  accent?: string;
+  submitting: boolean;
+  onCancel: () => void;
+  onSubmit: (reason: CommentFlagReason, note: string) => void;
+}) {
+  const [reason, setReason] = useState<CommentFlagReason | null>(null);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onCancel]);
+
+  return (
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        // Above the PWA header (3000) and bottom nav, below its toast.
+        zIndex: 10050,
+        background: "rgba(0,0,0,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 380,
+          boxSizing: "border-box",
+          background: "var(--bg-card)",
+          border: "1px solid var(--glass-border)",
+          borderRadius: 14,
+          padding: 18,
+          boxShadow: "0 16px 48px rgba(0,0,0,0.45)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 900,
+            color: "var(--text-main)",
+            marginBottom: 4,
+          }}
+        >
+          Report this comment
+        </div>
+        <div
+          style={{
+            fontSize: 12.5,
+            color: "var(--text-muted)",
+            lineHeight: 1.5,
+            marginBottom: 14,
+          }}
+        >
+          A moderator reviews every report. Your name is not shown to the
+          author.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {FLAG_REASONS.map((r) => {
+            const on = reason === r.value;
+            return (
+              <button
+                key={r.value}
+                onClick={() => setReason(r.value)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "10px 12px",
+                  borderRadius: 9,
+                  border: `1.5px solid ${on ? (accent ?? "var(--color-primary)") : "var(--glass-border)"}`,
+                  background: on
+                    ? `${accent ?? "var(--color-primary)"}1f`
+                    : "transparent",
+                  color: "var(--text-main)",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 13,
+                    height: 13,
+                    flexShrink: 0,
+                    borderRadius: "50%",
+                    border: `2px solid ${on ? (accent ?? "var(--color-primary)") : "var(--text-subtle)"}`,
+                    background: on
+                      ? (accent ?? "var(--color-primary)")
+                      : "transparent",
+                    boxShadow: on ? "inset 0 0 0 2px var(--bg-card)" : "none",
+                  }}
+                />
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value.slice(0, 300))}
+          placeholder="Anything else the moderator should know? (optional)"
+          rows={3}
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            marginTop: 12,
+            resize: "vertical",
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--glass-border)",
+            borderRadius: 9,
+            color: "var(--text-main)",
+            padding: "10px 12px",
+            fontSize: 13,
+            fontFamily: "inherit",
+            outline: "none",
+          }}
+        />
+        <div
+          style={{
+            textAlign: "right",
+            fontSize: 11,
+            color: "var(--text-subtle)",
+            marginTop: 4,
+          }}
+        >
+          {300 - note.length}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            marginTop: 10,
+          }}
+        >
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 9,
+              border: "1px solid var(--glass-border)",
+              background: "transparent",
+              color: "var(--text-main)",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            // Reason first: a report with no reason tells a moderator nothing,
+            // and the backend requires one anyway.
+            disabled={!reason || submitting}
+            onClick={() => reason && onSubmit(reason, note)}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 9,
+              border: "none",
+              background: reason
+                ? (accent ?? "var(--color-primary)")
+                : "var(--bg-secondary)",
+              color: reason ? onAccentColor(accent) : "var(--text-subtle)",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: reason && !submitting ? "pointer" : "not-allowed",
+            }}
+          >
+            {submitting ? "Reporting…" : "Submit report"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
