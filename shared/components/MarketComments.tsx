@@ -288,10 +288,9 @@ export default function MarketComments({
       style={{
         maxWidth: embedded ? "none" : maxWidth,
         margin: embedded ? 0 : "0 auto",
-        // Standalone, this is the LAST thing on the page, so it carries the
-        // bottom clearance for the fixed nav. Embedded, it sits inside a column
-        // whose own container already holds that clearance.
-        padding: embedded ? "14px 0 8px" : "16px 16px 120px",
+        // No bottom clearance here either: the app shell already reserves
+        // 80px below every route for the fixed nav.
+        padding: embedded ? "14px 0 8px" : "16px 16px 16px",
         marginTop: embedded ? 14 : 0,
         boxSizing: "border-box",
         // A hairline instead of empty space: the thread is part of the same
@@ -494,7 +493,9 @@ function Composer({
         alignItems: "center",
         gap: 8,
         padding: compact ? "6px 6px 6px 12px" : "8px 8px 8px 14px",
-        background: "var(--bg-secondary)",
+        // Transparent so it reads as part of the page rather than a slab laid
+        // on top of it — the outline alone is enough to say "type here".
+        background: "transparent",
         border: "1px solid var(--glass-border)",
         borderRadius: compact ? 12 : 14,
       }}
@@ -564,7 +565,11 @@ function Composer({
           fontWeight: 700,
           fontFamily: "inherit",
           color: draft.trim() ? "#000" : "var(--text-subtle)",
-          background: draft.trim() ? "var(--color-primary)" : "var(--bg-main)",
+          // Against a transparent field, a --bg-main fill reads as a hole
+          // punched in the page; the idle button takes a lighter tint instead.
+          background: draft.trim()
+            ? "var(--color-primary)"
+            : "var(--bg-secondary)",
           border: "none",
           borderRadius: 10,
           cursor: draft.trim() && !submitting ? "pointer" : "default",
