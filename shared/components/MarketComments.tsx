@@ -62,6 +62,13 @@ export interface MarketCommentsProps {
    * measure so it lines up under the themed detail views, which set the same.
    */
   embedded?: boolean;
+  /**
+   * Measure to match when standalone. Defaults to the 760px the themed detail
+   * views use; the price view widens to 1080 on desktop, and a thread sitting
+   * narrower than the market above it reads as a separate page rather than the
+   * rest of the same one. Ignored when `embedded`.
+   */
+  maxWidth?: number;
 }
 
 const FLAG_REASONS: Array<{ value: CommentFlagReason; label: string }> = [
@@ -77,6 +84,7 @@ export default function MarketComments({
   currentUserId,
   onOpenProfile,
   embedded,
+  maxWidth = 760,
 }: MarketCommentsProps) {
   const [comments, setComments] = useState<MarketCommentView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -278,10 +286,17 @@ export default function MarketComments({
   return (
     <div
       style={{
-        maxWidth: embedded ? "none" : 760,
+        maxWidth: embedded ? "none" : maxWidth,
         margin: embedded ? 0 : "0 auto",
-        padding: embedded ? "4px 0 8px" : "20px 16px 8px",
+        // Standalone, this is the LAST thing on the page, so it carries the
+        // bottom clearance for the fixed nav — the themed detail views above
+        // used to hold that 120px themselves, which left a dead band between
+        // the market and its thread once the thread moved below them.
+        padding: embedded ? "4px 0 8px" : "16px 16px 120px",
         boxSizing: "border-box",
+        // A hairline instead of empty space: the thread is part of the same
+        // page as the market, not a second screen stacked under it.
+        borderTop: embedded ? "none" : "1px solid var(--glass-border)",
       }}
     >
       {locked ? (

@@ -220,7 +220,7 @@ export function UclMarketDetail({
 
   return (
     <div style={{ minHeight: "100vh", background: BG }}>
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 16px 120px" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 16px 4px" }}>
         {/* ── Top bar ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <button onClick={() => navigate(-1)} style={iconBtn}>
