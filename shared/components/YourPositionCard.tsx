@@ -10,7 +10,14 @@ import type { Bet } from "@shared/api/client";
 export const YourPositionCard: React.FC<{
   bets: Bet[];
   resolved: boolean;
-}> = ({ bets, resolved }) => {
+  /**
+   * Theme, for the views that have one. The five themed market pages paint
+   * their own backdrop and accent, and a card left on the neutral app tokens
+   * reads as pasted in from another screen. Omit all three and it falls back
+   * to the app tokens, which is right for the generic view.
+   */
+  theme?: { accent: string; border: string; background: string };
+}> = ({ bets, resolved, theme }) => {
   if (!bets.length) return null;
 
   const GREEN = "#22c55e";
@@ -33,8 +40,8 @@ export const YourPositionCard: React.FC<{
         marginTop: 12,
         padding: "12px 14px",
         borderRadius: 12,
-        background: "var(--bg-card)",
-        border: "1px solid var(--glass-border)",
+        background: theme?.background ?? "var(--bg-card)",
+        border: `1px solid ${theme?.border ?? "var(--glass-border)"}`,
         textAlign: "left",
       }}
     >
@@ -44,7 +51,7 @@ export const YourPositionCard: React.FC<{
           fontWeight: 800,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--text-subtle)",
+          color: theme?.accent ?? "var(--text-subtle)",
           marginBottom: 10,
         }}
       >
@@ -56,7 +63,11 @@ export const YourPositionCard: React.FC<{
           const won = b.status === "won";
           const lost = b.status === "lost";
           const refunded = b.status === "refunded";
-          const accent = won ? GREEN : lost ? RED : "var(--text-muted)";
+          const accent = won
+            ? GREEN
+            : lost
+              ? RED
+              : (theme?.accent ?? "var(--text-muted)");
           const result = won
             ? `Won +${nu(Number(b.payout || 0))}`
             : lost
@@ -78,7 +89,7 @@ export const YourPositionCard: React.FC<{
               <span
                 style={{
                   fontWeight: 700,
-                  color: "var(--text-main)",
+                  color: theme ? "#fff" : "var(--text-main)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -95,7 +106,12 @@ export const YourPositionCard: React.FC<{
                   gap: 8,
                 }}
               >
-                <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>
+                <span
+                  style={{
+                    color: theme ? "rgba(255,255,255,0.62)" : "var(--text-muted)",
+                    fontWeight: 600,
+                  }}
+                >
                   staked {nu(Number(b.amount))}
                 </span>
                 <span style={{ color: accent, fontWeight: 800 }}>{result}</span>
