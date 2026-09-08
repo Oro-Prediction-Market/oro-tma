@@ -247,7 +247,7 @@ function WinnerMarketGroup({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {odds ? `${odds.toFixed(2)}x` : "—"}
+                    {formatOdds(odds)}
                   </div>
                 </div>
                 {eliminated ? (
@@ -307,10 +307,51 @@ export function calcProb(market: Market, outcomeId: string): number {
   return (Number(o.totalBetAmount) + prior / n) / (tPool + prior);
 }
 
+/** The reference stake every listed multiplier is quoted for. */
+export const ODDS_REFERENCE_STAKE = 100;
+
+/**
+ * Winners are guaranteed at least this multiple of their stake at settlement,
+ * funded by reducing the house edge. Mirrors the payout floor in the backend's
+ * parimutuel engine — keep the two in step.
+ */
+export const MIN_PAYOUT_MULTIPLE = 1.05;
+
+/**
+ * Renders a listed multiplier for display.
+ *
+ * The leading "~" is load-bearing, not decoration. Listed odds are quoted for
+ * a Nu 100 reference stake (ODDS_REFERENCE_STAKE); the multiple a viewer
+ * actually receives falls as their stake grows, because in a parimutuel their
+ * own money joins the pool they are claiming from. On a Nu 1,900 pool the same
+ * outcome pays 12x at Nu 100 and 1.2x at Nu 5,000. Printing a bare "12.00x"
+ * reads as a promise; "~12.00x" reads as an indication, which is all a card
+ * without a stake box can honestly offer. The exact figure is computed from
+ * the real amount on the bet page.
+ */
+export function formatOdds(odds: number | null | undefined): string {
+  return odds ? `~${odds.toFixed(2)}x` : "—";
+}
+
+/**
+ * The multiplier a `stake` bet on this outcome would return right now.
+ *
+ * Parimutuel, so your own stake joins the pool you are claiming from: the
+ * bigger the bet relative to the pool, the more it dilutes itself. A quoted
+ * multiplier is therefore only true for the stake it was computed with, which
+ * is why callers listing odds must label them "per Nu 100" (see
+ * ODDS_REFERENCE_STAKE) rather than presenting them as what the viewer will
+ * get. On a Nu 1,900 pool the same outcome is 12x at Nu 100 and 1.2x at
+ * Nu 5,000 — quoting the first as if it were the second overstates the return
+ * by an order of magnitude.
+ *
+ * DKBankBetPage computes the real figure from the amount actually entered;
+ * this exists for cards and lists, where no amount is known yet.
+ */
 export function calcOdds(
   market: Market,
   outcomeId: string,
-  stake = 100,
+  stake = ODDS_REFERENCE_STAKE,
 ): number | null {
   const o = market.outcomes?.find((x) => x.id === outcomeId);
   if (!o) return null;
@@ -318,7 +359,14 @@ export function calcOdds(
   const outcomePool = Number(o.totalBetAmount) || 0;
   const houseEdge = Number(market.houseEdgePct) || 0;
   if (totalPool <= 0) return null;
-  return ((totalPool + stake) * (1 - houseEdge / 100)) / (outcomePool + stake);
+  const raw =
+    ((totalPool + stake) * (1 - houseEdge / 100)) / (outcomePool + stake);
+  // Settlement guarantees winners 1.05x their stake, funded out of the house
+  // edge. Without this the card shows a sub-1.0x multiple ("bet 100, win 90")
+  // on any outcome holding most of the pool — a guaranteed loss for being
+  // right, which is not what would actually be paid. DKBankBetPage already
+  // applies the same floor.
+  return Math.max(raw, MIN_PAYOUT_MULTIPLE);
 }
 
 
@@ -401,7 +449,7 @@ function GroupMarketSection({
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {odds ? `${odds.toFixed(2)}x` : "—"}
+                    {formatOdds(odds)}
                   </div>
                 </div>
                 {eliminated ? (
@@ -513,7 +561,7 @@ function PropMarketSection({
               <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: "#A78BFA" }}>{Math.round(prob * 100)}%</span>
                 <span style={{ fontSize: 12, fontWeight: 900, color: "#fbbf24" }}>
-                  {odds ? `${odds.toFixed(2)}x` : "—"}
+                  {formatOdds(odds)}
                 </span>
               </span>
             </button>
@@ -607,7 +655,7 @@ function MatchMarketCard({
               <div style={{ fontSize: 14, fontWeight: 900, color: "#A78BFA" }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, marginTop: 2 }}>{outcome.label}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {odds ? `${odds.toFixed(2)}x` : "—"}
+                  {formatOdds(odds)}
                 </div>
             </button>
           );

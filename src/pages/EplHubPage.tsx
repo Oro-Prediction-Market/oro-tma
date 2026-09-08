@@ -15,7 +15,7 @@ import { Clock, Trophy, CalendarDays, ListOrdered, BarChart3, Goal, Handshake } 
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { isWCMarket, calcProb, calcOdds } from "./WorldCupHubPage";
+import { isWCMarket, calcProb, calcOdds, formatOdds} from "./WorldCupHubPage";
 import { isBplMarket, isDrawOutcome } from "./BplHubPage";
 
 // ── Helpers (mirrored from PWA — keep in sync) ────────────────────────────────
@@ -352,7 +352,7 @@ function FeaturedMatchCard({
               <div style={{ fontSize: 15, fontWeight: 900, color: ACCENT }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600, marginTop: 2 }}>{shortEplName(outcome.label)}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                {odds ? `${odds.toFixed(2)}x` : "—"}
+                {formatOdds(odds)}
               </div>
             </button>
           );
@@ -436,7 +436,7 @@ function EplMatchCard({
               <div style={{ fontSize: 14, fontWeight: 900, color: ACCENT }}>{Math.round(prob * 100)}%</div>
               <div style={{ fontSize: 11, color: "var(--text-muted, #888)", fontWeight: 600, marginTop: 2 }}>{shortEplName(outcome.label)}</div>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#fbbf24", marginTop: 2 }}>
-                  {odds ? `${odds.toFixed(2)}x` : "—"}
+                  {formatOdds(odds)}
                 </div>
             </button>
           );
@@ -612,7 +612,7 @@ function EplSeasonMarket({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {odds ? `${odds.toFixed(2)}x` : "—"}
+                    {formatOdds(odds)}
                   </div>
                 </div>
                 {!locked && (
@@ -1072,7 +1072,7 @@ export function EplHubPage() {
                             <>
                               <div style={{ textAlign: "center", minWidth: 46, flexShrink: 0 }}>
                                 <div style={{ fontSize: 14, fontWeight: 900, color: cat.color, lineHeight: 1 }}>{Math.round((prob ?? 0) * 100)}%</div>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", marginTop: 3 }}>{odds ? `${odds.toFixed(2)}x` : "—"}</div>
+                                <div style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", marginTop: 3 }}>{formatOdds(odds)}</div>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openBet(market!.id, outcome.id); }}

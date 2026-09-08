@@ -9,7 +9,7 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds } from "@/pages/WorldCupHubPage";
+import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import {
   getUfcAvatar,
@@ -1143,7 +1143,7 @@ function FieldBlock({
                   color: GOLD,
                 }}
               >
-                {odds ? `${odds.toFixed(2)}x` : "—"}
+                {formatOdds(odds)}
               </div>
             </div>
             {won ? (

@@ -5,7 +5,7 @@ import { Clock, CalendarDays } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { isWCMarket, calcProb, calcOdds } from "./WorldCupHubPage";
+import { isWCMarket, calcProb, calcOdds, formatOdds} from "./WorldCupHubPage";
 import { isDrawOutcome } from "./BplHubPage";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 
@@ -407,7 +407,7 @@ function UfcEventMarket({
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ textAlign: "center", minWidth: 52 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, color: "#fbbf24", lineHeight: 1 }}>
-                    {odds ? `${odds.toFixed(2)}x` : "—"}
+                    {formatOdds(odds)}
                   </div>
                 </div>
                 {!locked && (

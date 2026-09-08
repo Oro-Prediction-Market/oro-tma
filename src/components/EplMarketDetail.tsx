@@ -10,7 +10,7 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds } from "@/pages/WorldCupHubPage";
+import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import { getEplCrest, shortEplName, EplCrest } from "@/pages/EplHubPage";
 
@@ -785,7 +785,7 @@ function MatchBlock({
                 {label}
               </div>
               <div style={{ marginTop: 3, fontSize: 10, fontWeight: 800, color: GOLD }}>
-                {won ? "WON" : odds ? `${odds.toFixed(2)}x` : "—"}
+                {won ? "WON" : formatOdds(odds)}
               </div>
             </button>
           );
@@ -913,7 +913,7 @@ function FieldBlock({
                 {pct}%
               </div>
               <div style={{ marginTop: 3, fontSize: 11, fontWeight: 900, color: GOLD }}>
-                {odds ? `${odds.toFixed(2)}x` : "—"}
+                {formatOdds(odds)}
               </div>
             </div>
             {won ? (

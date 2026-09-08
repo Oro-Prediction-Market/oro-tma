@@ -9,6 +9,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
+import { MIN_PAYOUT_MULTIPLE } from "@/pages/WorldCupHubPage";
 
 const configMinBet = config.payments.dkBank.minBet;
 
@@ -118,8 +119,9 @@ export const DKBankBetPage: FC = () => {
       const parimutuel =
         (betAmount / newOutcomePool) * newTotalPool * (1 - houseEdge);
       // Winners are guaranteed a 1.05x floor (funded by the house edge at
-      // settlement), so the preview must never show less than that.
-      winAmount = Math.max(parimutuel, betAmount * 1.05);
+      // settlement), so the preview must never show less than that. Shares the
+      // constant with calcOdds so the card and this page cannot drift apart.
+      winAmount = Math.max(parimutuel, betAmount * MIN_PAYOUT_MULTIPLE);
     }
 
     // Price impact: LMSR softmax before and after this bet

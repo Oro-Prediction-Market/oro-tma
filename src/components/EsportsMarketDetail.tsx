@@ -19,7 +19,7 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds } from "@/pages/WorldCupHubPage";
+import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import {
   TeamAvatar,
@@ -941,7 +941,7 @@ function FieldBlock({
                 {pct}%
               </div>
               <div style={{ marginTop: 3 }}>
-                <Label size={8}>{odds ? `${odds.toFixed(2)}x` : "—"}</Label>
+                <Label size={8}>{formatOdds(odds)}</Label>
               </div>
             </div>
             {won ? (
