@@ -45,6 +45,13 @@ type SortOrder = "newest" | "oldest";
  * to, so there is no recursion here and no indent that grows without bound.
  */
 export interface MarketCommentsProps {
+  /**
+   * The market's colour, for the themed views. Applied as `--color-primary` on
+   * the thread root, which is what the Post button is painted with — so a UFC
+   * thread posts in UFC red rather than the app's blue. Omitted, the thread
+   * keeps the app token, which is right for the generic feed markets.
+   */
+  accent?: string;
   marketId: string;
   /** Comments lock when the market settles; cancelled markets close entirely. */
   marketStatus?: string | null;
@@ -85,6 +92,7 @@ export default function MarketComments({
   onOpenProfile,
   embedded,
   maxWidth = 760,
+  accent,
 }: MarketCommentsProps) {
   const [comments, setComments] = useState<MarketCommentView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,6 +304,10 @@ export default function MarketComments({
         // A hairline instead of empty space: the thread is part of the same
         // page as the market, not a second screen stacked under it.
         borderTop: "1px solid var(--glass-border)",
+        // Repaints the Post button and every other --color-primary use inside.
+        ...(accent
+          ? ({ "--color-primary": accent } as React.CSSProperties)
+          : {}),
       }}
     >
       {locked ? (
@@ -304,6 +316,7 @@ export default function MarketComments({
         <Composer
           placeholder="Add a comment..."
           submitting={submitting}
+          accent={accent}
           onSubmit={(body) => post(body)}
         />
       ) : (
@@ -392,6 +405,7 @@ export default function MarketComments({
           {comments.map((c) => (
             <CommentRow
               key={c.id}
+              accent={accent}
               comment={c}
               signedIn={signedIn}
               locked={locked}
@@ -455,11 +469,35 @@ export default function MarketComments({
  * OnboardingPage uses, because the keyboard animates in over ~350ms and a
  * single immediate scroll lands before the viewport has resized.
  */
+/**
+ * Readable text on a solid `accent` fill. Uses relative luminance rather than
+ * a hand-kept list, so a colour added later is handled without an edit.
+ */
+function onAccentColor(accent?: string): string {
+  if (!accent) return "#000";
+  const hex = accent.replace("#", "");
+  const full =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : hex;
+  if (full.length < 6) return "#000";
+  const ch = (i: number) => parseInt(full.slice(i, i + 2), 16) / 255;
+  const lin = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const L =
+    0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4));
+  return L > 0.45 ? "#000" : "#fff";
+}
+
 function Composer({
   placeholder,
   submitting,
   autoFocus,
   compact,
+  accent,
   onSubmit,
   onCancel,
 }: {
@@ -467,6 +505,7 @@ function Composer({
   submitting: boolean;
   autoFocus?: boolean;
   compact?: boolean;
+  accent?: string;
   onSubmit: (body: string) => Promise<boolean | void> | void;
   onCancel?: () => void;
 }) {
@@ -564,7 +603,12 @@ function Composer({
           fontSize: compact ? 12.5 : 13,
           fontWeight: 700,
           fontFamily: "inherit",
-          color: draft.trim() ? "#000" : "var(--text-subtle)",
+          // Black on a bright accent (PL green, EWC gold, BTC orange), white
+          // on a dark one (UCL blue, UFC red). A fixed #000 was unreadable on
+          // half of them.
+          color: draft.trim()
+            ? onAccentColor(accent)
+            : "var(--text-subtle)",
           // Against a transparent field, a --bg-main fill reads as a hole
           // punched in the page; the idle button takes a lighter tint instead.
           background: draft.trim()
@@ -624,6 +668,7 @@ function CommentRow({
   onToggleReplyMenu,
   onFlagReply,
   onDeleteReply,
+  accent,
 }: {
   comment: MarketCommentView;
   signedIn: boolean;
@@ -648,6 +693,8 @@ function CommentRow({
   onToggleReplyMenu?: (id: string) => void;
   onFlagReply?: (id: string, reason: CommentFlagReason) => void;
   onDeleteReply?: (id: string) => void;
+  /** Market colour, forwarded to the reply composer. */
+  accent?: string;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -688,6 +735,7 @@ function CommentRow({
         </div>
         {(comment.replyCount ?? 0) > 0 && (
           <RepliesSection
+            accent={accent}
             comment={comment}
             gutter={gutter}
             signedIn={signedIn}
@@ -939,6 +987,7 @@ function CommentRow({
                   autoFocus
                   placeholder={`Reply to ${name}...`}
                   submitting={Boolean(submitting)}
+                  accent={accent}
                   onSubmit={onSubmitReply}
                   onCancel={onStartReply}
                 />
@@ -946,6 +995,7 @@ function CommentRow({
             )}
 
             <RepliesSection
+              accent={accent}
               comment={comment}
               gutter={0}
               signedIn={signedIn}
@@ -978,11 +1028,14 @@ function RepliesSection({
   replies,
   onToggleReplies,
   replyMenuFor,
+  accent,
   onToggleReplyMenu,
   onFlagReply,
   onDeleteReply,
   onOpenProfile,
 }: {
+  /** Market colour, forwarded to the reply composer. */
+  accent?: string;
   comment: MarketCommentView;
   gutter: number;
   signedIn: boolean;
@@ -1046,6 +1099,7 @@ function RepliesSection({
               <CommentRow
                 key={r.id}
                 isReply
+                accent={accent}
                 comment={r}
                 signedIn={signedIn}
                 submitting={submitting}
