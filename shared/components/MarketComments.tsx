@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, MoreHorizontal, ShieldAlert } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  MoreHorizontal,
+  ShieldAlert,
+} from "lucide-react";
 import {
   avatarFallback,
   deleteMarketComment,
   flagMarketComment,
+  getCommentReplies,
   getMarketComments,
   postMarketComment,
   type CommentFlagReason,
@@ -33,6 +40,9 @@ type SortOrder = "newest" | "oldest";
  * shared/ dir: the two apps disagree on whether ui/, Page, BadgeGrid and
  * ProfileShareCard live in shared/ or src/, so importing any of those would
  * fail to resolve in one of them.
+ *
+ * Threading is one level deep, matching the server. A reply cannot be replied
+ * to, so there is no recursion here and no indent that grows without bound.
  */
 export interface MarketCommentsProps {
   marketId: string;
@@ -63,11 +73,19 @@ export default function MarketComments({
   const [exhausted, setExhausted] = useState(false);
   const [order, setOrder] = useState<SortOrder>("newest");
   const [holdersOnly, setHoldersOnly] = useState(false);
-  const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  const composerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Reply state, keyed by parent comment id.
+  const [replies, setReplies] = useState<
+    Record<string, MarketCommentView[] | undefined>
+  >({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   const settled = marketStatus === "settled";
   const cancelled = marketStatus === "cancelled";
@@ -125,78 +143,132 @@ export default function MarketComments({
     }
   }, [comments, marketId, loadingMore, order, holdersOnly]);
 
-  const submit = useCallback(async () => {
-    const body = draft.trim();
-    if (!body || submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const created = await postMarketComment(marketId, body);
-      // A new comment belongs at the top only when the newest is on top.
-      setComments((prev) =>
-        order === "newest" ? [created, ...prev] : [...prev, created],
-      );
-      setDraft("");
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Couldn't post that. Try again.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }, [draft, marketId, submitting, order]);
+  const post = useCallback(
+    async (body: string, parentId?: string) => {
+      if (!body.trim() || submitting) return false;
+      setSubmitting(true);
+      setError(null);
+      try {
+        const created = await postMarketComment(marketId, body.trim(), parentId);
+        if (parentId) {
+          // Replies read oldest-first, so a new one goes on the end. Bump the
+          // parent's count and open the thread so the author sees it land.
+          setReplies((prev) => ({
+            ...prev,
+            [parentId]: [...(prev[parentId] ?? []), created],
+          }));
+          setComments((prev) =>
+            prev.map((c) =>
+              c.id === parentId ? { ...c, replyCount: c.replyCount + 1 } : c,
+            ),
+          );
+          setExpanded((prev) => ({ ...prev, [parentId]: true }));
+          setReplyingTo(null);
+        } else {
+          setComments((prev) =>
+            order === "newest" ? [created, ...prev] : [...prev, created],
+          );
+        }
+        return true;
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Couldn't post that. Try again.",
+        );
+        return false;
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [marketId, submitting, order],
+  );
 
-  const remove = useCallback(async (id: string) => {
-    setMenuFor(null);
-    // Optimistic: drop it, put it back if the server disagrees.
-    let removed: MarketCommentView | undefined;
-    setComments((prev) => {
-      removed = prev.find((c) => c.id === id);
-      return prev.filter((c) => c.id !== id);
-    });
-    try {
-      await deleteMarketComment(id);
-    } catch {
-      setError("Couldn't delete that comment.");
-      if (removed) {
+  const toggleReplies = useCallback(
+    async (id: string) => {
+      const open = !expanded[id];
+      setExpanded((prev) => ({ ...prev, [id]: open }));
+      if (!open || replies[id]) return;
+      setLoadingReplies((prev) => ({ ...prev, [id]: true }));
+      try {
+        const rows = await getCommentReplies(id);
+        setReplies((prev) => ({ ...prev, [id]: rows }));
+        // Trust the server's count over the stored one, which drifts if
+        // someone else replied or a moderator removed one since page load.
         setComments((prev) =>
-          [...prev, removed as MarketCommentView].sort(
-            (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+          prev.map((c) => (c.id === id ? { ...c, replyCount: rows.length } : c)),
+        );
+      } catch {
+        setError("Couldn't load replies.");
+        setExpanded((prev) => ({ ...prev, [id]: false }));
+      } finally {
+        setLoadingReplies((prev) => ({ ...prev, [id]: false }));
+      }
+    },
+    [expanded, replies],
+  );
+
+  const remove = useCallback(
+    async (id: string, parentId: string | null) => {
+      setMenuFor(null);
+      // Optimistic: drop it, put it back if the server disagrees.
+      const snapshotComments = comments;
+      const snapshotReplies = parentId ? replies[parentId] : undefined;
+
+      if (parentId) {
+        setReplies((prev) => ({
+          ...prev,
+          [parentId]: (prev[parentId] ?? []).filter((r) => r.id !== id),
+        }));
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === parentId
+              ? { ...c, replyCount: Math.max(0, c.replyCount - 1) }
+              : c,
           ),
         );
+      } else {
+        setComments((prev) => prev.filter((c) => c.id !== id));
       }
-    }
-  }, []);
 
-  const flag = useCallback(async (id: string, reason: CommentFlagReason) => {
-    setMenuFor(null);
-    setComments((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, hasFlagged: true } : c)),
-    );
-    try {
-      await flagMarketComment(id, reason);
-    } catch {
-      setError("Couldn't report that comment.");
-      setComments((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, hasFlagged: false } : c)),
-      );
-    }
-  }, []);
+      try {
+        await deleteMarketComment(id);
+      } catch {
+        setError("Couldn't delete that comment.");
+        setComments(snapshotComments);
+        if (parentId && snapshotReplies) {
+          setReplies((prev) => ({ ...prev, [parentId]: snapshotReplies }));
+        }
+      }
+    },
+    [comments, replies],
+  );
 
-  // The composer sits inline at the end of a long page, so on focus it can be
-  // under the Telegram keyboard. Same approach as OnboardingPage: wait out the
-  // ~350ms iOS keyboard animation, then bring it back into view.
-  const handleFocus = useCallback(() => {
-    const scroll = () =>
-      composerRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    setTimeout(scroll, 100);
-    setTimeout(scroll, 400);
-  }, []);
-
-  const remaining = MAX_LENGTH - draft.length;
+  const flag = useCallback(
+    async (id: string, parentId: string | null, reason: CommentFlagReason) => {
+      setMenuFor(null);
+      const mark = (v: boolean) => {
+        if (parentId) {
+          setReplies((prev) => ({
+            ...prev,
+            [parentId]: (prev[parentId] ?? []).map((r) =>
+              r.id === id ? { ...r, hasFlagged: v } : r,
+            ),
+          }));
+        } else {
+          setComments((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, hasFlagged: v } : c)),
+          );
+        }
+      };
+      mark(true);
+      try {
+        await flagMarketComment(id, reason);
+      } catch {
+        setError("Couldn't report that comment.");
+        mark(false);
+      }
+    },
+    [],
+  );
 
   return (
     <div
@@ -207,85 +279,14 @@ export default function MarketComments({
         boxSizing: "border-box",
       }}
     >
-      {/* Composer — one rounded field with the action inside it. */}
       {locked ? (
         <LockedNotice settled={settled} />
       ) : signedIn ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: 8,
-            padding: "8px 8px 8px 14px",
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--glass-border)",
-            borderRadius: 14,
-          }}
-        >
-          <textarea
-            ref={composerRef}
-            rows={1}
-            value={draft}
-            maxLength={MAX_LENGTH}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              // Grow with the text instead of showing a scrollbar in a 1-row box.
-              e.target.style.height = "auto";
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
-            }}
-            onFocus={handleFocus}
-            placeholder="Add a comment..."
-            style={{
-              flex: 1,
-              minWidth: 0,
-              alignSelf: "center",
-              resize: "none",
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              padding: 0,
-              fontSize: 14,
-              fontFamily: "inherit",
-              lineHeight: 1.5,
-              color: "var(--text-main)",
-            }}
-          />
-          {remaining < 100 && (
-            <span
-              style={{
-                alignSelf: "center",
-                fontSize: 11,
-                color:
-                  remaining < 20
-                    ? "var(--color-warning)"
-                    : "var(--text-subtle)",
-              }}
-            >
-              {remaining}
-            </span>
-          )}
-          <button
-            onClick={submit}
-            disabled={!draft.trim() || submitting}
-            style={{
-              flexShrink: 0,
-              padding: "7px 16px",
-              fontSize: 13,
-              fontWeight: 700,
-              fontFamily: "inherit",
-              color: draft.trim() ? "#000" : "var(--text-subtle)",
-              background: draft.trim()
-                ? "var(--color-primary)"
-                : "var(--bg-main)",
-              border: "none",
-              borderRadius: 10,
-              cursor: draft.trim() && !submitting ? "pointer" : "default",
-              opacity: submitting ? 0.6 : 1,
-            }}
-          >
-            {submitting ? "Posting…" : "Post"}
-          </button>
-        </div>
+        <Composer
+          placeholder="Add a comment..."
+          submitting={submitting}
+          onSubmit={(body) => post(body)}
+        />
       ) : (
         <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
           Sign in to join the conversation.
@@ -395,12 +396,30 @@ export default function MarketComments({
               key={c.id}
               comment={c}
               signedIn={signedIn}
+              locked={locked}
+              submitting={submitting}
               menuOpen={menuFor === c.id}
               onToggleMenu={() => setMenuFor(menuFor === c.id ? null : c.id)}
               onCloseMenu={() => setMenuFor(null)}
-              onFlag={(reason) => flag(c.id, reason)}
-              onDelete={() => remove(c.id)}
+              onFlag={(reason) => flag(c.id, null, reason)}
+              onDelete={() => remove(c.id, null)}
               onOpenProfile={onOpenProfile}
+              // Reply wiring — top level only.
+              repliesOpen={Boolean(expanded[c.id])}
+              repliesLoading={Boolean(loadingReplies[c.id])}
+              replies={replies[c.id]}
+              onToggleReplies={() => toggleReplies(c.id)}
+              replying={replyingTo === c.id}
+              onStartReply={() =>
+                setReplyingTo(replyingTo === c.id ? null : c.id)
+              }
+              onSubmitReply={(body) => post(body, c.id)}
+              replyMenuFor={menuFor}
+              onToggleReplyMenu={(rid) =>
+                setMenuFor(menuFor === rid ? null : rid)
+              }
+              onFlagReply={(rid, reason) => flag(rid, c.id, reason)}
+              onDeleteReply={(rid) => remove(rid, c.id)}
             />
           ))}
           {!exhausted && (
@@ -430,6 +449,135 @@ export default function MarketComments({
   );
 }
 
+/**
+ * The write box, shared by the main composer and every reply box.
+ *
+ * Grows with its content instead of scrolling inside a fixed row, and on focus
+ * pulls itself back above the Telegram keyboard — the same two-stage scroll
+ * OnboardingPage uses, because the keyboard animates in over ~350ms and a
+ * single immediate scroll lands before the viewport has resized.
+ */
+function Composer({
+  placeholder,
+  submitting,
+  autoFocus,
+  compact,
+  onSubmit,
+  onCancel,
+}: {
+  placeholder: string;
+  submitting: boolean;
+  autoFocus?: boolean;
+  compact?: boolean;
+  onSubmit: (body: string) => Promise<boolean | void> | void;
+  onCancel?: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const remaining = MAX_LENGTH - draft.length;
+
+  const handleFocus = useCallback(() => {
+    const scroll = () =>
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setTimeout(scroll, 100);
+    setTimeout(scroll, 400);
+  }, []);
+
+  const send = async () => {
+    const ok = await onSubmit(draft);
+    if (ok !== false) setDraft("");
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: compact ? "6px 6px 6px 12px" : "8px 8px 8px 14px",
+        background: "var(--bg-secondary)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: compact ? 12 : 14,
+      }}
+    >
+      <textarea
+        ref={ref}
+        rows={1}
+        autoFocus={autoFocus}
+        value={draft}
+        maxLength={MAX_LENGTH}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          e.target.style.height = "auto";
+          e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+        }}
+        onFocus={handleFocus}
+        placeholder={placeholder}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          resize: "none",
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          padding: 0,
+          fontSize: compact ? 13 : 14,
+          fontFamily: "inherit",
+          lineHeight: 1.5,
+          color: "var(--text-main)",
+        }}
+      />
+      {remaining < 100 && (
+        <span
+          style={{
+            fontSize: 11,
+            color:
+              remaining < 20 ? "var(--color-warning)" : "var(--text-subtle)",
+          }}
+        >
+          {remaining}
+        </span>
+      )}
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          style={{
+            flexShrink: 0,
+            padding: "6px 8px",
+            fontSize: 12,
+            fontFamily: "inherit",
+            color: "var(--text-subtle)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      )}
+      <button
+        onClick={send}
+        disabled={!draft.trim() || submitting}
+        style={{
+          flexShrink: 0,
+          padding: compact ? "6px 13px" : "7px 16px",
+          fontSize: compact ? 12.5 : 13,
+          fontWeight: 700,
+          fontFamily: "inherit",
+          color: draft.trim() ? "#000" : "var(--text-subtle)",
+          background: draft.trim() ? "var(--color-primary)" : "var(--bg-main)",
+          border: "none",
+          borderRadius: 10,
+          cursor: draft.trim() && !submitting ? "pointer" : "default",
+          opacity: submitting ? 0.6 : 1,
+        }}
+      >
+        {submitting ? "…" : compact ? "Reply" : "Post"}
+      </button>
+    </div>
+  );
+}
+
 function LockedNotice({ settled }: { settled: boolean }) {
   return (
     <div
@@ -452,21 +600,50 @@ function LockedNotice({ settled }: { settled: boolean }) {
 function CommentRow({
   comment,
   signedIn,
+  locked,
+  submitting,
   menuOpen,
   onToggleMenu,
   onCloseMenu,
   onFlag,
   onDelete,
   onOpenProfile,
+  isReply,
+  repliesOpen,
+  repliesLoading,
+  replies,
+  onToggleReplies,
+  replying,
+  onStartReply,
+  onSubmitReply,
+  replyMenuFor,
+  onToggleReplyMenu,
+  onFlagReply,
+  onDeleteReply,
 }: {
   comment: MarketCommentView;
   signedIn: boolean;
+  locked?: boolean;
+  submitting?: boolean;
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
   onFlag: (reason: CommentFlagReason) => void;
   onDelete: () => void;
   onOpenProfile?: (userId: string) => void;
+  /** Replies render smaller and carry none of the threading controls. */
+  isReply?: boolean;
+  repliesOpen?: boolean;
+  repliesLoading?: boolean;
+  replies?: MarketCommentView[];
+  onToggleReplies?: () => void;
+  replying?: boolean;
+  onStartReply?: () => void;
+  onSubmitReply?: (body: string) => Promise<boolean | void> | void;
+  replyMenuFor?: string | null;
+  onToggleReplyMenu?: (id: string) => void;
+  onFlagReply?: (id: string, reason: CommentFlagReason) => void;
+  onDeleteReply?: (id: string) => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -484,17 +661,44 @@ function CommentRow({
     };
   }, [menuOpen, onCloseMenu]);
 
+  const avatarSize = isReply ? 30 : 40;
+  const gutter = avatarSize + 12;
+
   if (comment.deleted) {
+    // Still rendered because something hangs off it — either replies, or the
+    // fact that a moderator acted. Showing the gap is more honest than
+    // silently reflowing the thread.
     return (
-      <div
-        style={{
-          padding: "14px 0 14px 52px",
-          fontSize: 12.5,
-          fontStyle: "italic",
-          color: "var(--text-subtle)",
-        }}
-      >
-        This comment was removed by a moderator.
+      <div style={{ padding: "14px 0" }}>
+        <div
+          style={{
+            paddingLeft: gutter,
+            fontSize: 12.5,
+            fontStyle: "italic",
+            color: "var(--text-subtle)",
+          }}
+        >
+          {comment.deletedBy === "admin"
+            ? "This comment was removed by a moderator."
+            : "This comment was deleted."}
+        </div>
+        {(comment.replyCount ?? 0) > 0 && (
+          <RepliesSection
+            comment={comment}
+            gutter={gutter}
+            signedIn={signedIn}
+            submitting={submitting}
+            repliesOpen={repliesOpen}
+            repliesLoading={repliesLoading}
+            replies={replies}
+            onToggleReplies={onToggleReplies}
+            replyMenuFor={replyMenuFor}
+            onToggleReplyMenu={onToggleReplyMenu}
+            onFlagReply={onFlagReply}
+            onDeleteReply={onDeleteReply}
+            onOpenProfile={onOpenProfile}
+          />
+        )}
       </div>
     );
   }
@@ -508,12 +712,12 @@ function CommentRow({
   const openProfile = tappable ? () => onOpenProfile!(a!.id) : undefined;
 
   return (
-    <div style={{ display: "flex", gap: 12, padding: "14px 0" }}>
+    <div style={{ display: "flex", gap: 12, padding: isReply ? "10px 0" : "14px 0" }}>
       <div
         onClick={openProfile}
         style={{
-          width: 40,
-          height: 40,
+          width: avatarSize,
+          height: avatarSize,
           flexShrink: 0,
           borderRadius: "50%",
           overflow: "hidden",
@@ -521,7 +725,7 @@ function CommentRow({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 15,
+          fontSize: isReply ? 12 : 15,
           fontWeight: 800,
           color: "var(--text-muted)",
           cursor: tappable ? "pointer" : "default",
@@ -554,7 +758,7 @@ function CommentRow({
           <span
             onClick={openProfile}
             style={{
-              fontSize: 14,
+              fontSize: isReply ? 13 : 14,
               fontWeight: 700,
               color: "var(--text-main)",
               cursor: tappable ? "pointer" : "default",
@@ -643,11 +847,7 @@ function CommentRow({
                   }}
                 >
                   {comment.isMine ? (
-                    <MenuItem
-                      label="Delete comment"
-                      danger
-                      onClick={onDelete}
-                    />
+                    <MenuItem label="Delete comment" danger onClick={onDelete} />
                   ) : comment.hasFlagged ? (
                     <div
                       style={{
@@ -692,7 +892,7 @@ function CommentRow({
         <p
           style={{
             margin: "5px 0 0",
-            fontSize: 14,
+            fontSize: isReply ? 13.5 : 14,
             lineHeight: 1.5,
             color: "var(--text-main)",
             whiteSpace: "pre-wrap",
@@ -701,7 +901,161 @@ function CommentRow({
         >
           {comment.body}
         </p>
+
+        {/* Replies hang off top-level comments only — depth is capped at one,
+            so a reply shows no Reply button of its own. */}
+        {!isReply && (
+          <>
+            {signedIn && !locked && (
+              <button
+                onClick={onStartReply}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  marginTop: 8,
+                  padding: 0,
+                  fontSize: 12.5,
+                  fontFamily: "inherit",
+                  color: replying ? "var(--text-main)" : "var(--text-subtle)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <MessageSquare size={13} />
+                Reply
+              </button>
+            )}
+
+            {replying && onSubmitReply && (
+              <div style={{ marginTop: 8 }}>
+                <Composer
+                  compact
+                  autoFocus
+                  placeholder={`Reply to ${name}...`}
+                  submitting={Boolean(submitting)}
+                  onSubmit={onSubmitReply}
+                  onCancel={onStartReply}
+                />
+              </div>
+            )}
+
+            <RepliesSection
+              comment={comment}
+              gutter={0}
+              signedIn={signedIn}
+              submitting={submitting}
+              repliesOpen={repliesOpen}
+              repliesLoading={repliesLoading}
+              replies={replies}
+              onToggleReplies={onToggleReplies}
+              replyMenuFor={replyMenuFor}
+              onToggleReplyMenu={onToggleReplyMenu}
+              onFlagReply={onFlagReply}
+              onDeleteReply={onDeleteReply}
+              onOpenProfile={onOpenProfile}
+            />
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+/** The "N Replies" expander and, once open, the replies themselves. */
+function RepliesSection({
+  comment,
+  gutter,
+  signedIn,
+  submitting,
+  repliesOpen,
+  repliesLoading,
+  replies,
+  onToggleReplies,
+  replyMenuFor,
+  onToggleReplyMenu,
+  onFlagReply,
+  onDeleteReply,
+  onOpenProfile,
+}: {
+  comment: MarketCommentView;
+  gutter: number;
+  signedIn: boolean;
+  submitting?: boolean;
+  repliesOpen?: boolean;
+  repliesLoading?: boolean;
+  replies?: MarketCommentView[];
+  onToggleReplies?: () => void;
+  replyMenuFor?: string | null;
+  onToggleReplyMenu?: (id: string) => void;
+  onFlagReply?: (id: string, reason: CommentFlagReason) => void;
+  onDeleteReply?: (id: string) => void;
+  onOpenProfile?: (userId: string) => void;
+}) {
+  const count = comment.replyCount ?? 0;
+  if (count === 0 || !onToggleReplies) return null;
+
+  return (
+    <div style={{ paddingLeft: gutter }}>
+      <button
+        onClick={onToggleReplies}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          marginTop: 8,
+          padding: 0,
+          fontSize: 12.5,
+          fontWeight: 600,
+          fontFamily: "inherit",
+          color: "var(--text-muted)",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        {count} {count === 1 ? "Reply" : "Replies"}
+        {repliesOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+      </button>
+
+      {repliesOpen && (
+        <div
+          style={{
+            marginTop: 2,
+            paddingLeft: 12,
+            borderLeft: "1px solid var(--glass-border)",
+          }}
+        >
+          {repliesLoading && !replies ? (
+            <p
+              style={{
+                fontSize: 12.5,
+                color: "var(--text-subtle)",
+                margin: "8px 0",
+              }}
+            >
+              Loading…
+            </p>
+          ) : (
+            (replies ?? []).map((r) => (
+              <CommentRow
+                key={r.id}
+                isReply
+                comment={r}
+                signedIn={signedIn}
+                submitting={submitting}
+                menuOpen={replyMenuFor === r.id}
+                onToggleMenu={() => onToggleReplyMenu?.(r.id)}
+                onCloseMenu={() => onToggleReplyMenu?.("")}
+                onFlag={(reason) => onFlagReply?.(r.id, reason)}
+                onDelete={() => onDeleteReply?.(r.id)}
+                onOpenProfile={onOpenProfile}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

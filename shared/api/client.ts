@@ -1296,6 +1296,10 @@ export interface MarketCommentView {
   hasFlagged: boolean;
   deleted: boolean;
   deletedBy: "author" | "admin" | null;
+  /** Null for a top-level comment; the parent's id for a reply. */
+  parentId: string | null;
+  /** Live replies under this comment. Always 0 on a reply — depth is capped at 1. */
+  replyCount: number;
 }
 
 export type CommentFlagReason =
@@ -1326,14 +1330,23 @@ export function getMarketComments(
   return request<MarketCommentView[]>(`/markets/${marketId}/comments${suffix}`);
 }
 
+/** Pass `parentId` to reply. Replying to a reply is refused — depth is 1. */
 export function postMarketComment(
   marketId: string,
   body: string,
+  parentId?: string,
 ): Promise<MarketCommentView> {
   return request(`/markets/${marketId}/comments`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, ...(parentId ? { parentId } : {}) }),
   });
+}
+
+/** Every reply under one comment, oldest first. Not paginated. */
+export function getCommentReplies(
+  commentId: string,
+): Promise<MarketCommentView[]> {
+  return request<MarketCommentView[]>(`/comments/${commentId}/replies`);
 }
 
 export function deleteMarketComment(
