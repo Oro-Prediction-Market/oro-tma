@@ -1273,3 +1273,72 @@ export function voteSuggestion(
 ): Promise<{ votes: number; votedByMe: boolean }> {
   return request(`/suggestions/${id}/vote`, { method: "POST" });
 }
+
+// ─── Market comments ─────────────────────────────────────────────────────────
+
+export interface MarketCommentAuthor {
+  id: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  photoUrl: string | null;
+  reputationTier: string;
+}
+
+export interface MarketCommentView {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: MarketCommentAuthor | null;
+  /** The outcome this author is backing, resolved live. Null if no position. */
+  side: { outcomeId: string; label: string } | null;
+  isMine: boolean;
+  hasFlagged: boolean;
+  deleted: boolean;
+  deletedBy: "author" | "admin" | null;
+}
+
+export type CommentFlagReason =
+  | "spam"
+  | "abuse"
+  | "misinformation"
+  | "other";
+
+/** Newest first. `before` is the createdAt of the last row you have. */
+export function getMarketComments(
+  marketId: string,
+  opts: { limit?: number; before?: string } = {},
+): Promise<MarketCommentView[]> {
+  const qs = new URLSearchParams();
+  if (opts.limit) qs.set("limit", String(opts.limit));
+  if (opts.before) qs.set("before", opts.before);
+  const suffix = qs.toString() ? `?${qs}` : "";
+  return request<MarketCommentView[]>(`/markets/${marketId}/comments${suffix}`);
+}
+
+export function postMarketComment(
+  marketId: string,
+  body: string,
+): Promise<MarketCommentView> {
+  return request(`/markets/${marketId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function deleteMarketComment(
+  commentId: string,
+): Promise<{ ok: true }> {
+  return request(`/comments/${commentId}`, { method: "DELETE" });
+}
+
+export function flagMarketComment(
+  commentId: string,
+  reason: CommentFlagReason,
+  note?: string,
+): Promise<{ ok: true; alreadyFlagged: boolean }> {
+  return request(`/comments/${commentId}/flag`, {
+    method: "POST",
+    body: JSON.stringify({ reason, ...(note ? { note } : {}) }),
+  });
+}

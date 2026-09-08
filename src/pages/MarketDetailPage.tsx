@@ -1,5 +1,5 @@
 import { FC, useEffect, useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Spinner, Placeholder } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import {
@@ -20,6 +20,7 @@ import {
   Bet,
   TerPrice,
 } from "@shared/api/client";
+import MarketComments from "@shared/components/MarketComments";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
 import { YourPositionCard } from "@shared/components/YourPositionCard";
 import { DisputeContestFields } from "@/components/DisputeContestFields";
@@ -234,6 +235,7 @@ function TerPricePanel({ market }: { market: Market }) {
 
 export const MarketDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const track = useTrack();
   const haptic = useTmaHaptic();
   const { user } = useAuth();
@@ -494,6 +496,22 @@ export const MarketDetailPage: FC = () => {
     setSide: setDisputeSide,
   };
 
+  // Mounted here rather than inside each themed detail component: every branch
+  // below renders one of six near-duplicate components (and the PWA repeats the
+  // same six), so putting the thread in the page gives every market type
+  // comments from one place instead of ten.
+  //
+  // `user` comes from this page's own useAuth() — there is no auth context, so
+  // a useAuth() call inside MarketComments would fire another getMe().
+  const commentsSection = (
+    <MarketComments
+      marketId={m.id}
+      marketStatus={m.status}
+      currentUserId={user?.id ?? null}
+      onOpenProfile={(userId) => navigate(`/profile/${userId}`)}
+    />
+  );
+
   // TER / BTC price markets get the dedicated trading-styled detail view with
   // the live chart, price-to-beat and Higher/Lower.
   if (m.externalSource === "ter" || m.externalSource === "btc") {
@@ -526,6 +544,7 @@ export const MarketDetailPage: FC = () => {
           myDispute={myDispute}
           myBets={myMarketBets}
         />
+        {commentsSection}
       </Page>
     );
   }
@@ -557,6 +576,7 @@ export const MarketDetailPage: FC = () => {
           myDispute={myDispute}
           myBets={myMarketBets}
         />
+        {commentsSection}
       </Page>
     );
   }
@@ -588,6 +608,7 @@ export const MarketDetailPage: FC = () => {
           myDispute={myDispute}
           myBets={myMarketBets}
         />
+        {commentsSection}
       </Page>
     );
   }
@@ -619,6 +640,7 @@ export const MarketDetailPage: FC = () => {
           myDispute={myDispute}
           myBets={myMarketBets}
         />
+        {commentsSection}
       </Page>
     );
   }
@@ -650,6 +672,7 @@ export const MarketDetailPage: FC = () => {
           myDispute={myDispute}
           myBets={myMarketBets}
         />
+        {commentsSection}
       </Page>
     );
   }
@@ -1578,6 +1601,7 @@ export const MarketDetailPage: FC = () => {
           </div>
         </div>
       </div>
+      {commentsSection}
     </Page>
   );
 };
