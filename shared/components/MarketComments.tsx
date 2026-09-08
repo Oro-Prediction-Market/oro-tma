@@ -72,7 +72,6 @@ export default function MarketComments({
   const [loadingMore, setLoadingMore] = useState(false);
   const [exhausted, setExhausted] = useState(false);
   const [order, setOrder] = useState<SortOrder>("newest");
-  const [holdersOnly, setHoldersOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -92,16 +91,12 @@ export default function MarketComments({
   const locked = settled || cancelled;
   const signedIn = Boolean(currentUserId);
 
-  // Refetches whenever the sort or the holders filter changes — both are
-  // server-side, because paging a client-side filter would skip rows.
+  // Refetches whenever the sort changes. Sorting is server-side, because
+  // re-ordering only the loaded page would misplace everything not yet fetched.
   useEffect(() => {
     let stale = false;
     setLoading(true);
-    getMarketComments(marketId, {
-      limit: PAGE_SIZE,
-      order,
-      holders: holdersOnly,
-    })
+    getMarketComments(marketId, { limit: PAGE_SIZE, order })
       .then((rows) => {
         if (stale) return;
         setComments(rows);
@@ -116,7 +111,7 @@ export default function MarketComments({
     return () => {
       stale = true;
     };
-  }, [marketId, order, holdersOnly]);
+  }, [marketId, order]);
 
   const loadMore = useCallback(async () => {
     const last = comments[comments.length - 1];
@@ -127,7 +122,6 @@ export default function MarketComments({
         limit: PAGE_SIZE,
         cursor: cursorOf(last),
         order,
-        holders: holdersOnly,
       });
       setComments((prev) => {
         // Guard the page boundary — two comments can share a createdAt to the
@@ -141,7 +135,7 @@ export default function MarketComments({
     } finally {
       setLoadingMore(false);
     }
-  }, [comments, marketId, loadingMore, order, holdersOnly]);
+  }, [comments, marketId, loadingMore, order]);
 
   const post = useCallback(
     async (body: string, parentId?: string) => {
@@ -323,25 +317,6 @@ export default function MarketComments({
           <ChevronDown size={14} />
         </button>
 
-        <label
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 13,
-            color: "var(--text-muted)",
-            cursor: "pointer",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={holdersOnly}
-            onChange={(e) => setHoldersOnly(e.target.checked)}
-            style={{ accentColor: "var(--color-primary)" }}
-          />
-          Holders
-        </label>
-
         {/* Comments are the one place a stranger can put a link in front of
             someone holding a balance. Say so where they will read it. */}
         <span
@@ -383,11 +358,9 @@ export default function MarketComments({
             borderRadius: 12,
           }}
         >
-          {holdersOnly
-            ? "No comments from anyone holding a position yet."
-            : locked
-              ? "Nobody commented on this one."
-              : "No comments yet — say why you're taking your side."}
+          {locked
+            ? "Nobody commented on this one."
+            : "No comments yet — say why you're taking your side."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>

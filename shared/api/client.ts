@@ -1313,8 +1313,6 @@ export interface MarketCommentQuery {
   /** createdAt of the last row you have; the comparison flips with `order`. */
   cursor?: string;
   order?: "newest" | "oldest";
-  /** Only people with a position in this market. */
-  holders?: boolean;
 }
 
 export function getMarketComments(
@@ -1325,7 +1323,6 @@ export function getMarketComments(
   if (opts.limit) qs.set("limit", String(opts.limit));
   if (opts.cursor) qs.set("cursor", opts.cursor);
   if (opts.order === "oldest") qs.set("order", "oldest");
-  if (opts.holders) qs.set("holders", "true");
   const suffix = qs.toString() ? `?${qs}` : "";
   return request<MarketCommentView[]>(`/markets/${marketId}/comments${suffix}`);
 }
