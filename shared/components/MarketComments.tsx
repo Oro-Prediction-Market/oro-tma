@@ -289,14 +289,14 @@ export default function MarketComments({
         maxWidth: embedded ? "none" : maxWidth,
         margin: embedded ? 0 : "0 auto",
         // Standalone, this is the LAST thing on the page, so it carries the
-        // bottom clearance for the fixed nav — the themed detail views above
-        // used to hold that 120px themselves, which left a dead band between
-        // the market and its thread once the thread moved below them.
-        padding: embedded ? "4px 0 8px" : "16px 16px 120px",
+        // bottom clearance for the fixed nav. Embedded, it sits inside a column
+        // whose own container already holds that clearance.
+        padding: embedded ? "14px 0 8px" : "16px 16px 120px",
+        marginTop: embedded ? 14 : 0,
         boxSizing: "border-box",
         // A hairline instead of empty space: the thread is part of the same
         // page as the market, not a second screen stacked under it.
-        borderTop: embedded ? "none" : "1px solid var(--glass-border)",
+        borderTop: "1px solid var(--glass-border)",
       }}
     >
       {locked ? (
