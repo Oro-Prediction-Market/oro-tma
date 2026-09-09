@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   Heart,
@@ -104,6 +105,16 @@ export default function MarketComments({
   const [order, setOrder] = useState<SortOrder>("newest");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Every composer in the thread — top level, reply, inline edit — reports
+  // through this one slot, which renders under the top composer. A reply
+  // rejected from the bottom of a long thread would otherwise fail silently
+  // from the user's point of view, so bring the message to them. `block:
+  // "nearest"` is deliberate: it does nothing when the message is already on
+  // screen, which is the common case.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: "nearest" });
+  }, [error]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // The comment the report dialog is open on. `parentId` is carried so the
   // optimistic "You reported this" lands on the right list — replies live in
@@ -442,6 +453,35 @@ export default function MarketComments({
         </p>
       )}
 
+      {/* Directly under the composer, not further down the page: this is the
+          answer to a submit. A rejection — blocked language, the rate limit, a
+          market that settled while the box was open — has to read as feedback
+          on what was just typed. post() returns false rather than throwing so
+          the draft survives, which only helps if the reason is visible next to
+          it. */}
+      {error && (
+        <p
+          ref={errorRef}
+          role="alert"
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 7,
+            margin: "10px 0 0",
+            padding: "9px 11px",
+            borderRadius: 10,
+            fontSize: 12.5,
+            lineHeight: 1.4,
+            color: "var(--color-danger)",
+            background: "var(--bg-secondary)",
+            border: "1px solid var(--color-danger)",
+          }}
+        >
+          <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+          {error}
+        </p>
+      )}
+
       {/* Controls: sort on the left, safety notice on the right. */}
       <div
         style={{
@@ -492,12 +532,6 @@ export default function MarketComments({
           Beware of external links.
         </span>
       </div>
-
-      {error && (
-        <p style={{ fontSize: 12, color: "var(--color-danger)", marginTop: 8 }}>
-          {error}
-        </p>
-      )}
 
       {loading ? (
         <p style={{ fontSize: 13, color: "var(--text-subtle)" }}>Loading…</p>
