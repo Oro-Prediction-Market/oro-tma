@@ -156,6 +156,32 @@ export function nextTierMeta(tier?: string | null): TierMeta | null {
   return next ? TIERS[next] : null;
 }
 
+/**
+ * A rung's requirement as one line — "31+ picks · 50%+ accuracy".
+ *
+ * Derived from the same two numbers the backend gates on rather than written
+ * out as seven strings on the screen that shows them, so a changed threshold
+ * cannot leave a stale sentence behind. That drift is what this module exists
+ * to prevent.
+ *
+ * `minPicks` is already the smallest QUALIFYING count (31, where the backend
+ * writes `total > 30`), so it is quoted directly: "31+ picks" is the bar.
+ *
+ * A `minWinRate` of 0 means there is NO accuracy bar, not a 0% one. Rookie is
+ * where everyone starts, and Scout is a pure volume milestone left deliberately
+ * ungated so beginners are not judged on win rate before they have one.
+ * Printing "0%+ accuracy" for either would invent a requirement that does not
+ * exist.
+ */
+export function tierRequirement(tier?: string | null): string {
+  const { minPicks, minWinRate } = tierMeta(tier);
+  if (minPicks <= 0) return "Everyone starts here";
+  const picks = `${minPicks}+ picks`;
+  return minWinRate > 0
+    ? `${picks} · ${Math.round(minWinRate * 100)}%+ accuracy`
+    : picks;
+}
+
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace("#", "");
   const r = parseInt(h.slice(0, 2), 16);

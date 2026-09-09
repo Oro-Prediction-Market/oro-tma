@@ -19,6 +19,7 @@ import { StreakBenefitsModal } from "@/components/StreakBenefitsModal";
 import { ProfileShareCard } from "@/components/ProfileShareCard";
 import { tierChip } from "@shared/reputation/tiers";
 import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
+import { TierMapSheet } from "@shared/components/TierMapSheet";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import {
   BadgeGrid,
@@ -52,6 +53,7 @@ export const TmaProfilePage: FC = () => {
   const [streakModalOpen, setStreakModalOpen] = useState(false);
   const [showProfileShare, setShowProfileShare] = useState(false);
   const [collectiblesOpen, setCollectiblesOpen] = useState(false);
+  const [tierMapOpen, setTierMapOpen] = useState(false);
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
   const [recentCalls, setRecentCalls] = useState<Bet[]>([]);
 
@@ -619,8 +621,14 @@ export const TmaProfilePage: FC = () => {
         )}
 
         {/* ── Tier Progress ─────────────────────────────────────── */}
+        {/* Both branches open the tier map. A Legend has no "next rung" card,
+            but is the most likely person to want to see the whole ladder —
+            leaving the entry point on the progress branch alone would lock
+            them out of it. No explicit width: the siblings are margin-16 flex
+            children that stretch, and a width here overflows by 32px. */}
         {tier === "legend" ? (
-          <div
+          <button
+            onClick={() => setTierMapOpen(true)}
             style={{
               margin: "0 16px",
               padding: "10px 14px",
@@ -630,21 +638,43 @@ export const TmaProfilePage: FC = () => {
               display: "flex",
               alignItems: "center",
               gap: 8,
+              cursor: "pointer",
+              textAlign: "left",
+              fontFamily: "inherit",
             }}
           >
             <Trophy size={14} color="#f59e0b" />
             <span style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b" }}>
               You've reached the top — Legend tier!
             </span>
-          </div>
+            <span
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                flexShrink: 0,
+              }}
+            >
+              All tiers
+              <ChevronRight size={12} />
+            </span>
+          </button>
         ) : tierProgress ? (
-          <div
+          <button
+            onClick={() => setTierMapOpen(true)}
             style={{
               margin: "0 16px",
               padding: "12px 14px",
               background: "var(--bg-card)",
               borderRadius: 12,
               border: "1px solid var(--glass-border)",
+              cursor: "pointer",
+              textAlign: "left",
+              fontFamily: "inherit",
             }}
           >
             <div
@@ -693,16 +723,42 @@ export const TmaProfilePage: FC = () => {
                 }}
               />
             </div>
-            <span
+            {/* The affordance shares the hint's line rather than the header
+                row, which already carries the percentage. Keeps the card's
+                three-line rhythm. */}
+            <div
               style={{
-                fontSize: 11,
-                color: "var(--text-subtle)",
-                fontWeight: 600,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
               }}
             >
-              {tierProgress.hint}
-            </span>
-          </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-subtle)",
+                  fontWeight: 600,
+                }}
+              >
+                {tierProgress.hint}
+              </span>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--text-muted)",
+                  flexShrink: 0,
+                }}
+              >
+                All tiers
+                <ChevronRight size={12} />
+              </span>
+            </div>
+          </button>
         ) : null}
 
         </div>{/* close profile-two-col (streak + tier) */}
@@ -1079,6 +1135,16 @@ export const TmaProfilePage: FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Reputation tier map ────────────────────────────────── */}
+      {tierMapOpen && (
+        <TierMapSheet
+          tier={tier}
+          totalPredictions={total}
+          correctPredictions={correct}
+          onClose={() => setTierMapOpen(false)}
+        />
       )}
 
       {/* ── Share Profile Modal ────────────────────────────────── */}
