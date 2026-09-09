@@ -23,6 +23,10 @@ import type {
   UclBracketTeam,
 } from "@shared/api/client";
 import { getMarkets, getUclStandings, getUclStats, getUclBracket } from "@shared/api/client";
+// The same helpers the EPL hub uses. This page previously showed only a win %,
+// so a UCL fixture was the one football surface in the app with no payout
+// multiple on it — the PWA's copy of this page has always shown one.
+import { calcOdds, formatOdds } from "./WorldCupHubPage";
 
 // Live-data row shapes fed into the tabs (from the API, with dummy fallback).
 type StandRow = { short: string; crest: string; p: number; gd: number; pts: number };
@@ -241,9 +245,15 @@ function UclSeasonMarket({
               <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.label}</div>
               <div style={{ fontSize: 10.5, color: SILVER, fontWeight: 600, marginTop: 1 }}>Nu {Number(o.totalBetAmount ?? 0).toLocaleString()} pool</div>
             </div>
-            <div style={{ textAlign: "center", minWidth: 40, flexShrink: 0 }}>
+            <div style={{ textAlign: "center", minWidth: 46, flexShrink: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 900, color: BLUE, lineHeight: 1 }}>{shareOf(o.id)}%</div>
               <div style={{ fontSize: 8.5, color: SILVER, fontWeight: 700, textTransform: "uppercase", marginTop: 2 }}>win</div>
+              {(() => {
+                const od = calcOdds(market, o.id);
+                return od ? (
+                  <div style={{ fontSize: 9, fontWeight: 800, color: GOLD, marginTop: 3 }}>{od.toFixed(2)}x</div>
+                ) : null;
+              })()}
             </div>
             {!locked && (
               <button
@@ -429,6 +439,12 @@ function MatchCard({
           >
             <div style={{ fontSize: 18, fontWeight: 900, color: i === 1 ? "#c8d2e0" : colors[Math.min(i, 2)], lineHeight: 1 }}>{probs[i]}%</div>
             <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{labels[i]}</div>
+            {/* formatOdds renders "—" on an empty pool, where a multiple cannot
+                be computed at all. Kept as a placeholder rather than hidden so
+                the three buttons stay the same height. */}
+            <div style={{ marginTop: 2, fontSize: 9, fontWeight: 700, color: GOLD }}>
+              {formatOdds(calcOdds(m, o.id))}
+            </div>
           </button>
         ))}
       </div>
