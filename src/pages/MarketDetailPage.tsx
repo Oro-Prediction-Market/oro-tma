@@ -32,7 +32,7 @@ import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
-import { TrendingUp, TrendingDown, Share2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Share2, ArrowLeft } from "lucide-react";
 import { calcProb, calcOdds } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
@@ -697,6 +697,35 @@ export const MarketDetailPage: FC = () => {
             position: "relative",
           }}
         >
+          {/* Every themed detail view draws its own Back control, because
+              <Page back> only drives Telegram's native back button and is a
+              no-op in PWA mode (Page.tsx). Without this row, the generic view
+              — the one every "other" market from the feed lands on — has no
+              way back at all outside Telegram. */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                background: "var(--bg-card)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: 10,
+                padding: "8px 12px",
+                color: "var(--text-muted)",
+                fontSize: 11,
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                cursor: "pointer",
+              }}
+            >
+              <ArrowLeft size={15} />
+              Back
+            </button>
+          </div>
+
           {/* Header Section */}
           <div
             style={{
