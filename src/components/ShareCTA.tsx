@@ -2,6 +2,7 @@ import { FC } from "react";
 import { Share, Send, Trophy, Sparkles } from "lucide-react";
 import { useAuth } from "@shared/hooks/useAuth";
 import { trackEvent } from "@shared/api/client";
+import { tierLabel as tierLabelOf } from "@shared/reputation/tiers";
 
 declare global {
   interface Window {
@@ -40,15 +41,12 @@ export const ShareCTA: FC<ShareCTAProps> = ({
     } else if (type === "bet") {
       shareText = `🧠 I'm calling it! Just dropped Nu ${amount?.toLocaleString() || ""} on:\n"${marketTitle}"\n\nLet's see who's got the best foresight. Join the pool 👇\n${refLink}`;
     } else if (type === "profile") {
-      const tierLabel =
-        reputation === "expert"
-          ? "Legend"
-          : reputation === "reliable"
-            ? "Hot Hand"
-            : reputation === "regular"
-              ? "Sharpshooter"
-              : "Rookie";
-      shareText = `🏆 My prediction rank on Oro: ${tierLabel} 👑\n\nCan you beat my stats? Start building your own streak 👇\n${refLink}`;
+      // Was a chain matching "expert" / "reliable" / "regular" — names from
+      // an older ladder. Nothing matched, so every user shared "Rookie",
+      // a Prophet included. This one goes out to Telegram, so it was wrong
+      // in front of an audience.
+      const label = tierLabelOf(reputation);
+      shareText = `🏆 My prediction rank on Oro: ${label} 👑\n\nCan you beat my stats? Start building your own streak 👇\n${refLink}`;
     }
 
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;

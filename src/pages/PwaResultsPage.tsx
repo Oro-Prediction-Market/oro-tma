@@ -1,15 +1,14 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+// The four tier icons that used to live here (Trophy, Flame, Crosshair,
+// Sprout) now come from the ladder definition via tierChip, so each rung
+// carries its own icon instead of this file guessing at four of them.
 import {
-  Trophy,
   TrendingUp,
   Award,
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Flame,
-  Crosshair,
-  Sprout,
   Clock,
 } from "lucide-react";
 import {
@@ -22,6 +21,7 @@ import {
   type AuthUser,
 } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
+import { tierChip, tierProgress, nextTierMeta } from "@shared/reputation/tiers";
 
 // Collapse/expand toggle for the Active & Settled lists.
 function ShowMore({
@@ -250,49 +250,19 @@ export function PwaResultsPage() {
                     style={{ display: "flex", alignItems: "center", gap: 6 }}
                   >
                     {(() => {
-                      const tier = me?.reputationTier ?? "newcomer";
-                      const label =
-                        tier === "expert"
-                          ? "Legend"
-                          : tier === "reliable"
-                            ? "Hot Hand"
-                            : tier === "regular"
-                              ? "Sharpshooter"
-                              : "Rookie";
-                      const bg =
-                        tier === "expert"
-                          ? "rgba(245,158,11,0.15)"
-                          : tier === "reliable"
-                            ? "rgba(34,197,94,0.15)"
-                            : tier === "regular"
-                              ? "rgba(59,130,246,0.15)"
-                              : "rgba(100,116,139,0.15)";
-                      const color =
-                        tier === "expert"
-                          ? "#f59e0b"
-                          : tier === "reliable"
-                            ? "#22c55e"
-                            : tier === "regular"
-                              ? "#3b82f6"
-                              : "var(--text-subtle)";
-                      const border =
-                        tier === "expert"
-                          ? "rgba(245,158,11,0.25)"
-                          : tier === "reliable"
-                            ? "rgba(34,197,94,0.25)"
-                            : tier === "regular"
-                              ? "rgba(59,130,246,0.25)"
-                              : "rgba(100,116,139,0.25)";
-                      const tierIcon =
-                        tier === "expert" ? (
-                          <Trophy size={11} />
-                        ) : tier === "reliable" ? (
-                          <Flame size={11} />
-                        ) : tier === "regular" ? (
-                          <Crosshair size={11} />
-                        ) : (
-                          <Sprout size={11} />
-                        );
+                      // Was four if-chains matching "expert" / "reliable" /
+                      // "regular" — an older ladder whose names no longer
+                      // exist, so every real tier fell through and rendered as
+                      // Rookie. tierChip derives all four values from the one
+                      // ladder definition, so a new rung styles itself.
+                      const {
+                        label,
+                        color,
+                        bg,
+                        border,
+                        Icon: TierIcon,
+                      } = tierChip(me?.reputationTier);
+                      const tierIcon = <TierIcon size={11} />;
                       return (
                         <span
                           style={{
@@ -456,8 +426,12 @@ export function PwaResultsPage() {
                       const total = me?.totalPredictions ?? 0;
                       const correct = me?.correctPredictions ?? 0;
                       const accuracy = total > 0 ? correct / total : 0;
-                      const tier = me?.reputationTier ?? "newcomer";
-                      if (tier === "expert") {
+                      const tier = me?.reputationTier ?? "rookie";
+                      // Legend is the top of the ladder, so tierProgress
+                      // returns null there — that is the "nothing left to
+                      // climb" case, not an error.
+                      const climb = tierProgress(tier, total, accuracy);
+                      if (!climb) {
                         return (
                           <>
                             <div
@@ -494,47 +468,18 @@ export function PwaResultsPage() {
                           </>
                         );
                       }
-                      let label: string,
-                        color: string,
-                        progressPct: number,
-                        hint: string;
-                      if (tier === "newcomer") {
-                        progressPct = Math.min((total / 10) * 100, 100);
-                        const rem = 10 - total;
-                        label = "Sharpshooter";
-                        color = "#3b82f6";
-                        hint = `Predict ${rem} more to reach ${label}`;
-                      } else if (tier === "regular") {
-                        progressPct =
-                          ((Math.min(total / 50, 1) +
-                            Math.min(accuracy / 0.65, 1)) /
-                            2) *
-                          100;
-                        const rem = Math.max(0, 50 - total);
-                        label = "Hot Hand";
-                        color = "#059669";
-                        hint =
-                          rem > 0 && accuracy < 0.65
-                            ? `${rem} more & 65% accuracy for ${label}`
-                            : rem > 0
-                              ? `${rem} more for ${label}`
-                              : `Reach 65% accuracy for ${label}`;
-                      } else {
-                        progressPct =
-                          ((Math.min(total / 100, 1) +
-                            Math.min(accuracy / 0.75, 1)) /
-                            2) *
-                          100;
-                        const rem = Math.max(0, 100 - total);
-                        label = "Legend";
-                        color = "#f59e0b";
-                        hint =
-                          rem > 0 && accuracy < 0.75
-                            ? `${rem} more & 75% accuracy for ${label}`
-                            : rem > 0
-                              ? `${rem} more for ${label}`
-                              : `Reach 75% accuracy for ${label}`;
-                      }
+                      // Every threshold below comes from the ladder itself.
+                      // The previous version restated them by hand and had
+                      // drifted: it promised Legend at 100 picks and 75%
+                      // accuracy, which stopped being true when the ladder
+                      // grew to seven rungs (Legend is now 201 and 80%). It
+                      // also branched on tier names that no longer exist, so
+                      // every user fell through to the Legend branch and was
+                      // told their next rank was Legend — even a Rookie.
+                      const label = nextTierMeta(tier)?.label ?? climb.label;
+                      const color = climb.nextColor;
+                      const progressPct = climb.progress * 100;
+                      const hint = climb.hint;
                       return (
                         <>
                           <div
