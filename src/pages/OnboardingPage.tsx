@@ -155,9 +155,48 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
 
   const [displayName, setDisplayName] = useState("");
 
-  // Terms & Privacy consent
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  // Terms & Privacy consent - swipeable carousel, checked items stay checked when swiping back
+  const [consentChecked, setConsentChecked] = useState<boolean[]>([false, false, false]);
+  const [consentSlide, setConsentSlide] = useState(0);
+  const [consentDragOffset, setConsentDragOffset] = useState(0);
+  const consentTouchStartX = useRef<number | null>(null);
+  const termsAccepted = consentChecked.every(Boolean);
   const [showTerms, setShowTerms] = useState(false);
+
+  const goToConsentSlide = (index: number) => {
+    setConsentSlide(Math.max(0, Math.min(2, index)));
+  };
+
+  const handleConsentCheck = (index: number, checked: boolean) => {
+    setConsentChecked((prev) => {
+      const next = [...prev];
+      next[index] = checked;
+      return next;
+    });
+    if (checked && index < 2) {
+      setTimeout(() => goToConsentSlide(index + 1), 200);
+    }
+  };
+
+  const handleConsentTouchStart = (e: React.TouchEvent) => {
+    consentTouchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleConsentTouchMove = (e: React.TouchEvent) => {
+    if (consentTouchStartX.current === null) return;
+    setConsentDragOffset(e.touches[0].clientX - consentTouchStartX.current);
+  };
+
+  const handleConsentTouchEnd = () => {
+    const threshold = 40;
+    if (consentDragOffset > threshold) {
+      goToConsentSlide(consentSlide - 1);
+    } else if (consentDragOffset < -threshold) {
+      goToConsentSlide(consentSlide + 1);
+    }
+    consentTouchStartX.current = null;
+    setConsentDragOffset(0);
+  };
 
   // bank linking
   const [bankStep, setBankStep] = useState<"cid" | "otp" | "done">("cid");
@@ -1293,55 +1332,109 @@ export function OnboardingPage({ auth }: OnboardingPageProps) {
               />
             </div>
 
-            {/* Terms checkbox */}
-            <label
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 8,
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                style={{
-                  marginTop: 2,
-                  accentColor: "#2775d0",
-                  width: 16,
-                  height: 16,
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "var(--text-muted, #94a3b8)",
-                  lineHeight: 1.5,
-                }}
+            {/* Terms checkbox - swipeable carousel; checked slides stay checked when swiping back */}
+            <div>
+              <div
+                style={{ overflow: "hidden" }}
+                onTouchStart={handleConsentTouchStart}
+                onTouchMove={handleConsentTouchMove}
+                onTouchEnd={handleConsentTouchEnd}
               >
-                <span style={{ display: "block", marginBottom: 6 }}>
-                  Licensed by GMC Gelephu. Use of Oro is subject to applicable laws and regulations. By continuing, you confirm your participation is lawful in your jurisdiction. Access may be restricted where prohibited.
-                </span>
-                I agree to the{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowTerms(true);
-                  }}
+                <div
                   style={{
-                    color: "#2775d0",
-                    textDecoration: "underline",
-                    textUnderlineOffset: 2,
+                    display: "flex",
+                    width: "300%",
+                    transform: `translateX(calc(${-consentSlide * (100 / 3)}% + ${consentDragOffset}px))`,
+                    transition: consentDragOffset === 0 ? "transform 0.25s ease-out" : "none",
                   }}
                 >
-                  Terms of Service and Privacy Policy
-                </a>
-              </span>
-            </label>
+                  {[
+                    <>
+                      I confirm that I have read, understood, and agree to be bound by the{" "}
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowTerms(true);
+                        }}
+                        style={{
+                          color: "#2775d0",
+                          textDecoration: "underline",
+                          textUnderlineOffset: 2,
+                        }}
+                      >
+                        Terms and Conditions and Privacy Policy
+                      </a>{" "}
+                      of this platform.
+                    </>,
+                    "I confirm that I am eligible to participate in this platform and that my participation is permitted under the laws, regulations, and policies applicable in my country or jurisdiction of residence.",
+                    "I declare that the information provided by me during onboarding is true, accurate, and complete.",
+                  ].map((text, index) => (
+                    <label
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 8,
+                        cursor: "pointer",
+                        width: `${100 / 3}%`,
+                        flexShrink: 0,
+                        boxSizing: "border-box",
+                        paddingRight: 12,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={consentChecked[index]}
+                        onChange={(e) => handleConsentCheck(index, e.target.checked)}
+                        style={{
+                          marginTop: 2,
+                          accentColor: "#2775d0",
+                          width: 16,
+                          height: 16,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted, #94a3b8)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slide indicators */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 8 }}>
+                {[0, 1, 2].map((index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => goToConsentSlide(index)}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      background:
+                        index === consentSlide
+                          ? "#2775d0"
+                          : consentChecked[index]
+                            ? "#2775d080"
+                            : "var(--text-muted, #94a3b8)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
             {/* Send Code button */}
             <button
