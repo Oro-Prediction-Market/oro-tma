@@ -1681,7 +1681,13 @@ export const TmaLeaderboardPage: FC = () => {
                   fontWeight: 600,
                 }}
               >
-                10+ predictions needed to appear on the board
+                {/* The two boards do not share an entry rule: all-time needs 10
+                    lifetime predictions, the month needs 15 SETTLED ones inside
+                    it. Saying "10+" on both is what makes an empty monthly
+                    board look broken rather than simply unearned. */}
+                {selectedPeriod === "week"
+                  ? "15+ settled predictions this month to appear"
+                  : "10+ predictions needed to appear on the board"}
               </p>
             </div>
 
@@ -1786,9 +1792,19 @@ export const TmaLeaderboardPage: FC = () => {
                 strokeWidth={1.5}
                 style={{ marginBottom: 12, opacity: 0.4 }}
               />
-              <p style={{ fontWeight: 600 }}>No ranked predictors yet.</p>
+              {/* An empty monthly board is the normal state early in a month —
+                  it means nobody has settled 15 predictions yet, not that the
+                  platform has no predictors. The all-time copy would read as a
+                  bug here. */}
+              <p style={{ fontWeight: 600 }}>
+                {selectedPeriod === "week"
+                  ? "No one has qualified this month yet."
+                  : "No ranked predictors yet."}
+              </p>
               <p style={{ fontSize: 12, marginTop: 4 }}>
-                Be the first to make predictions!
+                {selectedPeriod === "week"
+                  ? "Settle 15 predictions this month to claim the top spot."
+                  : "Be the first to make predictions!"}
               </p>
             </div>
           ) : (
