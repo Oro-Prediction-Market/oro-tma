@@ -75,6 +75,28 @@ function valueAt(points: ChartPoint[], t: number): number | null {
   return points[lo].p;
 }
 
+/**
+ * The vertex closest in time to an instant. The crosshair snaps to one of these
+ * rather than floating between them, so the readout is always a moment the
+ * market actually recorded rather than an interpolation of one.
+ */
+function nearestIndex(axis: number[], t: number): number {
+  if (axis.length === 0) return -1;
+  let lo = 0;
+  let hi = axis.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (axis[mid] < t) lo = mid + 1;
+    else hi = mid;
+  }
+  // `lo` is the first vertex at or after the cursor; its predecessor may be
+  // closer. Ties go to the earlier one, which is the price that was standing.
+  if (lo > 0 && Math.abs(axis[lo - 1] - t) <= Math.abs(axis[lo] - t)) {
+    return lo - 1;
+  }
+  return lo;
+}
+
 export function ProbabilityChart({
   series,
   borderColor = "var(--border)",
@@ -116,11 +138,15 @@ export function ProbabilityChart({
 
   const W = w > 0 ? w : ASSUMED_W;
 
-  const { tMin, tSpan, lines, ticks } = useMemo(() => {
+  const { tMin, tSpan, lines, ticks, axis, toX } = useMemo(() => {
     const all = series.flatMap((s) => s.points);
     const min = all.length ? Math.min(...all.map((p) => p.t)) : 0;
     const max = all.length ? Math.max(...all.map((p) => p.t)) : 1;
     const span = Math.max(max - min, 1);
+    // Every vertex on the chart, deduped and ordered — what the crosshair snaps
+    // to. The server sends one shared timeline, but this is the union rather
+    // than the first series' own so the component stays correct for any caller.
+    const axisTimes = [...new Set(all.map((p) => p.t))].sort((a, b) => a - b);
     const plotW = Math.max(W - PAD.left - PAD.right, 1);
     const toX = (t: number) => PAD.left + ((t - min) / span) * plotW;
     // Full 0–100% domain, not a zoomed one: a 3pp wiggle rendered floor to
@@ -139,6 +165,7 @@ export function ProbabilityChart({
       tSpan: span,
       toX,
       toY,
+      axis: axisTimes,
       ticks: tickList,
       lines: series.map((s) => {
         // Step-after: each point is the price *after* the bet at its timestamp,
@@ -166,11 +193,14 @@ export function ProbabilityChart({
   const onMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       const r = e.currentTarget.getBoundingClientRect();
+      // Converted through the fraction across the element, not raw client
+      // pixels. The measured width is the bordered wrapper's while the SVG
+      // fills its content box, so the two differ by the border and the viewBox
+      // quietly rescales everything drawn inside it — reading pixels directly
+      // put the crosshair a couple of px off the pointer at the right edge.
+      const frac = (e.clientX - r.left) / (r.width || 1);
       const plotW = Math.max(W - PAD.left - PAD.right, 1);
-      const x = Math.min(
-        Math.max(e.clientX - r.left - PAD.left, 0),
-        plotW,
-      );
+      const x = Math.min(Math.max(frac * W - PAD.left, 0), plotW);
       setCursor(tMin + (x / plotW) * tSpan);
     },
     [W, tMin, tSpan],
@@ -206,9 +236,12 @@ export function ProbabilityChart({
 
   if (!series.length || !hasPlottableHistory(series)) return null;
 
-  const plotW = Math.max(W - PAD.left - PAD.right, 1);
-  const cursorX =
-    cursor === null ? null : PAD.left + ((cursor - tMin) / tSpan) * plotW;
+  // Everything downstream reads the snapped instant, never the raw cursor, so
+  // the crosshair, the dots, the tooltip's timestamp and the legend all describe
+  // one moment the market actually recorded.
+  const snapIdx = cursor === null ? -1 : nearestIndex(axis, cursor);
+  const snapped = snapIdx < 0 ? null : axis[snapIdx];
+  const cursorX = snapped === null ? null : toX(snapped);
 
   return (
     <div style={{ marginBottom: "var(--space-md)" }}>
@@ -227,9 +260,9 @@ export function ProbabilityChart({
       >
         {lines.map((l) => {
           const v =
-            cursor === null
+            snapped === null
               ? (l.points[l.points.length - 1]?.p ?? 0)
-              : (valueAt(l.points, cursor) ??
+              : (valueAt(l.points, snapped) ??
                 l.points[l.points.length - 1]?.p ??
                 0);
           return (
@@ -349,16 +382,17 @@ export function ProbabilityChart({
             />
           )}
 
-          {/* Dots: the hovered instant while scrubbing, the latest price
-              otherwise. On a step line the hovered dot sits exactly on the
-              drawn segment, because both read the same last-value-at rule. */}
+          {/* Dots: the snapped vertex while scrubbing, the latest price
+              otherwise. Each dot lands exactly on its line's drawn step,
+              because the crosshair is on a real vertex rather than between
+              two of them. */}
           {lines.map((l) => {
-            if (cursor === null) {
+            if (snapped === null) {
               return (
                 <circle key={l.label} cx={l.cx} cy={l.cy} r={3} fill={l.color} />
               );
             }
-            const v = valueAt(l.points, cursor);
+            const v = valueAt(l.points, snapped);
             if (v === null || cursorX === null) return null;
             return (
               <circle
@@ -374,7 +408,7 @@ export function ProbabilityChart({
           })}
         </svg>
 
-        {cursor !== null && cursorX !== null && (
+        {snapped !== null && cursorX !== null && (
           <div
             style={{
               position: "absolute",
@@ -399,10 +433,10 @@ export function ProbabilityChart({
             <div
               style={{ color: "var(--text-subtle)", marginBottom: 2 }}
             >
-              {fmtMoment(cursor, tSpan)}
+              {fmtMoment(snapped, tSpan)}
             </div>
             {lines.map((l) => {
-              const v = valueAt(l.points, cursor);
+              const v = valueAt(l.points, snapped);
               if (v === null) return null;
               return (
                 <div
