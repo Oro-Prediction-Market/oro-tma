@@ -2,9 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
-import type { Bet, Market, Outcome, MyDispute } from "@shared/api/client";
+import type { Market, Outcome, MyDispute } from "@shared/api/client";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
-import { YourPositionCard } from "@shared/components/YourPositionCard";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import {
   DisputeContestFields,
@@ -90,7 +89,6 @@ export interface EplMarketDetailProps {
   disputeSuccess: boolean;
   disputeContest?: DisputeContestControls;
   myDispute?: MyDispute | null;
-  myBets?: Bet[];
   referralId?: string;
 }
 
@@ -108,7 +106,6 @@ export function EplMarketDetail({
   disputeSuccess,
   disputeContest,
   myDispute,
-  myBets,
   referralId,
   chartSlot,
 }: EplMarketDetailProps) {
@@ -379,10 +376,7 @@ export function EplMarketDetail({
         </div>
 
         {/* ── Resolution info ── */}
-        <DisputeResultBanner dispute={myDispute ?? null} />
-        <YourPositionCard bets={myBets ?? []} resolved={resolved} />
-
-        {(market.resolutionCriteria || market.settlementSource) && (
+        <DisputeResultBanner dispute={myDispute ?? null} />        {(market.resolutionCriteria || market.settlementSource) && (
           <div
             style={{
               marginTop: 14,

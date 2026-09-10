@@ -43,6 +43,7 @@ export function CrowdSentiment({
   const dash = (composite * circ).toFixed(2);
 
   const detail = [
+    `${label} confidence · ${pct}%`,
     participantCount != null ? `Participants: ${participantCount}` : null,
     reputationDepth != null
       ? `Reputation depth: ${Math.round(reputationDepth * 100)}%`
@@ -89,7 +90,7 @@ export function CrowdSentiment({
           whiteSpace: "nowrap",
         }}
       >
-        {label} confidence · {pct}%
+        {label} · {pct}%
       </span>
     </div>
   );

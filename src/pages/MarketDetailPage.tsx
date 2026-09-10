@@ -26,7 +26,6 @@ import { ProbabilityChart } from "@shared/components/ProbabilityChart";
 import { CrowdSentiment } from "@shared/components/CrowdSentiment";
 import MarketComments from "@shared/components/MarketComments";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
-import { YourPositionCard } from "@shared/components/YourPositionCard";
 import { DisputeContestFields } from "@/components/DisputeContestFields";
 import { Link } from "@/components/Link/Link";
 import { ShareCTA } from "@shared/components/ShareCTA";
@@ -539,7 +538,6 @@ export const MarketDetailPage: FC = () => {
   const hasWon = wonTotalPayout > 0;
 
   // The caller's own bets on THIS market — drives the "Your position" card.
-  const myMarketBets = userBets.filter((b) => b.marketId === m.id);
 
   const proposedOutcome =
     isResolving && m.proposedOutcomeId
@@ -613,7 +611,6 @@ export const MarketDetailPage: FC = () => {
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
           myDispute={myDispute}
-          myBets={myMarketBets}
         />
         {commentsSection}
       </Page>
@@ -645,7 +642,6 @@ export const MarketDetailPage: FC = () => {
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
           myDispute={myDispute}
-          myBets={myMarketBets}
         />
         {commentsSection}
       </Page>
@@ -677,7 +673,6 @@ export const MarketDetailPage: FC = () => {
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
           myDispute={myDispute}
-          myBets={myMarketBets}
         />
         {commentsSection}
       </Page>
@@ -710,7 +705,6 @@ export const MarketDetailPage: FC = () => {
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
           myDispute={myDispute}
-          myBets={myMarketBets}
         />
         {commentsSection}
       </Page>
@@ -743,7 +737,6 @@ export const MarketDetailPage: FC = () => {
           disputeSuccess={disputeSuccess}
           disputeContest={disputeContest}
           myDispute={myDispute}
-          myBets={myMarketBets}
         />
         {commentsSection}
       </Page>
@@ -1084,10 +1077,7 @@ export const MarketDetailPage: FC = () => {
             </div>
           )}
 
-          {/* Your bets on this market (stake + result) */}
-          <YourPositionCard bets={myMarketBets} resolved={isResolved} />
-
-          {/* Your dispute result (won reward / lost bond) */}
+          {/* Your bets on this market (stake + result) */}          {/* Your dispute result (won reward / lost bond) */}
           <DisputeResultBanner dispute={myDispute} />
 
           {/* Share CTA for Winner */}
