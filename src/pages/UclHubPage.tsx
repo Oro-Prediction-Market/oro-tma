@@ -752,7 +752,6 @@ const STAT_DEFS: {
 function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat) => void }) {
   const [cat, setCat] = useState<StatCat>("goals");
   const active = boards.find((c) => c.id === cat) ?? boards[0];
-  const max = Math.max(...active.rows.map((r) => r.value), 1);
 
   return (
     <div>
@@ -852,17 +851,6 @@ function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat)
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 800, color: "#fff" }}>{s.player}</div>
               <div style={{ fontSize: 11, color: SILVER, marginTop: 1 }}>{s.clubShort}</div>
-              <div
-                style={{
-                  marginTop: 6,
-                  height: 3,
-                  background: "rgba(255,255,255,0.1)",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
-                <div style={{ width: `${(s.value / max) * 100}%`, height: "100%", background: active.accent }} />
-              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 5, color: active.accent, flexShrink: 0 }}>
               <span style={{ display: "inline-flex" }}>{active.icon}</span>
