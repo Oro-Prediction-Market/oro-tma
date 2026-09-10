@@ -29,7 +29,18 @@ import { getMarkets, getUclStandings, getUclStats, getUclBracket } from "@shared
 import { calcOdds, formatOdds } from "./WorldCupHubPage";
 
 // Live-data row shapes fed into the tabs (from the API, with dummy fallback).
-type StandRow = { short: string; crest: string; p: number; gd: number; pts: number };
+type StandRow = {
+  short: string;
+  crest: string;
+  p: number;
+  w: number;
+  d: number;
+  l: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  pts: number;
+};
 type StatRow = { player: string; clubShort: string; crest: string; value: number };
 type StatBoard = {
   id: StatCat;
@@ -664,72 +675,54 @@ function StandingsTab({ rows }: { rows: StandRow[] }) {
   return (
     <div>
       <Heading>League Phase</Heading>
-      <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid rgba(43,107,255,0.2)" }}>
-        {/* Header row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "9px 12px",
-            background: "rgba(43,107,255,0.1)",
-            fontSize: 10,
-            fontWeight: 800,
-            color: SILVER,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          <span style={{ width: 22, flexShrink: 0 }}>#</span>
-          <span style={{ flex: 1 }}>Club</span>
-          <span style={{ width: 26, textAlign: "center" }}>P</span>
-          <span style={{ width: 32, textAlign: "center" }}>GD</span>
-          <span style={{ width: 34, textAlign: "center" }}>Pts</span>
-        </div>
-        {rows.map((row, i) => {
-          // Top 8 auto-advance, 9–24 play-off, else out — colored left rail.
-          const rail = i < 8 ? BLUE : i < 24 ? GOLD : "#e0457b";
-          return (
-            <div
-              key={`${row.short}-${i}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "10px 12px",
-                borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.05)",
-                background: i % 2 ? "rgba(255,255,255,0.015)" : "transparent",
-              }}
-            >
-              <span style={{ width: 22, flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 3, height: 18, borderRadius: 2, background: rail }} />
-                <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{i + 1}</span>
-              </span>
-              <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                <Crest src={row.crest} label={row.short} size={26} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {row.short}
-                </span>
-              </span>
-              <span style={{ width: 26, textAlign: "center", fontSize: 12, color: SILVER }}>{row.p}</span>
-              <span style={{ width: 32, textAlign: "center", fontSize: 12, color: SILVER }}>
-                {row.gd > 0 ? `+${row.gd}` : row.gd}
-              </span>
-              <span style={{ width: 34, textAlign: "center", fontSize: 14, fontWeight: 900, color: "#fff" }}>{row.pts}</span>
-            </div>
-          );
-        })}
+      {/* Same table as the EPL hub — full result columns, zone shown as a left
+          stripe on the position cell, and horizontal scroll on narrow screens
+          rather than dropping columns. Only the palette and the zones differ:
+          the league phase advances 36 clubs into three bands, not two. */}
+      <div style={{ overflowX: "auto", borderRadius: 14, border: "1px solid rgba(43,107,255,0.2)", background: NAVY }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 460 }}>
+          <thead>
+            <tr style={{ color: SILVER, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <th style={{ textAlign: "left", padding: "10px 6px 10px 12px", fontWeight: 800 }}>#</th>
+              <th style={{ textAlign: "left", padding: "10px 6px", fontWeight: 800 }}>Club</th>
+              {["MP", "W", "D", "L", "GF", "GA", "GD"].map((h) => (
+                <th key={h} style={{ textAlign: "center", padding: "10px 4px", fontWeight: 800 }}>{h}</th>
+              ))}
+              <th style={{ textAlign: "center", padding: "10px 12px 10px 4px", fontWeight: 900, color: "rgba(255,255,255,0.7)" }}>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              // Top 8 go straight to the last 16, 9–24 play off for it, the
+              // rest are out. Counted by row, so tied positions in the feed
+              // cannot shift a band.
+              const stripe = i < 8 ? BLUE : i < 24 ? GOLD : "#e0457b";
+              return (
+                <tr key={`${row.short}-${i}`} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <td style={{ padding: "9px 6px 9px 0", borderLeft: `3px solid ${stripe}` }}>
+                    <span style={{ paddingLeft: 9, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>{i + 1}</span>
+                  </td>
+                  <td style={{ padding: "9px 6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Crest src={row.crest} label={row.short} size={22} />
+                      <span style={{ fontWeight: 700, color: "#fff", whiteSpace: "nowrap" }}>{row.short}</span>
+                    </div>
+                  </td>
+                  {[row.p, row.w, row.d, row.l, row.gf, row.ga, row.gd].map((v, j) => (
+                    <td key={j} style={{ textAlign: "center", padding: "9px 4px", color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{v}</td>
+                  ))}
+                  <td style={{ textAlign: "center", padding: "9px 12px 9px 4px", fontWeight: 900, color: "#fff" }}>{row.pts}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      {/* Legend */}
-      <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        {[
-          { c: BLUE, t: "Round of 16" },
-          { c: GOLD, t: "Play-off" },
-          { c: "#e0457b", t: "Eliminated" },
-        ].map((l) => (
-          <span key={l.t} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10.5, color: SILVER, fontWeight: 600 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2, background: l.c }} />
-            {l.t}
-          </span>
-        ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 10, fontSize: 10, color: SILVER, fontWeight: 600 }}>
+        <span><span style={{ color: BLUE }}>▎</span> Round of 16</span>
+        <span><span style={{ color: GOLD }}>▎</span> Play-off</span>
+        <span><span style={{ color: "#e0457b" }}>▎</span> Eliminated</span>
+        <span style={{ marginLeft: "auto" }}>Live · updates hourly</span>
       </div>
     </div>
   );
@@ -1309,6 +1302,11 @@ export function UclHubPage() {
     short: r.teamName,
     crest: r.teamBadge,
     p: r.played,
+    w: r.won,
+    d: r.draw,
+    l: r.lost,
+    gf: r.gf,
+    ga: r.ga,
     gd: r.gd,
     pts: r.points,
   }));
