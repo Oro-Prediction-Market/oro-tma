@@ -129,6 +129,13 @@ function useCountdown(target: string | null | undefined): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export interface UclMarketDetailProps {
+  /**
+   * The probability curve. Passed in rather than fetched here: the page above
+   * already holds the history and this component is reached through an early
+   * return, so a fetch of its own would duplicate the request on every themed
+   * market.
+   */
+  chartSlot?: React.ReactNode;
   market: Market;
   onBetPlaced: () => void;
   isResolving: boolean;
@@ -162,6 +169,7 @@ export function UclMarketDetail({
   myDispute,
   myBets,
   referralId,
+  chartSlot,
 }: UclMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -357,6 +365,8 @@ export function UclMarketDetail({
             </span>
           </div>
         )}
+
+        {chartSlot}
 
         {/* ── Outcomes ── */}
         <div style={{ marginTop: 14 }}>

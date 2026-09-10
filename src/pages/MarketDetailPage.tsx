@@ -23,6 +23,7 @@ import {
   OutcomeHistory,
 } from "@shared/api/client";
 import { ProbabilityChart } from "@shared/components/ProbabilityChart";
+import { CrowdSentiment } from "@shared/components/CrowdSentiment";
 import MarketComments from "@shared/components/MarketComments";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
 import { YourPositionCard } from "@shared/components/YourPositionCard";
@@ -306,6 +307,12 @@ export const MarketDetailPage: FC = () => {
       }
     }
     load();
+    // Fetched here as well as in the poll below. The curve used to be requested
+    // only from the 15s interval, so it could not appear before the first tick
+    // — fifteen seconds of empty card in front of a six-millisecond endpoint.
+    getMarketHistory(id!)
+      .then(setHistory)
+      .catch(() => setHistory([]));
     // Check if user has already bet on this market
     getMyBets()
       .then((bets) => {
@@ -322,6 +329,10 @@ export const MarketDetailPage: FC = () => {
     if (!id) return;
     const refetch = () => {
       bustCache(`/markets/${id}`);
+      // The history key is `/insights/markets/…`, which does not share the
+      // prefix above, so without this the curve served whatever it had cached
+      // and never moved after a bet.
+      bustCache(`/insights/markets/${id}`);
       // The curve rides this poll rather than appending points from the
       // socket: the server already ends the series at the live value, and a
       // client-appended point would compute its probability a different way
@@ -440,81 +451,50 @@ export const MarketDetailPage: FC = () => {
   /**
    * The probability curve, mapped into the chart's primitive shape.
    *
-   * Null — and so the card renders exactly as it did before — unless the market
-   * is in the "other" category (the first test surface) and some point is
-   * usable (see the recovery note below).
+   * The server replays this from the market's own bets and already returns the
+   * displayed share on a shared timeline, so there is nothing left to derive
+   * here — only colours, which are taken from the outcome's position in the
+   * market so a line always matches the row beneath it.
    *
-   * Colours are indexed the same way as the outcome rows below, so a line and
-   * its row are the same colour.
+   * Null — and the card renders exactly as it did before — when the market has
+   * no bets to replay.
    *
    * Declared above the loading/error early returns below: every hook on this
    * page must run on every render, including the ones that bail out.
    */
   const chartSeries = useMemo(() => {
     const mkt = liveMarket ?? market;
-    if (!history || mkt?.category !== "other") return null;
+    if (!history || !history.length || !mkt) return null;
 
-    const resolved =
-      mkt.status === "resolved" || mkt.status === "settled";
+    const resolved = mkt.status === "resolved" || mkt.status === "settled";
     const palette = resolved
       ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
       : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
 
-    const series = history.map((h) => {
-      // Colour by the outcome's position in the market, not its position in
-      // the history payload, so a line always matches the row beneath it even
-      // if the two ever come back in a different order.
-      const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
-      /**
-       * Points written before the outcomePool column can only offer the raw
-       * LMSR value, which is a few points off what the rows print — plotting
-       * it directly would make the chart contradict the page.
-       *
-       * They are still recoverable when the book provably did not change:
-       * LMSR pins the differences between outcome pools and totalPool pins
-       * their sum, so a legacy point matching the first pooled point on both
-       * describes the same pools, and therefore the same share. That restores
-       * the flat prefix truthfully; a legacy point that actually moved is
-       * dropped rather than guessed at.
-       */
-      const anchor = h.points.find((pt) => pt.outcomePool !== null);
-      const unchanged = (pt: (typeof h.points)[number]) =>
-        anchor != null &&
-        Math.abs(pt.probability - anchor.probability) < 1e-9 &&
-        Math.abs(pt.totalPool - anchor.totalPool) < 1e-9;
+    const series = history
+      .filter((h) => h.points.length > 0)
+      .map((h) => {
+        const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
+        return {
+          label: h.label,
+          color: palette[(idx >= 0 ? idx : 0) % palette.length],
+          points: h.points.map((pt) => ({ t: pt.t, p: pt.p })),
+        };
+      });
 
-      return {
-        label: h.label,
-        color: palette[(idx >= 0 ? idx : 0) % palette.length],
-        points: h.points.flatMap((pt) => {
-          const t = new Date(pt.capturedAt).getTime();
-          if (pt.outcomePool !== null) return [{ t, p: pt.share }];
-          return unchanged(pt) ? [{ t, p: anchor!.share }] : [];
-        }),
-      };
-    });
+    // A curve needs somewhere to have moved. One bet is a single step, which
+    // reads as a dead market rather than as a market with one bet in it.
+    const distinct = new Set(series.flatMap((s) => s.points.map((p) => p.t)));
+    if (distinct.size < 3) return null;
 
-    // Some of these markets have sixteen outcomes; drawn in full that is
-    // sixteen near-identical lines under a legend four rows deep. Show the
-    // five the crowd actually favours — the outcome rows below the chart
-    // remain the complete list.
-    const ranked = series
-      .filter((s) => s.points.length > 0)
+    // Five lines is what the eye can follow; the rows below stay complete.
+    return series
       .sort(
         (a, b) =>
           b.points[b.points.length - 1].p - a.points[a.points.length - 1].p,
       )
       .slice(0, palette.length);
-    return ranked.length ? ranked : null;
   }, [history, liveMarket, market]);
-
-  /** The whole tracked window, including points too old to plot. */
-  const chartSince = useMemo(() => {
-    const ts = (history ?? []).flatMap((h) =>
-      h.points.map((pt) => new Date(pt.capturedAt).getTime()),
-    );
-    return ts.length ? Math.min(...ts) : null;
-  }, [history]);
 
   if (loading) {
     return (
@@ -709,6 +689,7 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <UclMarketDetail
+          chartSlot={chartSeries ? <ProbabilityChart series={chartSeries} borderColor="var(--glass-border)" /> : null}
           market={m}
           referralId={referralId}
           onBetPlaced={() => {
@@ -741,6 +722,7 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <EplMarketDetail
+          chartSlot={chartSeries ? <ProbabilityChart series={chartSeries} borderColor="var(--glass-border)" /> : null}
           market={m}
           referralId={referralId}
           onBetPlaced={() => {
@@ -1405,21 +1387,38 @@ export const MarketDetailPage: FC = () => {
             {chartSeries && (
               <ProbabilityChart
                 series={chartSeries}
-                since={chartSince}
                 borderColor="var(--glass-border)"
               />
             )}
+            {/* This card is the predict CTA — each outcome row opens the stake
+                page — so the confidence badge pairs with its heading, the same
+                grouping the PWA gets beside "Make Your Prediction". */}
             <div
               style={{
-                fontSize: "0.7rem",
-                fontWeight: 800,
-                color: "var(--text-subtle)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
                 marginBottom: 20,
               }}
             >
-              Pick your outcome
+              <div
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 800,
+                  color: "var(--text-subtle)",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Pick your outcome
+              </div>
+              <CrowdSentiment
+                composite={m.signalMeta?.composite}
+                participantCount={m.signalMeta?.participantCount}
+                reputationDepth={m.signalMeta?.reputationDepth}
+                maturityScore={m.signalMeta?.maturityScore}
+              />
             </div>
             {(() => {
               const ul = isOpen

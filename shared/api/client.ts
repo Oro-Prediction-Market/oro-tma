@@ -695,20 +695,16 @@ export function getMarket(id: string): Promise<Market> {
 /**
  * One market's probability curve, per outcome, oldest point first.
  *
- * `share` is the value to plot: the Laplace-smoothed pool share, the same
- * number `calcProb` shows in the outcome rows. `probability` is the raw LMSR
- * value the backend stores, which saturates on a lopsided book and would
- * contradict the rows — it is returned for completeness, not for display.
- *
- * `outcomePool` is null on points captured before the column existed; those
- * points fall back to `probability` and are not worth plotting.
+ * The server replays it from the bets that produced it, so `p` is the same
+ * Laplace-smoothed pool share `calcProb` prints in the outcome rows, and the
+ * curve covers the market's whole life rather than however long a sampler
+ * happened to be running. Every outcome shares one set of timestamps.
  */
 export interface HistoryPoint {
-  capturedAt: string;
-  probability: number;
-  totalPool: number;
-  outcomePool: number | null;
-  share: number;
+  /** Epoch milliseconds. */
+  t: number;
+  /** Share of the pool, 0–1. */
+  p: number;
 }
 
 export interface OutcomeHistory {
@@ -717,13 +713,16 @@ export interface OutcomeHistory {
   points: HistoryPoint[];
 }
 
+/**
+ * No `hours` by default: a market that closed more than a window ago would
+ * return nothing, and a settled market's full story is the point of the chart.
+ */
 export function getMarketHistory(
   id: string,
-  hours = 720,
+  hours?: number,
 ): Promise<OutcomeHistory[]> {
-  return request<OutcomeHistory[]>(
-    `/insights/markets/${id}/history?hours=${hours}`,
-  );
+  const q = hours ? `?hours=${hours}` : "";
+  return request<OutcomeHistory[]>(`/insights/markets/${id}/history${q}`);
 }
 
 export interface ResolvedMarket {
