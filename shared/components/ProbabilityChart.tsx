@@ -148,6 +148,9 @@ export function ProbabilityChart({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [w, setW] = useState(0);
   const [cursor, setCursor] = useState<number | null>(null);
+  // Height of the pointer in viewBox units — what decides which line is being
+  // read when several are on screen.
+  const [cursorY, setCursorY] = useState<number | null>(null);
   const scrubbing = useRef(false);
   const startX = useRef(0);
 
@@ -227,6 +230,7 @@ export function ProbabilityChart({
       const plotW = Math.max(W - PAD.left - PAD.right, 1);
       const x = Math.min(Math.max(frac * W - PAD.left, 0), plotW);
       setCursor(tMin + (x / plotW) * tSpan);
+      setCursorY(((e.clientY - r.top) / (r.height || 1)) * H);
     },
     [W, tMin, tSpan],
   );
@@ -257,9 +261,34 @@ export function ProbabilityChart({
   const endScrub = useCallback(() => {
     scrubbing.current = false;
     setCursor(null);
+    setCursorY(null);
   }, []);
 
   if (!series.length || !hasPlottableHistory(series)) return null;
+
+  /**
+   * The line the pointer is nearest, vertically, at the hovered instant.
+   *
+   * With five outcomes on one chart the crosshair alone does not say which
+   * number is being read, so the nearest line is brought forward and the rest
+   * are pushed back. Measured against each line's own height at that instant —
+   * the value the reader is looking at — not against its last point.
+   */
+  const active = (() => {
+    if (cursor === null || cursorY === null) return null;
+    let best: string | null = null;
+    let bestGap = Infinity;
+    for (const l of lines) {
+      const v = valueAt(l.points, cursor);
+      if (v === null) continue;
+      const gap = Math.abs(l.toY(v) - cursorY);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = l.label;
+      }
+    }
+    return best;
+  })();
 
   // The crosshair follows the pointer rather than jumping to the nearest
   // vertex, and the value under it is the last point at or before the cursor —
@@ -290,10 +319,16 @@ export function ProbabilityChart({
               : (valueAt(l.points, cursor) ??
                 l.points[l.points.length - 1]?.p ??
                 0);
+          const dim = active !== null && active !== l.label;
           return (
             <span
               key={l.label}
-              style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                opacity: dim ? 0.4 : 1,
+              }}
             >
               <span
                 style={{
@@ -390,6 +425,7 @@ export function ProbabilityChart({
               one half and nothing is dimmed. */}
           {lines.map((l) => {
             const { past, future } = splitStep(l.points, cursor, l.toX, l.toY);
+            const dim = active !== null && active !== l.label;
             return (
               <g key={l.label}>
                 {future && (
@@ -400,7 +436,7 @@ export function ProbabilityChart({
                     strokeWidth={2}
                     strokeLinejoin="round"
                     strokeLinecap="round"
-                    opacity={0.22}
+                    opacity={dim ? 0.1 : 0.25}
                   />
                 )}
                 {past && (
@@ -408,9 +444,12 @@ export function ProbabilityChart({
                     d={past}
                     fill="none"
                     stroke={l.color}
-                    strokeWidth={2}
+                    // Weight as well as opacity: on a phone, colour alone at
+                    // this stroke width is not enough separation to read.
+                    strokeWidth={active === l.label ? 3 : 2}
                     strokeLinejoin="round"
                     strokeLinecap="round"
+                    opacity={dim ? 0.3 : 1}
                   />
                 )}
               </g>
@@ -441,15 +480,17 @@ export function ProbabilityChart({
             }
             const v = valueAt(l.points, cursor);
             if (v === null || cursorX === null) return null;
+            const dim = active !== null && active !== l.label;
             return (
               <circle
                 key={l.label}
                 cx={cursorX}
                 cy={l.toY(v)}
-                r={3.5}
+                r={active === l.label ? 4.5 : 3.5}
                 fill={l.color}
                 stroke="var(--bg-card)"
                 strokeWidth={1.5}
+                opacity={dim ? 0.35 : 1}
               />
             );
           })}
@@ -485,6 +526,7 @@ export function ProbabilityChart({
             {lines.map((l) => {
               const v = valueAt(l.points, cursor);
               if (v === null) return null;
+              const dim = active !== null && active !== l.label;
               return (
                 <div
                   key={l.label}
@@ -492,6 +534,7 @@ export function ProbabilityChart({
                     display: "flex",
                     justifyContent: "space-between",
                     gap: 10,
+                    opacity: dim ? 0.45 : 1,
                   }}
                 >
                   <span style={{ color: "var(--text-muted)" }}>{l.label}</span>
