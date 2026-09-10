@@ -175,6 +175,41 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * "3d 5h" / "5h 12m" / "12m" until betting closes, refreshed each minute.
+ *
+ * A card is being asked "have I still got time to predict this?", and a
+ * timestamp makes the reader do the subtraction themselves. Same hook and same
+ * shape as the EPL hub's; kept private here because the two hub files do not
+ * import from each other.
+ */
+function useClosesAt(closesAt: string | null | undefined): string {
+  const [label, setLabel] = useState("");
+  useEffect(() => {
+    if (!closesAt) {
+      setLabel("");
+      return;
+    }
+    const tick = () => {
+      const ms = new Date(closesAt).getTime() - Date.now();
+      if (ms <= 0) {
+        setLabel("Closed");
+        return;
+      }
+      const d = Math.floor(ms / 86_400_000);
+      const h = Math.floor((ms % 86_400_000) / 3_600_000);
+      const mn = Math.floor((ms % 3_600_000) / 60_000);
+      if (d > 0) setLabel(`${d}d ${h}h`);
+      else if (h > 0) setLabel(`${h}h ${mn}m`);
+      else setLabel(`${mn}m`);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [closesAt]);
+  return label;
+}
+
 // A single outright market with its contenders shown inline (favourite first),
 // mirroring the EPL hub's season market. Top 5 by default, expandable — so the
 // Season tab shows the actual options to bet on, not a collapsed one-liner.
@@ -190,10 +225,9 @@ function UclSeasonMarket({
   const [expanded, setExpanded] = useState(false);
   const VISIBLE = 5;
   const locked = market.status === "closed" || market.status === "resolving";
-  const closesRaw = market.bettingClosesAt ?? market.closesAt;
-  const when = closesRaw
-    ? new Date(closesRaw).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-    : "";
+  // Time left to predict, not the closing date. An outright can be months out,
+  // so "84d 6h" is long — but it still answers the question the card is asked.
+  const when = useClosesAt(market.bettingClosesAt ?? market.closesAt);
 
   // Share is computed off the ORIGINAL outcome order, so resolve each row's
   // win% by id after we sort the display list by pool (favourite first).
@@ -353,10 +387,10 @@ function MatchCard({
   // the list endpoint doesn't populate `totalPool`.
   const pool = Number(m.totalPool) || outs.reduce((sum, o) => sum + Number(o.totalBetAmount ?? 0), 0);
   const labels = outs.map((o) => o.label);
-  const kickoff = m.bettingClosesAt ?? m.closesAt;
-  const when = kickoff
-    ? new Date(kickoff).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-    : "";
+  // Time left to predict, not the kickoff timestamp — matching the EPL cards.
+  // "Sat, Sep 12, 07:00 PM" makes you work out how long you have; "3d 5h"
+  // answers the question the card is actually being asked.
+  const when = useClosesAt(m.bettingClosesAt ?? m.closesAt);
   const locked = m.status === "closed" || m.status === "resolving";
   const badge = featured
     ? "★ Featured"
