@@ -19,7 +19,10 @@ import {
   SubmitDisputePayload,
   Bet,
   TerPrice,
+  getMarketHistory,
+  OutcomeHistory,
 } from "@shared/api/client";
+import { ProbabilityChart } from "@shared/components/ProbabilityChart";
 import MarketComments from "@shared/components/MarketComments";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
 import { YourPositionCard } from "@shared/components/YourPositionCard";
@@ -242,6 +245,7 @@ export const MarketDetailPage: FC = () => {
   const referralId = String(user?.telegramId ?? user?.id ?? "");
   const [shareOpen, setShareOpen] = useState(false);
   const [market, setMarket] = useState<Market | null>(null);
+  const [history, setHistory] = useState<OutcomeHistory[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -318,6 +322,13 @@ export const MarketDetailPage: FC = () => {
     if (!id) return;
     const refetch = () => {
       bustCache(`/markets/${id}`);
+      // The curve rides this poll rather than appending points from the
+      // socket: the server already ends the series at the live value, and a
+      // client-appended point would compute its probability a different way
+      // and land a second "now" at a slightly different timestamp.
+      getMarketHistory(id)
+        .then(setHistory)
+        .catch(() => setHistory([]));
       return getMarket(id)
         .then(setMarket)
         .catch(() => {});
@@ -452,6 +463,41 @@ export const MarketDetailPage: FC = () => {
     (liveMarket ?? market).status === "settled";
   // Use liveMarket for all display — falls back to REST data until first WS event
   const m = liveMarket ?? market;
+
+  /**
+   * The probability curve, mapped into the chart's primitive shape.
+   *
+   * Null — and so the card renders exactly as it did before — unless the market
+   * is in the "other" category (the first test surface) and there are points
+   * carrying an outcomePool. Points written before that column existed can only
+   * offer the raw LMSR value, which is not what the rows display, so plotting
+   * them would contradict the page.
+   *
+   * Colours are indexed the same way as the outcome rows below, so a line and
+   * its row are the same colour.
+   */
+  const chartSeries = useMemo(() => {
+    if (!history || m.category !== "other") return null;
+
+    const palette = isResolved
+      ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
+      : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
+
+    const series = history.map((h, i) => ({
+      label: h.label,
+      color: palette[i % palette.length],
+      points: h.points
+        .filter((pt) => pt.outcomePool !== null)
+        .map((pt) => ({ t: new Date(pt.capturedAt).getTime(), p: pt.share })),
+    }));
+    return series.some((s) => s.points.length) ? series : null;
+  }, [history, m.category, isResolved]);
+
+  const chartSince = useMemo(() => {
+    const ts = (chartSeries ?? []).flatMap((s) => s.points.map((p) => p.t));
+    return ts.length ? Math.min(...ts) : null;
+  }, [chartSeries]);
+
   const resolvedOutcome =
     isResolved && m.resolvedOutcomeId
       ? m.outcomes.find((o) => o.id === m.resolvedOutcomeId)
@@ -1311,77 +1357,24 @@ export const MarketDetailPage: FC = () => {
               </div>
             )}
 
+            {chartSeries && (
+              <ProbabilityChart
+                series={chartSeries}
+                since={chartSince}
+                borderColor="var(--glass-border)"
+              />
+            )}
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                fontSize: "0.7rem",
+                fontWeight: 800,
+                color: "var(--text-subtle)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
                 marginBottom: 20,
               }}
             >
-              <div
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 800,
-                  color: "var(--text-subtle)",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Pick your outcome
-              </div>
-              {(() => {
-                const meta = (m as any).signalMeta;
-                if (!meta || meta.composite === 0) return null;
-                const c = meta.composite as number;
-                const pct = Math.round(c * 100);
-                // colour: red < 30, amber 30-60, green > 60
-                const col =
-                  c >= 0.6 ? "#22c55e" : c >= 0.3 ? "#f59e0b" : "#ef4444";
-                const label = c >= 0.6 ? "High" : c >= 0.3 ? "Moderate" : "Low";
-                // Arc SVG: r=7, cx=cy=9, circumference≈43.98, filled portion = pct/100 * 43.98
-                const r = 7,
-                  circ = 2 * Math.PI * r;
-                const dash = (c * circ).toFixed(2);
-                return (
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    title={`Participants: ${meta.participantCount} · Reputation depth: ${Math.round(meta.reputationDepth * 100)}% · Maturity: ${Math.round(meta.maturityScore * 100)}%`}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18">
-                      <circle
-                        cx="9"
-                        cy="9"
-                        r={r}
-                        fill="none"
-                        stroke="var(--bg-secondary)"
-                        strokeWidth="2.5"
-                      />
-                      <circle
-                        cx="9"
-                        cy="9"
-                        r={r}
-                        fill="none"
-                        stroke={col}
-                        strokeWidth="2.5"
-                        strokeDasharray={`${dash} ${circ}`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 9 9)"
-                      />
-                    </svg>
-                    <span
-                      style={{
-                        fontSize: "0.68rem",
-                        fontWeight: 800,
-                        color: col,
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      {label} confidence · {pct}%
-                    </span>
-                  </div>
-                );
-              })()}
+              Pick your outcome
             </div>
             {(() => {
               const ul = isOpen

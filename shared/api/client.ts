@@ -692,6 +692,40 @@ export function getMarket(id: string): Promise<Market> {
   return request<Market>(`/markets/${id}`);
 }
 
+/**
+ * One market's probability curve, per outcome, oldest point first.
+ *
+ * `share` is the value to plot: the Laplace-smoothed pool share, the same
+ * number `calcProb` shows in the outcome rows. `probability` is the raw LMSR
+ * value the backend stores, which saturates on a lopsided book and would
+ * contradict the rows — it is returned for completeness, not for display.
+ *
+ * `outcomePool` is null on points captured before the column existed; those
+ * points fall back to `probability` and are not worth plotting.
+ */
+export interface HistoryPoint {
+  capturedAt: string;
+  probability: number;
+  totalPool: number;
+  outcomePool: number | null;
+  share: number;
+}
+
+export interface OutcomeHistory {
+  outcomeId: string;
+  label: string;
+  points: HistoryPoint[];
+}
+
+export function getMarketHistory(
+  id: string,
+  hours = 720,
+): Promise<OutcomeHistory[]> {
+  return request<OutcomeHistory[]>(
+    `/insights/markets/${id}/history?hours=${hours}`,
+  );
+}
+
 export interface ResolvedMarket {
   id: string;
   title: string;
