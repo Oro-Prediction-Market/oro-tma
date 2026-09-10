@@ -437,6 +437,46 @@ export const MarketDetailPage: FC = () => {
     }
   };
 
+  /**
+   * The probability curve, mapped into the chart's primitive shape.
+   *
+   * Null — and so the card renders exactly as it did before — unless the market
+   * is in the "other" category (the first test surface) and there are points
+   * carrying an outcomePool. Points written before that column existed can only
+   * offer the raw LMSR value, which is not what the rows display, so plotting
+   * them would contradict the page.
+   *
+   * Colours are indexed the same way as the outcome rows below, so a line and
+   * its row are the same colour.
+   *
+   * Declared above the loading/error early returns below: every hook on this
+   * page must run on every render, including the ones that bail out.
+   */
+  const chartSeries = useMemo(() => {
+    const mkt = liveMarket ?? market;
+    if (!history || mkt?.category !== "other") return null;
+
+    const resolved =
+      mkt.status === "resolved" || mkt.status === "settled";
+    const palette = resolved
+      ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
+      : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
+
+    const series = history.map((h, i) => ({
+      label: h.label,
+      color: palette[i % palette.length],
+      points: h.points
+        .filter((pt) => pt.outcomePool !== null)
+        .map((pt) => ({ t: new Date(pt.capturedAt).getTime(), p: pt.share })),
+    }));
+    return series.some((s) => s.points.length) ? series : null;
+  }, [history, liveMarket, market]);
+
+  const chartSince = useMemo(() => {
+    const ts = (chartSeries ?? []).flatMap((s) => s.points.map((p) => p.t));
+    return ts.length ? Math.min(...ts) : null;
+  }, [chartSeries]);
+
   if (loading) {
     return (
       <Page back={true}>
@@ -463,40 +503,6 @@ export const MarketDetailPage: FC = () => {
     (liveMarket ?? market).status === "settled";
   // Use liveMarket for all display — falls back to REST data until first WS event
   const m = liveMarket ?? market;
-
-  /**
-   * The probability curve, mapped into the chart's primitive shape.
-   *
-   * Null — and so the card renders exactly as it did before — unless the market
-   * is in the "other" category (the first test surface) and there are points
-   * carrying an outcomePool. Points written before that column existed can only
-   * offer the raw LMSR value, which is not what the rows display, so plotting
-   * them would contradict the page.
-   *
-   * Colours are indexed the same way as the outcome rows below, so a line and
-   * its row are the same colour.
-   */
-  const chartSeries = useMemo(() => {
-    if (!history || m.category !== "other") return null;
-
-    const palette = isResolved
-      ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
-      : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
-
-    const series = history.map((h, i) => ({
-      label: h.label,
-      color: palette[i % palette.length],
-      points: h.points
-        .filter((pt) => pt.outcomePool !== null)
-        .map((pt) => ({ t: new Date(pt.capturedAt).getTime(), p: pt.share })),
-    }));
-    return series.some((s) => s.points.length) ? series : null;
-  }, [history, m.category, isResolved]);
-
-  const chartSince = useMemo(() => {
-    const ts = (chartSeries ?? []).flatMap((s) => s.points.map((p) => p.t));
-    return ts.length ? Math.min(...ts) : null;
-  }, [chartSeries]);
 
   const resolvedOutcome =
     isResolved && m.resolvedOutcomeId
