@@ -57,14 +57,9 @@ function fmtMoment(ms: number, spanMs: number): string {
   return fmtDay(ms);
 }
 
-/**
- * Value of a step series at an arbitrary instant: the last point at or before
- * it. A parimutuel price holds flat between bets and jumps when one lands, so
- * interpolating between vertices would invent prices that never existed.
- */
-function valueAt(points: ChartPoint[], t: number): number | null {
-  if (points.length === 0) return null;
-  if (t < points[0].t) return null;
+/** Index of the last point at or before `t`, or -1 if `t` predates the series. */
+function indexAt(points: ChartPoint[], t: number): number {
+  if (points.length === 0 || t < points[0].t) return -1;
   let lo = 0;
   let hi = points.length - 1;
   while (lo < hi) {
@@ -72,7 +67,74 @@ function valueAt(points: ChartPoint[], t: number): number | null {
     if (points[mid].t <= t) lo = mid;
     else hi = mid - 1;
   }
-  return points[lo].p;
+  return lo;
+}
+
+/**
+ * Value of a step series at an arbitrary instant: the last point at or before
+ * it. A parimutuel price holds flat between bets and jumps when one lands, so
+ * interpolating between vertices would invent prices that never existed.
+ */
+function valueAt(points: ChartPoint[], t: number): number | null {
+  const i = indexAt(points, t);
+  return i < 0 ? null : points[i].p;
+}
+
+/**
+ * The staircase for a run of points. Each point is the price *after* the bet at
+ * its timestamp, so the value holds flat until the next one — drawn as a
+ * diagonal it would suggest the price drifted while nothing was happening.
+ */
+function stepPath(
+  points: ChartPoint[],
+  from: number,
+  to: number,
+  toX: (t: number) => number,
+  toY: (p: number) => number,
+): string {
+  let d = "";
+  for (let i = from; i <= to; i++) {
+    const x = toX(points[i].t);
+    const y = toY(points[i].p);
+    d += i === from ? `M${x},${y}` : `L${x},${toY(points[i - 1].p)}L${x},${y}`;
+  }
+  return d;
+}
+
+/**
+ * The line split at the hovered instant: what had already happened, and what
+ * had not yet.
+ *
+ * The second half is drawn faint, so the chart reads as the market did at the
+ * moment under the cursor rather than as a finished picture with a marker on
+ * it. The cut lands mid-tread — the price at the cursor is the one standing
+ * since the last bet — so the two halves meet exactly and the join is
+ * invisible.
+ */
+function splitStep(
+  points: ChartPoint[],
+  cut: number | null,
+  toX: (t: number) => number,
+  toY: (p: number) => number,
+): { past: string; future: string } {
+  if (points.length === 0) return { past: "", future: "" };
+  const whole = stepPath(points, 0, points.length - 1, toX, toY);
+  if (cut === null) return { past: whole, future: "" };
+
+  const k = indexAt(points, cut);
+  // Cursor sits before this outcome had any price: all of it is still ahead.
+  if (k < 0) return { past: "", future: whole };
+
+  const xc = toX(cut);
+  const yc = toY(points[k].p);
+  const past = stepPath(points, 0, k, toX, toY) + `L${xc},${yc}`;
+
+  let future = `M${xc},${yc}`;
+  for (let i = k + 1; i < points.length; i++) {
+    const x = toX(points[i].t);
+    future += `L${x},${toY(points[i - 1].p)}L${x},${toY(points[i].p)}`;
+  }
+  return { past, future: k === points.length - 1 ? "" : future };
 }
 
 export function ProbabilityChart({
@@ -141,20 +203,10 @@ export function ProbabilityChart({
       toY,
       ticks: tickList,
       lines: series.map((s) => {
-        // Step-after: each point is the price *after* the bet at its timestamp,
-        // so the value holds from there until the next one. Drawn as a diagonal
-        // it would suggest the price drifted while nothing was happening.
-        let d = "";
-        s.points.forEach((pt, i) => {
-          const x = toX(pt.t);
-          const y = toY(pt.p);
-          if (i === 0) d += `M${x},${y}`;
-          else d += `L${x},${toY(s.points[i - 1].p)}L${x},${y}`;
-        });
         const last = s.points[s.points.length - 1];
         return {
           ...s,
-          d,
+          toX,
           toY,
           cx: last ? toX(last.t) : 0,
           cy: last ? toY(last.p) : 0,
@@ -331,17 +383,39 @@ export function ProbabilityChart({
             </text>
           ))}
 
-          {lines.map((l) => (
-            <path
-              key={l.label}
-              d={l.d}
-              fill="none"
-              stroke={l.color}
-              strokeWidth={2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          ))}
+          {/* Each line in two halves: what had happened by the hovered moment,
+              and what had not yet. The second is drawn faint so the chart reads
+              as the market looked at that moment rather than as a finished
+              picture with a marker dropped on it. With no cursor there is only
+              one half and nothing is dimmed. */}
+          {lines.map((l) => {
+            const { past, future } = splitStep(l.points, cursor, l.toX, l.toY);
+            return (
+              <g key={l.label}>
+                {future && (
+                  <path
+                    d={future}
+                    fill="none"
+                    stroke={l.color}
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    opacity={0.22}
+                  />
+                )}
+                {past && (
+                  <path
+                    d={past}
+                    fill="none"
+                    stroke={l.color}
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                )}
+              </g>
+            );
+          })}
 
           {cursorX !== null && (
             <line
