@@ -441,10 +441,8 @@ export const MarketDetailPage: FC = () => {
    * The probability curve, mapped into the chart's primitive shape.
    *
    * Null — and so the card renders exactly as it did before — unless the market
-   * is in the "other" category (the first test surface) and there are points
-   * carrying an outcomePool. Points written before that column existed can only
-   * offer the raw LMSR value, which is not what the rows display, so plotting
-   * them would contradict the page.
+   * is in the "other" category (the first test surface) and some point is
+   * usable (see the recovery note below).
    *
    * Colours are indexed the same way as the outcome rows below, so a line and
    * its row are the same colour.
@@ -462,20 +460,61 @@ export const MarketDetailPage: FC = () => {
       ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
       : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
 
-    const series = history.map((h, i) => ({
-      label: h.label,
-      color: palette[i % palette.length],
-      points: h.points
-        .filter((pt) => pt.outcomePool !== null)
-        .map((pt) => ({ t: new Date(pt.capturedAt).getTime(), p: pt.share })),
-    }));
-    return series.some((s) => s.points.length) ? series : null;
+    const series = history.map((h) => {
+      // Colour by the outcome's position in the market, not its position in
+      // the history payload, so a line always matches the row beneath it even
+      // if the two ever come back in a different order.
+      const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
+      /**
+       * Points written before the outcomePool column can only offer the raw
+       * LMSR value, which is a few points off what the rows print — plotting
+       * it directly would make the chart contradict the page.
+       *
+       * They are still recoverable when the book provably did not change:
+       * LMSR pins the differences between outcome pools and totalPool pins
+       * their sum, so a legacy point matching the first pooled point on both
+       * describes the same pools, and therefore the same share. That restores
+       * the flat prefix truthfully; a legacy point that actually moved is
+       * dropped rather than guessed at.
+       */
+      const anchor = h.points.find((pt) => pt.outcomePool !== null);
+      const unchanged = (pt: (typeof h.points)[number]) =>
+        anchor != null &&
+        Math.abs(pt.probability - anchor.probability) < 1e-9 &&
+        Math.abs(pt.totalPool - anchor.totalPool) < 1e-9;
+
+      return {
+        label: h.label,
+        color: palette[(idx >= 0 ? idx : 0) % palette.length],
+        points: h.points.flatMap((pt) => {
+          const t = new Date(pt.capturedAt).getTime();
+          if (pt.outcomePool !== null) return [{ t, p: pt.share }];
+          return unchanged(pt) ? [{ t, p: anchor!.share }] : [];
+        }),
+      };
+    });
+
+    // Some of these markets have sixteen outcomes; drawn in full that is
+    // sixteen near-identical lines under a legend four rows deep. Show the
+    // five the crowd actually favours — the outcome rows below the chart
+    // remain the complete list.
+    const ranked = series
+      .filter((s) => s.points.length > 0)
+      .sort(
+        (a, b) =>
+          b.points[b.points.length - 1].p - a.points[a.points.length - 1].p,
+      )
+      .slice(0, palette.length);
+    return ranked.length ? ranked : null;
   }, [history, liveMarket, market]);
 
+  /** The whole tracked window, including points too old to plot. */
   const chartSince = useMemo(() => {
-    const ts = (chartSeries ?? []).flatMap((s) => s.points.map((p) => p.t));
+    const ts = (history ?? []).flatMap((h) =>
+      h.points.map((pt) => new Date(pt.capturedAt).getTime()),
+    );
     return ts.length ? Math.min(...ts) : null;
-  }, [chartSeries]);
+  }, [history]);
 
   if (loading) {
     return (

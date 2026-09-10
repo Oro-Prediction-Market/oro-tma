@@ -32,25 +32,20 @@ const H = 200;
 const PAD = { top: 10, right: 8, bottom: 8, left: 8 };
 
 /**
- * A curve is only worth drawing once it says something. Two points fifteen
- * minutes apart, or a line that never moves, read as "this market is dead" —
- * which is a lie about a market that simply has not been bet on yet.
+ * The narrowest window worth an axis. A single sample, or several inside the
+ * same minute, has no width to plot against, so the domain is stretched to at
+ * least this and the line runs flat across it.
  */
 const MIN_SPAN_MS = 60 * 60 * 1000;
 
+/**
+ * A market that has not moved still has a price, and a flat line is the honest
+ * picture of it. An earlier version of this withheld the chart until the price
+ * moved — which meant nearly every market showed no chart at all, since the
+ * sampler writes a baseline and then only on movement.
+ */
 export function hasPlottableHistory(series: ChartSeries[]): boolean {
-  const times = new Set<number>();
-  let varies = false;
-  for (const s of series) {
-    for (const pt of s.points) times.add(pt.t);
-    if (s.points.length > 1) {
-      const first = s.points[0].p;
-      if (s.points.some((pt) => Math.abs(pt.p - first) > 1e-9)) varies = true;
-    }
-  }
-  if (times.size < 2) return false;
-  const sorted = [...times].sort((a, b) => a - b);
-  return sorted[sorted.length - 1] - sorted[0] >= MIN_SPAN_MS && varies;
+  return series.some((s) => s.points.length > 0);
 }
 
 function fmtDay(ms: number): string {
@@ -77,8 +72,13 @@ export function ProbabilityChart({
 
   const { tMin, tSpan, lines } = useMemo(() => {
     const all = series.flatMap((s) => s.points);
-    const min = all.length ? Math.min(...all.map((p) => p.t)) : 0;
-    const max = all.length ? Math.max(...all.map((p) => p.t)) : 1;
+    // Sampling can have begun before the oldest point we are able to plot, so
+    // the axis starts at `since` when it is earlier — the dates then describe
+    // the tracked window rather than just the plottable part of it.
+    let min = all.length ? Math.min(...all.map((p) => p.t)) : 0;
+    if (since != null && since < min) min = since;
+    let max = all.length ? Math.max(...all.map((p) => p.t)) : 1;
+    if (max - min < MIN_SPAN_MS) max = Math.max(Date.now(), min + MIN_SPAN_MS);
     const span = Math.max(max - min, 1);
     const toX = (t: number) =>
       PAD.left + ((t - min) / span) * (W - PAD.left - PAD.right);
@@ -89,38 +89,31 @@ export function ProbabilityChart({
     return {
       tMin: min,
       tSpan: span,
-      lines: series.map((s) => ({
-        ...s,
-        d: s.points.map((pt) => `${toX(pt.t)},${toY(pt.p)}`).join(" "),
-        last: s.points[s.points.length - 1],
-        cx: s.points.length ? toX(s.points[s.points.length - 1].t) : 0,
-        cy: s.points.length ? toY(s.points[s.points.length - 1].p) : 0,
-      })),
+      lines: series.map((s) => {
+        // A polyline needs two vertices, so a lone sample is held flat across
+        // the axis. That is not an assumption about the past — it is what the
+        // market has done since it was first sampled.
+        const pts =
+          s.points.length === 1
+            ? [
+                { t: min, p: s.points[0].p },
+                { t: max, p: s.points[0].p },
+              ]
+            : s.points;
+        return {
+          ...s,
+          d: pts.map((pt) => `${toX(pt.t)},${toY(pt.p)}`).join(" "),
+          last: pts[pts.length - 1],
+          cx: pts.length ? toX(pts[pts.length - 1].t) : 0,
+          cy: pts.length ? toY(pts[pts.length - 1].p) : 0,
+        };
+      }),
     };
-  }, [series]);
+  }, [series, since]);
 
-  if (!series.length) return null;
-
-  // Low-data state. This is the common case on a market nobody has bet on
-  // since it opened, so it gets a real answer rather than an empty box.
-  if (!plottable) {
-    return (
-      <div
-        style={{
-          border: `1px solid ${borderColor}`,
-          borderRadius: "var(--radius-md)",
-          padding: "14px 16px",
-          marginBottom: "var(--space-md)",
-          fontSize: "0.75rem",
-          color: "var(--text-subtle)",
-          lineHeight: 1.5,
-        }}
-      >
-        {since ? `Tracking since ${fmtDay(since)}. ` : ""}
-        The chart appears once the price moves.
-      </div>
-    );
-  }
+  // Nothing to draw at all — no outcome has a usable point. The card keeps its
+  // previous shape rather than showing an empty box.
+  if (!series.length || !plottable) return null;
 
   const readout =
     hover === null
