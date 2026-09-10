@@ -1110,10 +1110,23 @@ export function EplHubPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {standingsRows.map((row) => {
-                      // Zone stripe: 1-4 UCL (green), 5 UEL (amber), 18-20 relegation (pink)
+                    {standingsRows.map((row, i) => {
+                      // Zone stripe: top 4 UCL (green), 5th UEL (amber), bottom
+                      // 3 relegation (pink).
+                      //
+                      // Counted by ROW, not by the position number. The feed
+                      // gives tied clubs the same position and then skips the
+                      // next one — early season it reads
+                      // …15, 16, 17, 17, 19, 20 — so there is no 18th position
+                      // at all, and "pos >= 18" striped only two clubs.
                       const stripe =
-                        row.pos <= 4 ? ACCENT : row.pos === 5 ? "#fbbf24" : row.pos >= 18 ? PINK : "transparent";
+                        i < 4
+                          ? ACCENT
+                          : i === 4
+                            ? "#fbbf24"
+                            : i >= standingsRows.length - 3
+                              ? PINK
+                              : "transparent";
                       return (
                         <tr key={row.club} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                           <td style={{ padding: "9px 6px 9px 0", borderLeft: `3px solid ${stripe}` }}>
