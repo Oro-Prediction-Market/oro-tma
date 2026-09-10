@@ -12,6 +12,10 @@ import {
 import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import { getEplCrest, shortEplName, EplCrest } from "@/pages/EplHubPage";
+import {
+  ProbabilityChart,
+  type ChartOutcome,
+} from "@shared/components/ProbabilityChart";
 
 // ── Premier League theme tokens (mirror the hub) ──────────────────────────────
 const ACCENT = "#00ff85"; // PL green
@@ -19,6 +23,25 @@ const PURPLE = "#38003c"; // PL purple
 const PINK = "#e90052"; // PL pink
 const GOLD = "#fbbf24";
 const BG = "#0a0410";
+
+/**
+ * The probability card, dressed as the match card beside it — same fill, same
+ * border, same 16px corner — so the chart reads as part of this view rather
+ * than as the site's grey panel dropped into it.
+ */
+const CHART_THEME = {
+  surface: "#140a1a",
+  border: "rgba(0,255,133,0.2)",
+  axis: "rgba(255,255,255,0.45)",
+  muted: "rgba(255,255,255,0.7)",
+  text: "#fff",
+  tooltipBg: BG,
+  accent: ACCENT,
+  radius: 16,
+};
+
+/** Five distinguishable lines for a season market, all of them league colours. */
+const FIELD_RAMP = [ACCENT, PINK, "#a855f7", GOLD, "#38bdf8"];
 
 // "Arsenal vs Chelsea" → { a, b }
 function parseMatchTeams(title: string): { a: string; b: string } {
@@ -70,12 +93,15 @@ function useCountdown(target: string | null | undefined): string {
 
 export interface EplMarketDetailProps {
   /**
-   * The probability curve. Passed in rather than fetched here: the page above
-   * already holds the history and this component is reached through an early
-   * return, so a fetch of its own would duplicate the request on every themed
-   * market.
+   * The probability curves, uncoloured. Passed in rather than fetched here:
+   * the page above already holds the history and this component is reached
+   * through an early return, so a fetch of its own would duplicate the request
+   * on every themed market.
+   *
+   * The data arrives without colours on purpose — this view paints the lines in
+   * the league's own palette, so a curve matches the tile beneath it.
    */
-  chartSlot?: React.ReactNode;
+  chartData?: ChartOutcome[] | null;
   market: Market;
   onBetPlaced: () => void;
   isResolving: boolean;
@@ -107,7 +133,7 @@ export function EplMarketDetail({
   disputeContest,
   myDispute,
   referralId,
-  chartSlot,
+  chartData,
 }: EplMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -148,6 +174,38 @@ export function EplMarketDetail({
           : "Open";
 
   const onBet = (outcomeId: string) => setActiveBet(outcomeId);
+
+  /**
+   * The curve, drawn as one of this view's own cards rather than as the site's.
+   *
+   * Lines take the colours the tiles below already use — the home side's green,
+   * the away side's pink, grey for the draw — so a curve can be read against
+   * the outcome it belongs to without a legend lookup. On a season market
+   * there is no home or away, so the five lines walk the league's palette in
+   * the order the table beneath them is ranked.
+   */
+  const chartCard = chartData?.length ? (
+    <ProbabilityChart
+      title={isMatch ? "How the odds moved" : "Title race"}
+      theme={CHART_THEME}
+      fit
+      // One column at every width in the mini app, so the card always has the
+      // depth the taller plot wants.
+      height={236}
+      series={chartData.map((h, i) => {
+        const o = outcomes.find((x) => x.id === h.outcomeId);
+        const teams = outcomes.filter((x) => !isDrawOutcome(x.label ?? ""));
+        return {
+          label: isDrawOutcome(h.label) ? "Draw" : shortEplName(h.label),
+          color:
+            isMatch && o
+              ? outcomeColor(o.label ?? "", teams.indexOf(o))
+              : FIELD_RAMP[i % FIELD_RAMP.length],
+          points: h.points,
+        };
+      })}
+    />
+  ) : null;
 
   const iconBtn: React.CSSProperties = {
     display: "inline-flex",
@@ -354,7 +412,7 @@ export function EplMarketDetail({
           </div>
         )}
 
-        {chartSlot}
+        {chartCard}
 
         {/* ── Outcomes ── */}
         <div style={{ marginTop: 14 }}>

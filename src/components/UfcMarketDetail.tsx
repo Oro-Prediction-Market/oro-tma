@@ -11,6 +11,10 @@ import {
 import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
 import {
+  ProbabilityChart,
+  type ChartOutcome,
+} from "@shared/components/ProbabilityChart";
+import {
   getUfcAvatar,
   shortFighterName,
   FighterAvatar,
@@ -25,6 +29,32 @@ const BLUE = "#2563eb";
 const BLUE_DIM = "#173e9e";
 const GOLD = "#fbbf24";
 const BG = "#0d0b0c";
+
+/**
+ * The probability card, dressed as the fight card beside it — same fill, same
+ * border, same 16px corner — so the chart reads as part of this view rather
+ * than as the site's grey panel dropped into it.
+ */
+const CHART_THEME = {
+  surface: "#131013",
+  border: "rgba(255,255,255,0.1)",
+  axis: "rgba(255,255,255,0.45)",
+  muted: "rgba(255,255,255,0.7)",
+  text: "#fff",
+  tooltipBg: BG,
+  accent: "#ff6b6b",
+  radius: 16,
+};
+
+/**
+ * The red corner, raised for line work. #d20a0a carries a 34px number on the
+ * fight card, but at a 2px stroke and 10px legend text beside the blue corner
+ * it goes muddy — this is the same red with the luminance a thin line needs.
+ */
+const RED_LINE = "#ef2b2b";
+
+/** Five distinguishable lines for a card-wide market, on the theme's colours. */
+const FIELD_RAMP = [RED_LINE, BLUE, GOLD, "#f97316", "#a3a3a3"];
 
 // "Jon Jones vs Charles Oliveira" → { a, b } (strips a leading "UFC 315:" etc.)
 function parseFightNames(title: string): { a: string; b: string } {
@@ -111,6 +141,16 @@ function OctagonFist({ size = 34 }: { size?: number }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export interface UfcMarketDetailProps {
+  /**
+   * The probability curves, uncoloured. Passed in rather than fetched here:
+   * the page above already holds the history and this component is reached
+   * through an early return, so a fetch of its own would duplicate the request
+   * on every themed market.
+   *
+   * The data arrives without colours on purpose — this view paints each line in
+   * its fighter's corner, so a curve matches the tile beneath it.
+   */
+  chartData?: ChartOutcome[] | null;
   market: Market;
   onBetPlaced: () => void;
   isResolving: boolean;
@@ -142,6 +182,7 @@ export function UfcMarketDetail({
   disputeContest,
   myDispute,
   referralId,
+  chartData,
 }: UfcMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -183,6 +224,47 @@ export function UfcMarketDetail({
           : "Open";
 
   const onBet = (outcomeId: string) => setActiveBet(outcomeId);
+
+  /**
+   * The curve, drawn as one of this view's own cards rather than as the site's.
+   *
+   * Each line is its fighter's corner — red and blue, the same two colours the
+   * card above uses — so a curve can be read against the man it belongs to
+   * without a legend lookup. Yes/No outcomes take their fighter's name from the
+   * title, exactly as the corners do; a market spanning the whole event has no
+   * corners, so its lines walk the theme's palette in ranked order.
+   */
+  const chartCard = chartData?.length ? (
+    <ProbabilityChart
+      title="How the odds moved"
+      theme={CHART_THEME}
+      fit
+      // One column at every width in the mini app, so the card always has the
+      // depth the taller plot wants.
+      height={236}
+      series={chartData.map((h, i) => {
+        const fighters = outcomes.filter((x) => !isDrawOutcome(x.label ?? ""));
+        const idx = fighters.findIndex((x) => x.id === h.outcomeId);
+        const named = parseFightNames(market.title);
+        const label = isDrawOutcome(h.label)
+          ? "Draw"
+          : idx >= 0 && /^(yes|no)$/i.test(h.label.trim())
+            ? shortFighterName(idx === 0 ? named.a : named.b)
+            : shortFighterName(h.label);
+        return {
+          label,
+          color: !isFight
+            ? FIELD_RAMP[i % FIELD_RAMP.length]
+            : idx === 0
+              ? RED_LINE
+              : idx === 1
+                ? BLUE
+                : "#9ca3af",
+          points: h.points,
+        };
+      })}
+    />
+  ) : null;
 
   // Share-card outcomes, themed by corner (red / blue), draw greyed.
   const shareOutcomes = (() => {
@@ -430,6 +512,8 @@ export function UfcMarketDetail({
             </span>
           </div>
         )}
+
+        {chartCard}
 
         {/* ── Outcomes ── */}
         <div style={{ marginTop: 14 }}>

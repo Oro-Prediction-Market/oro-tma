@@ -11,6 +11,10 @@ import {
 } from "@/components/DisputeContestFields";
 import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
 import { isDrawOutcome } from "@/pages/BplHubPage";
+import {
+  ProbabilityChart,
+  type ChartOutcome,
+} from "@shared/components/ProbabilityChart";
 
 // ── UEFA Champions League theme tokens ────────────────────────────────────────
 const ACCENT = "#2b6bff"; // UCL blue (home)
@@ -19,6 +23,25 @@ const AWAY = "#e0457b"; // magenta (away)
 const GOLD = "#e8c766";
 const SILVER = "#aab6d6";
 const BG = "#070d29";
+
+/**
+ * The probability card, dressed as the match card beside it — same fill, same
+ * border, same 16px corner — so the chart reads as part of this view rather
+ * than as the site's grey panel dropped into it.
+ */
+const CHART_THEME = {
+  surface: "#0a1130",
+  border: "rgba(43,107,255,0.25)",
+  axis: "rgba(255,255,255,0.45)",
+  muted: "rgba(255,255,255,0.7)",
+  text: "#fff",
+  tooltipBg: BG,
+  accent: ACCENT,
+  radius: 16,
+};
+
+/** Five distinguishable lines for a field market, all of them UCL colours. */
+const FIELD_RAMP = [ACCENT, AWAY, GOLD, SILVER, "#7c5cff"];
 
 // ── Self-contained crest + name helpers ───────────────────────────────────────
 function UclCrest({ src, label, size }: { src: string | null; label: string; size: number }) {
@@ -129,12 +152,15 @@ function useCountdown(target: string | null | undefined): string {
 
 export interface UclMarketDetailProps {
   /**
-   * The probability curve. Passed in rather than fetched here: the page above
-   * already holds the history and this component is reached through an early
-   * return, so a fetch of its own would duplicate the request on every themed
-   * market.
+   * The probability curves, uncoloured. Passed in rather than fetched here:
+   * the page above already holds the history and this component is reached
+   * through an early return, so a fetch of its own would duplicate the request
+   * on every themed market.
+   *
+   * The data arrives without colours on purpose — this view paints the lines in
+   * the competition's own palette, so a curve matches the tile beneath it.
    */
-  chartSlot?: React.ReactNode;
+  chartData?: ChartOutcome[] | null;
   market: Market;
   onBetPlaced: () => void;
   isResolving: boolean;
@@ -166,7 +192,7 @@ export function UclMarketDetail({
   disputeContest,
   myDispute,
   referralId,
-  chartSlot,
+  chartData,
 }: UclMarketDetailProps) {
   const navigate = useNavigate();
   const [activeBet, setActiveBet] = useState<string | null>(null);
@@ -206,6 +232,38 @@ export function UclMarketDetail({
           : "Open";
 
   const onBet = (outcomeId: string) => setActiveBet(outcomeId);
+
+  /**
+   * The curve, drawn as one of this view's own cards rather than as the site's.
+   *
+   * Lines take the colours the tiles below already use — the home side's blue,
+   * the away side's magenta, grey for the draw — so a curve can be read against
+   * the outcome it belongs to without a legend lookup. On a field market there
+   * is no home or away, so the five lines walk the competition's palette in the
+   * order the list beneath them is ranked.
+   */
+  const chartCard = chartData?.length ? (
+    <ProbabilityChart
+      title={isMatch ? "How the odds moved" : "Road to the final"}
+      theme={CHART_THEME}
+      fit
+      // One column at every width in the mini app, so the card always has the
+      // depth the taller plot wants.
+      height={236}
+      series={chartData.map((h, i) => {
+        const o = outcomes.find((x) => x.id === h.outcomeId);
+        const teams = outcomes.filter((x) => !isDrawOutcome(x.label ?? ""));
+        return {
+          label: isDrawOutcome(h.label) ? "Draw" : shortName(h.label),
+          color:
+            isMatch && o
+              ? outcomeColor(o.label ?? "", teams.indexOf(o))
+              : FIELD_RAMP[i % FIELD_RAMP.length],
+          points: h.points,
+        };
+      })}
+    />
+  ) : null;
 
   const iconBtn: React.CSSProperties = {
     display: "inline-flex",
@@ -363,7 +421,7 @@ export function UclMarketDetail({
           </div>
         )}
 
-        {chartSlot}
+        {chartCard}
 
         {/* ── Outcomes ── */}
         <div style={{ marginTop: 14 }}>

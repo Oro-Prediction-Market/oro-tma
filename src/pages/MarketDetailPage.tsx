@@ -461,39 +461,54 @@ export const MarketDetailPage: FC = () => {
    * Declared above the loading/error early returns below: every hook on this
    * page must run on every render, including the ones that bail out.
    */
-  const chartSeries = useMemo(() => {
+  const chartData = useMemo(() => {
     const mkt = liveMarket ?? market;
     if (!history || !history.length || !mkt) return null;
 
-    const resolved = mkt.status === "resolved" || mkt.status === "settled";
-    const palette = resolved
-      ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
-      : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
-
-    const series = history
+    const curves = history
       .filter((h) => h.points.length > 0)
-      .map((h) => {
-        const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
-        return {
-          label: h.label,
-          color: palette[(idx >= 0 ? idx : 0) % palette.length],
-          points: h.points.map((pt) => ({ t: pt.t, p: pt.p })),
-        };
-      });
+      .map((h) => ({
+        outcomeId: h.outcomeId,
+        label: h.label,
+        points: h.points.map((pt) => ({ t: pt.t, p: pt.p })),
+      }));
 
     // A curve needs somewhere to have moved. One bet is a single step, which
     // reads as a dead market rather than as a market with one bet in it.
-    const distinct = new Set(series.flatMap((s) => s.points.map((p) => p.t)));
+    const distinct = new Set(curves.flatMap((s) => s.points.map((p) => p.t)));
     if (distinct.size < 3) return null;
 
     // Five lines is what the eye can follow; the rows below stay complete.
-    return series
+    // Ranked by where each one ended, so the order matches the list beneath.
+    return curves
       .sort(
         (a, b) =>
           b.points[b.points.length - 1].p - a.points[a.points.length - 1].p,
       )
-      .slice(0, palette.length);
+      .slice(0, 5);
   }, [history, liveMarket, market]);
+
+  /**
+   * The generic view's colouring: the outcome's position in the market, so a
+   * line matches the row beneath it. The themed views ignore this and paint
+   * their own — red and blue corners, home and away — from `chartData`.
+   */
+  const chartSeries = useMemo(() => {
+    const mkt = liveMarket ?? market;
+    if (!chartData || !mkt) return null;
+    const resolved = mkt.status === "resolved" || mkt.status === "settled";
+    const palette = resolved
+      ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
+      : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
+    return chartData.map((h) => {
+      const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
+      return {
+        label: h.label,
+        color: palette[(idx >= 0 ? idx : 0) % palette.length],
+        points: h.points,
+      };
+    });
+  }, [chartData, liveMarket, market]);
 
   if (loading) {
     return (
@@ -622,6 +637,7 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <UfcMarketDetail
+          chartData={chartData}
           market={m}
           referralId={referralId}
           onBetPlaced={() => {
@@ -684,7 +700,7 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <UclMarketDetail
-          chartSlot={chartSeries ? <ProbabilityChart series={chartSeries} borderColor="var(--glass-border)" /> : null}
+          chartData={chartData}
           market={m}
           referralId={referralId}
           onBetPlaced={() => {
@@ -716,7 +732,7 @@ export const MarketDetailPage: FC = () => {
     return (
       <Page back={true}>
         <EplMarketDetail
-          chartSlot={chartSeries ? <ProbabilityChart series={chartSeries} borderColor="var(--glass-border)" /> : null}
+          chartData={chartData}
           market={m}
           referralId={referralId}
           onBetPlaced={() => {
