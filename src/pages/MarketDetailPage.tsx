@@ -27,7 +27,7 @@ import { CrowdSentiment } from "@shared/components/CrowdSentiment";
 import MarketComments from "@shared/components/MarketComments";
 import { DisputeResultBanner } from "@shared/components/DisputeResultBanner";
 import { DisputeContestFields } from "@/components/DisputeContestFields";
-import { Link } from "@/components/Link/Link";
+import { TmaBetModal } from "@/components/TmaBetModal";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { getCategoryVisual } from "@shared/helpers/visuals";
@@ -244,6 +244,8 @@ export const MarketDetailPage: FC = () => {
   const { user } = useAuth();
   const referralId = String(user?.telegramId ?? user?.id ?? "");
   const [shareOpen, setShareOpen] = useState(false);
+  /** The outcome whose stake sheet is open, as on every themed market view. */
+  const [activeBet, setActiveBet] = useState<string | null>(null);
   const [market, setMarket] = useState<Market | null>(null);
   const [history, setHistory] = useState<OutcomeHistory[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1456,15 +1458,29 @@ export const MarketDetailPage: FC = () => {
                 const signal = outcome.reputationSignal;
                 const barWidth = Math.max(4, Math.min(100, pct));
                 const eliminated = !!outcome.isEliminated;
+                const pickable = isOpen && !eliminated;
                 return (
-                  <Link
+                  // Opens the stake sheet in place, the way every other market
+                  // in this app does. It used to navigate to /dkbank-bet, which
+                  // left the market behind and opened on a "pick a side" step
+                  // that asked for the outcome you had just tapped.
+                  <div
                     key={outcome.id}
-                    to={
-                      isOpen && !eliminated
-                        ? `/dkbank-bet/${m.id}?outcomeId=${outcome.id}`
-                        : "#"
-                    }
-                    style={{ textDecoration: "none", display: "block", opacity: eliminated ? 0.5 : 1 }}
+                    role={pickable ? "button" : undefined}
+                    tabIndex={pickable ? 0 : undefined}
+                    onClick={() => pickable && setActiveBet(outcome.id)}
+                    onKeyDown={(e) => {
+                      if (!pickable) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setActiveBet(outcome.id);
+                      }
+                    }}
+                    style={{
+                      display: "block",
+                      opacity: eliminated ? 0.5 : 1,
+                      cursor: pickable ? "pointer" : "default",
+                    }}
                   >
                     <div
                       style={{
@@ -1666,7 +1682,7 @@ export const MarketDetailPage: FC = () => {
                         </div>
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -1674,6 +1690,25 @@ export const MarketDetailPage: FC = () => {
         </div>
       </div>
       {commentsSection}
+      {activeBet && (
+        <TmaBetModal
+          isOpen={true}
+          onClose={() => setActiveBet(null)}
+          market={m}
+          outcomeId={activeBet}
+          onSuccess={() => {
+            setActiveBet(null);
+            if (!id) return;
+            bustCache(`/markets/${id}`);
+            bustCache(`/insights/markets/${id}`);
+            getMarket(id)
+              .then(setMarket)
+              .catch(() => {});
+          }}
+          onFailure={(e: string) => console.error(e)}
+          onGoToWallet={() => navigate("/wallet")}
+        />
+      )}
     </Page>
   );
 };
