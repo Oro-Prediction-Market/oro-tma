@@ -71,11 +71,13 @@ const GOLD = "#e8c766";
 // All hub data is live: standings/stats/bracket from /ucl/*, and markets
 // (matches, stat markets, outrights) from the markets API.
 
-type UclTab = "matches" | "season" | "bracket" | "standings" | "stats";
+type UclTab = "season" | "matches" | "bracket" | "standings" | "stats";
 
 const TABS: { id: UclTab; label: string; icon: React.ReactNode }[] = [
-  { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
+  // Season leads, as it does on the Premier League hub — the outright is the
+  // competition, the fixtures are this week's slice of it.
   { id: "season", label: "Season", icon: <Trophy size={14} /> },
+  { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "bracket", label: "Bracket", icon: <Swords size={14} /> },
   { id: "standings", label: "Table", icon: <ListOrdered size={14} /> },
   { id: "stats", label: "Stats", icon: <BarChart3 size={14} /> },
