@@ -22,7 +22,7 @@ import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
 import { TierMapSheet } from "@shared/components/TierMapSheet";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { useSavedMarkets } from "@shared/hooks/useSavedMarkets";
-import { SAVED_ACCENT } from "@shared/components/SaveMarketButton";
+import { SavedMarketsShortcut } from "@shared/components/SavedMarketsShortcut";
 import {
   BadgeGrid,
   buildBadges,
@@ -41,7 +41,6 @@ import {
   X,
   Wallet,
   ChevronRight,
-  Bookmark,
 } from "lucide-react";
 
 export const TmaProfilePage: FC = () => {
@@ -932,59 +931,11 @@ export const TmaProfilePage: FC = () => {
           <ChevronRight size={16} color="var(--text-muted)" />
         </button>
         {/* ── Saved markets shortcut ────────────────────────────── */}
-        <button
-          onClick={() => navigate("/saved")}
-          style={{
-            margin: "8px 16px 0",
-            borderRadius: 14,
-            padding: "14px 16px",
-            background: "var(--bg-card)",
-            border: "1px solid var(--glass-border)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            cursor: "pointer",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              background: "rgba(6,182,212,0.14)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Bookmark size={20} color={SAVED_ACCENT} />
-          </div>
-          <div style={{ flex: 1, textAlign: "left" }}>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "var(--text-main)",
-              }}
-            >
-              Saved Markets
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "var(--text-subtle)",
-                marginTop: 2,
-              }}
-            >
-              {savedCount
-                ? `${savedCount} market${savedCount === 1 ? "" : "s"} you bookmarked`
-                : "Bookmark a market to come back to it"}
-            </div>
-          </div>
-          <ChevronRight size={16} color="var(--text-muted)" />
-        </button>
+        <SavedMarketsShortcut
+          count={savedCount}
+          onOpen={() => navigate("/saved")}
+          style={{ margin: "8px 16px 0", width: "auto" }}
+        />
 
         {recentCalls[0] && <RecentCallTile call={recentCalls[0]} onOpen={() => navigate("/results")} />}
 

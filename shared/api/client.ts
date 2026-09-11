@@ -893,6 +893,9 @@ export interface PublicProfile {
   totalPredictions: number; correctPredictions: number; winRate: number; rank: number | null;
   betStreak?: number; contrarianBadge: string | null; contrarianWins: number; joinedAt: string;
   featuredAchievementIds?: string[];
+  /** How many markets this predictor has saved. Counted server-side so the
+   *  profile's saved row can print a number without fetching the list. */
+  savedMarketCount?: number;
   seasonBadgeStats?: Record<
     string,
     { eplSettled: number; eplWins: number; uclSettled: number; uclWins: number }

@@ -1,9 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Bookmark, CalendarDays, Target, Trophy } from "lucide-react";
-import { SavedMarketsPanel } from "@shared/components/SavedMarkets";
-import { SAVED_ACCENT } from "@shared/components/SaveMarketButton";
-import { useSavedFormatters } from "@/pages/SavedMarketsPage";
+import { ArrowLeft, CalendarDays, Target, Trophy } from "lucide-react";
+import { SavedMarketsShortcut } from "@shared/components/SavedMarketsShortcut";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { getPublicProfile, avatarFallback, type PublicProfile } from "@shared/api/client";
@@ -18,7 +16,6 @@ export function TmaPublicProfilePage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const { probOf, poolLabel } = useSavedFormatters();
 
   useEffect(() => {
     getPublicProfile(id)
@@ -163,34 +160,17 @@ export function TmaPublicProfilePage() {
           ))}
         </div>
 
-        {/* ── What they are watching ─────────────────────────────
-            A predictor's saved list is part of their public profile, the same
-            way their record and recent calls are: it shows what they are
-            paying attention to, not what they have staked. Read-only here —
-            the rows open the market, but only the owner can unsave. */}
-        <section style={{ marginTop: 18 }}>
-          <h2
-            style={{
-              margin: "0 0 10px",
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              fontSize: 13,
-              fontWeight: 800,
-              color: "var(--text-main)",
-            }}
-          >
-            <Bookmark size={15} color={SAVED_ACCENT} />
-            Watching
-          </h2>
-          <SavedMarketsPanel
-            userId={profile.id}
-            ownerName={name}
-            probOf={probOf}
-            poolLabel={poolLabel}
-            onOpen={(mid) => navigate(`/market/${mid}`)}
-          />
-        </section>
+        {/* ── Saved markets ───────────────────────────────────────
+            The same row this predictor sees on their own profile, opening the
+            same list read-only. A profile is a page about how someone
+            predicts, and what they are watching belongs on it. */}
+        <SavedMarketsShortcut
+          owner="them"
+          ownerName={name}
+          count={profile.savedMarketCount ?? 0}
+          onOpen={() => navigate(`/saved/${profile.id}`)}
+          style={{ marginTop: 16 }}
+        />
       </main>
     </Page>
   );

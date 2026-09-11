@@ -140,6 +140,9 @@ export const routes: Route[] = [
     title: "Platform Accuracy",
   },
   { path: "/saved", Component: SavedMarketsPage, title: "Saved Markets" },
+  // Someone else's list, reached from their profile. No title: the page
+  // names the owner itself, which the static map cannot.
+  { path: "/saved/:id", Component: SavedMarketsPage },
   { path: "/leaderboard", Component: TmaLeaderboardPage, title: "Leaderboard" },
   { path: "/settings", Component: TmaSettingsPage, title: "Settings" },
   { path: "/challenges", Component: TmaChallengesPage, title: "Duels" },
