@@ -813,13 +813,13 @@ export const MarketDetailPage: FC = () => {
             </button>
           </div>
 
-          {/* Header Section — sticky so the title, pool and timeline stay
-              visible while the outcomes below are scrolled. */}
+          {/* Header Section. Scrolls with the page: pinned, this card held
+              about a quarter of a phone screen for a title you have already
+              read, and the outcomes — the part you came to act on — ran
+              underneath it. The timeline stays folded in here; that part of
+              the change was worth keeping. */}
           <div
             style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 5,
               background: "var(--bg-card)",
               border: "1px solid var(--glass-border)",
               borderRadius: "var(--radius-lg)",
