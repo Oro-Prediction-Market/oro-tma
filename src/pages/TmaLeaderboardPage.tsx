@@ -119,6 +119,19 @@ function fmtVol(n: number) {
   return String(n);
 }
 
+/**
+ * A prize amount, in full.
+ *
+ * Deliberately not `fmtVol`: that abbreviates to one decimal, which turns a
+ * Nu 1,550 pot into "1.6K". Volume is a sense of scale; a prize is a promise,
+ * and it gets every digit. The symbol is resolved here because
+ * `shared/currency/` exists in only one of the two apps.
+ */
+function fmtPrize(n: number, currency: string) {
+  const symbol = currency === "USDT" ? "$" : "Nu";
+  return `${symbol} ${Math.round(n).toLocaleString()}`;
+}
+
 function TableHeader() {
   const cell: React.CSSProperties = {
     fontSize: 10,
@@ -1746,6 +1759,129 @@ export const TmaLeaderboardPage: FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Monthly prize pot. Shown on the monthly tab only: the all-time
+              board pays nothing, and sitting this above it would say otherwise.
+
+              The pot and the rules, never a prize against a row. This board is
+              ordered by raw monthly win rate; the season pays on a blend of
+              accuracy and volume, to users who clear the floors — so the name
+              at the top here is not guaranteed to be the name that collects. */}
+          {selectedPeriod === "week" && lb?.prize && (
+            <div
+              className="lb-prize"
+              style={{
+                margin: "0 16px 10px",
+                padding: "10px 12px",
+                background: "rgba(245,158,11,0.08)",
+                border: "1px solid rgba(245,158,11,0.25)",
+                borderRadius: 10,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Trophy size={13} color="#f59e0b" />
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#f59e0b",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  Prizes this month
+                </span>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {fmtPrize(
+                    Object.values(lb.prize.amounts).reduce((s, n) => s + n, 0),
+                    lb.prize.currency,
+                  )}{" "}
+                  pot
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  marginTop: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                {[1, 2, 3].map((r) => {
+                  const amount = lb.prize?.amounts?.[String(r)];
+                  if (amount == null) return null;
+                  return (
+                    <div
+                      key={r}
+                      style={{
+                        flex: "1 1 0",
+                        minWidth: 78,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 5,
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--glass-border)",
+                      }}
+                    >
+                      <span style={{ fontSize: 13 }}>
+                        {r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: "var(--text-main)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {fmtPrize(amount, lb.prize!.currency)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* The floors are the point of this line: a board place is not a
+                  prize, and someone grinding a losing record should know that
+                  before the month ends rather than after. */}
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  fontSize: 10,
+                  lineHeight: 1.5,
+                  fontWeight: 600,
+                  color: "var(--text-subtle)",
+                }}
+              >
+                Credited automatically when the month closes. To be in the
+                running you need {lb.prize.minPicks}+ settled picks,{" "}
+                {lb.prize.minWins}+ wins and a{" "}
+                {Math.round(lb.prize.minWinRate * 100)}%+ win rate. Winners are
+                ranked on accuracy ({Math.round(lb.prize.skillWeight * 100)}%)
+                and volume ({Math.round(lb.prize.volumeWeight * 100)}%), so this
+                board's order is not the prize order. Nothing is paid unless at
+                least {lb.prize.minQualifiers} players qualify.
+              </p>
+            </div>
+          )}
 
           {/* Percentile banner */}
           {percentile && (

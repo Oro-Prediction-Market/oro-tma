@@ -931,10 +931,36 @@ export interface LeaderboardEntry {
   isMe: boolean;
 }
 
+/**
+ * What the month pays out, and who can collect.
+ *
+ * Served by the API rather than written into the apps: these are real-money
+ * figures, and a copy in the frontend would go on promising Nu 700 long after
+ * the backend constant changed. Present only on the monthly board.
+ *
+ * The podium these fund is NOT this board's top three — the board orders by
+ * raw monthly win rate, while the season ranks on a blend of accuracy and
+ * volume among users who clear the floors. Show the pot and the rules; never
+ * put a prize against a row.
+ */
+export interface LeaderboardPrize {
+  /** Rank (1-3) to amount. */
+  amounts: Record<string, number>;
+  currency: string;
+  minPicks: number;
+  minWins: number;
+  minWinRate: number;
+  /** The month pays nothing unless this many users qualify. */
+  minQualifiers: number;
+  skillWeight: number;
+  volumeWeight: number;
+}
+
 export interface LeaderboardResponse {
   board: LeaderboardEntry[];
   myRank: number | null;
   totalRanked: number;
+  prize?: LeaderboardPrize;
 }
 
 export function getLeaderboard(
