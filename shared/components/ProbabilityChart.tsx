@@ -23,6 +23,8 @@ export interface ChartSeries {
   label: string;
   color: string;
   points: ChartPoint[];
+  /** Pre-formatted payout multiple (e.g. "3.57x"), shown beside the % in the legend. */
+  odds?: string;
 }
 
 /**
@@ -431,6 +433,11 @@ export function ProbabilityChart({
             <span style={{ color: l.color }}>
               {Math.round(valueOf(l) * 100)}%
             </span>
+            {l.odds && (
+              <span style={{ color: mutedFill, fontWeight: 600 }}>
+                {l.odds}
+              </span>
+            )}
           </span>
         );
       })}
