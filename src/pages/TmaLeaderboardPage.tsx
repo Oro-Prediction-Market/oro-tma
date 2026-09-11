@@ -12,6 +12,7 @@ import {
   avatarFallback,
   type LeaderboardEntry,
   type LeaderboardResponse,
+  type LeaderboardPrize,
   type Bet,
   type AuthUser,
   type Season,
@@ -24,6 +25,7 @@ import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
 import { TierMapSheet } from "@shared/components/TierMapSheet";
 import {
   Trophy,
+  Info,
   Flame,
   TrendingUp,
   Share2,
@@ -986,6 +988,267 @@ function MyStatsSheet({
 
 // ── Season History Sheet ──────────────────────────────────────────────────────
 
+/**
+ * What the month pays, and what it takes to collect.
+ *
+ * A sheet rather than a panel on the board: the rules run to a paragraph, and
+ * a paragraph above the table pushed the standings themselves below the fold
+ * on a phone. The trigger keeps the headline figure visible, so the prize is
+ * still advertised without the small print being permanently in the way.
+ *
+ * Mirrors SeasonsSheet's shell exactly — same backdrop, grabber, radius and
+ * spring — so the two sheets on this page do not read as different mechanisms.
+ */
+function PrizeSheet({
+  open,
+  onClose,
+  prize,
+}: {
+  open: boolean;
+  onClose: () => void;
+  prize: LeaderboardPrize | null;
+}) {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1000,
+          background: open ? "rgba(0,0,0,0.6)" : "transparent",
+          backdropFilter: open ? "blur(4px)" : "none",
+          WebkitBackdropFilter: open ? "blur(4px)" : "none",
+          pointerEvents: open ? "auto" : "none",
+          transition: "background 0.25s",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1001,
+          background: "var(--bg-card)",
+          borderRadius: "20px 20px 0 0",
+          border: "1px solid var(--glass-border)",
+          borderBottom: "none",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          transform: open ? "translateY(0)" : "translateY(105%)",
+          transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+          paddingBottom: "env(safe-area-inset-bottom, 16px)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "12px 0 4px",
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 99,
+              background: "var(--glass-border)",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 16px 16px",
+          }}
+        >
+          <div
+            style={{ fontSize: 16, fontWeight: 900, color: "var(--text-main)" }}
+          >
+            Monthly prizes
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              border: "1px solid var(--glass-border)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {prize && (
+          <div
+            style={{
+              padding: "0 16px 24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))",
+                border: "1px solid rgba(245,158,11,0.3)",
+                borderRadius: 16,
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  marginBottom: 12,
+                }}
+              >
+                <Trophy size={14} color="#f59e0b" />
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#f59e0b",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {fmtPrize(
+                    Object.values(prize.amounts).reduce((s, n) => s + n, 0),
+                    prize.currency,
+                  )}{" "}
+                  every month
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {[1, 2, 3].map((r) => {
+                  const amount = prize.amounts?.[String(r)];
+                  if (amount == null) return null;
+                  return (
+                    <div
+                      key={r}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--glass-border)",
+                      }}
+                    >
+                      <span style={{ fontSize: 15 }}>
+                        {r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        {r === 1 ? "1st" : r === 2 ? "2nd" : "3rd"}
+                      </span>
+                      <span
+                        style={{
+                          marginLeft: "auto",
+                          fontSize: 14,
+                          fontWeight: 900,
+                          color: "var(--text-main)",
+                        }}
+                      >
+                        {fmtPrize(amount, prize.currency)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <PrizeRule title="How to be in the running">
+              {prize.minPicks}+ settled picks this month, {prize.minWins}+ of
+              them wins, and a {Math.round(prize.minWinRate * 100)}%+ win rate.
+              Miss any one of those and you can still appear on the board, but
+              you cannot place.
+            </PrizeRule>
+
+            <PrizeRule title="How the winners are chosen">
+              Accuracy counts for {Math.round(prize.skillWeight * 100)}% and
+              volume for {Math.round(prize.volumeWeight * 100)}%, with volume
+              compressed so a single large stake cannot buy the top spot. Only
+              real-money predictions count toward volume — bonus credit does
+              not. This board is ordered by win rate alone, so its order is not
+              the prize order.
+            </PrizeRule>
+
+            <PrizeRule title="When you get paid">
+              Credited to your wallet automatically when the month closes, with
+              a notification. Nothing is paid at all in a month with fewer than{" "}
+              {prize.minQualifiers} qualifying players.
+            </PrizeRule>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** One labelled paragraph of prize small print. */
+function PrizeRule({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--bg-secondary)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: 14,
+        padding: "12px 14px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          color: "var(--text-muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          marginBottom: 5,
+        }}
+      >
+        {title}
+      </div>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 11.5,
+          lineHeight: 1.6,
+          fontWeight: 600,
+          color: "var(--text-subtle)",
+        }}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}
+
 function SeasonsSheet({
   open,
   onClose,
@@ -1486,6 +1749,7 @@ export const TmaLeaderboardPage: FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showMyStats, setShowMyStats] = useState(false);
   const [showSeasons, setShowSeasons] = useState(false);
+  const [showPrize, setShowPrize] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "week">("all");
   const navigate = useNavigate();
@@ -1760,126 +2024,42 @@ export const TmaLeaderboardPage: FC = () => {
             ))}
           </div>
 
-          {/* Monthly prize pot. Shown on the monthly tab only: the all-time
-              board pays nothing, and sitting this above it would say otherwise.
+          {/* Monthly prize, as a one-line trigger rather than a panel.
 
-              The pot and the rules, never a prize against a row. This board is
-              ordered by raw monthly win rate; the season pays on a blend of
-              accuracy and volume, to users who clear the floors — so the name
-              at the top here is not guaranteed to be the name that collects. */}
+              The rules run to three paragraphs and they belong in the sheet,
+              not above the standings — but a bare info icon would hide the
+              fact that there is money at all, which is the whole point. So the
+              pot stays on the face of it and the small print moves behind the
+              tap. Monthly tab only: the all-time board pays nothing. */}
           {selectedPeriod === "week" && lb?.prize && (
-            <div
-              className="lb-prize"
-              style={{
-                margin: "0 16px 10px",
-                padding: "10px 12px",
-                background: "rgba(245,158,11,0.08)",
-                border: "1px solid rgba(245,158,11,0.25)",
-                borderRadius: 10,
-              }}
-            >
-              <div
+            <div style={{ padding: "0 16px 10px" }}>
+              <button
+                onClick={() => setShowPrize(true)}
                 style={{
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   gap: 7,
-                  flexWrap: "wrap",
+                  padding: "6px 11px",
+                  borderRadius: 20,
+                  background: "rgba(245,158,11,0.08)",
+                  border: "1px solid rgba(245,158,11,0.25)",
+                  color: "#f59e0b",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
                 }}
               >
-                <Trophy size={13} color="#f59e0b" />
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: "#f59e0b",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  Prizes this month
-                </span>
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: "var(--text-muted)",
-                  }}
-                >
+                <Trophy size={12} />
+                <span>
                   {fmtPrize(
                     Object.values(lb.prize.amounts).reduce((s, n) => s + n, 0),
                     lb.prize.currency,
                   )}{" "}
-                  pot
+                  in prizes this month
                 </span>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                  marginTop: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                {[1, 2, 3].map((r) => {
-                  const amount = lb.prize?.amounts?.[String(r)];
-                  if (amount == null) return null;
-                  return (
-                    <div
-                      key={r}
-                      style={{
-                        flex: "1 1 0",
-                        minWidth: 78,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 5,
-                        padding: "6px 8px",
-                        borderRadius: 8,
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--glass-border)",
-                      }}
-                    >
-                      <span style={{ fontSize: 13 }}>
-                        {r === 1 ? "🥇" : r === 2 ? "🥈" : "🥉"}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 800,
-                          color: "var(--text-main)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {fmtPrize(amount, lb.prize!.currency)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* The floors are the point of this line: a board place is not a
-                  prize, and someone grinding a losing record should know that
-                  before the month ends rather than after. */}
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  fontSize: 10,
-                  lineHeight: 1.5,
-                  fontWeight: 600,
-                  color: "var(--text-subtle)",
-                }}
-              >
-                Credited automatically when the month closes. To be in the
-                running you need {lb.prize.minPicks}+ settled picks,{" "}
-                {lb.prize.minWins}+ wins and a{" "}
-                {Math.round(lb.prize.minWinRate * 100)}%+ win rate. Winners are
-                ranked on accuracy ({Math.round(lb.prize.skillWeight * 100)}%)
-                and volume ({Math.round(lb.prize.volumeWeight * 100)}%), so this
-                board's order is not the prize order. Nothing is paid unless at
-                least {lb.prize.minQualifiers} players qualify.
-              </p>
+                <Info size={12} style={{ opacity: 0.8 }} />
+              </button>
             </div>
           )}
 
@@ -2040,6 +2220,13 @@ export const TmaLeaderboardPage: FC = () => {
           setShowMyStats(false);
           setTimeout(() => setShowShareModal(true), 200);
         }}
+      />
+
+      {/* ── Monthly prize bottom sheet ── */}
+      <PrizeSheet
+        open={showPrize}
+        onClose={() => setShowPrize(false)}
+        prize={lb?.prize ?? null}
       />
 
       {/* ── Seasons bottom sheet ── */}
