@@ -13,6 +13,22 @@ import { useAuth } from "@shared/hooks/useAuth";
 const QUICK_AMOUNTS_DEFAULT = [100, 500, 1000];
 const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
 
+/**
+ * A payout, for display. Whole units only.
+ *
+ * An estimate that reads "Nu 1,284.6039" invites a precision it does not have:
+ * this figure moves with every prediction that follows and is only final at
+ * close. Rounded DOWN, so the number shown is never more than the pool would
+ * actually return.
+ *
+ * Named rather than inlined so the two payout figures below cannot drift, and
+ * so it is obvious this rounding is for payouts only — a stake or a balance is
+ * an exact amount and is printed as it is.
+ */
+function fmtPayout(value: number): string {
+  return Math.floor(value).toLocaleString();
+}
+
 function getMinBet(market: Market): number {
   return ["ter", "btc"].includes(market.externalSource ?? "") ? 10 : 50;
 }
@@ -1085,7 +1101,7 @@ export function TmaBetModal({
                         color: estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                       }}
                     >
-                      {estProfit >= 0 ? `Nu ${Math.floor(estPayout).toLocaleString()}` : "—"}
+                      {estProfit >= 0 ? `Nu ${fmtPayout(estPayout)}` : "—"}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -1108,7 +1124,7 @@ export function TmaBetModal({
                           color: "#16a34a",
                         }}
                       >
-                        +Nu {Math.floor(estProfit).toLocaleString()}
+                        +Nu {fmtPayout(estProfit)}
                       </div>
                     ) : (
                       <div
