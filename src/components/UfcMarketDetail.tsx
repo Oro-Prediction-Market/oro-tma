@@ -20,6 +20,7 @@ import {
   FighterAvatar,
 } from "@/pages/UfcHubPage";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { SaveMarketButton } from "@shared/components/SaveMarketButton";
 import { marketOutcomeChances } from "@/components/MarketShareCard";
 
 // ── UFC theme tokens (mirror the hub) ─────────────────────────────────────────
@@ -310,6 +311,12 @@ export function UfcMarketDetail({
             <ArrowLeft size={15} />
             Back
           </button>
+          <SaveMarketButton
+            marketId={market.id}
+            variant="inherit"
+            accent={RED}
+            style={{ ...iconBtn, marginLeft: "auto", marginRight: 8 }}
+          />
           <button onClick={() => setShareOpen(true)} style={iconBtn}>
             <Share2 size={15} />
             Share

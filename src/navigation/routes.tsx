@@ -3,6 +3,7 @@ import { lazy, type ComponentType, type JSX } from "react";
 import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { PlatformAccuracyPage } from "@/pages/PlatformAccuracyPage";
+import { SavedMarketsPage } from "@/pages/SavedMarketsPage";
 import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
 // BPL hub retired/hidden — uncomment to re-enable (also flip BPL_HIDDEN in BplHubPage.tsx)
 // import { BplHubPage } from "@/pages/BplHubPage";
@@ -138,6 +139,7 @@ export const routes: Route[] = [
     Component: PlatformAccuracyPage,
     title: "Platform Accuracy",
   },
+  { path: "/saved", Component: SavedMarketsPage, title: "Saved Markets" },
   { path: "/leaderboard", Component: TmaLeaderboardPage, title: "Leaderboard" },
   { path: "/settings", Component: TmaSettingsPage, title: "Settings" },
   { path: "/challenges", Component: TmaChallengesPage, title: "Duels" },

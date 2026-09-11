@@ -36,6 +36,7 @@ import { useTrack } from "@shared/hooks/useTrack";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown, Share2, ArrowLeft } from "lucide-react";
+import { SaveMarketButton } from "@shared/components/SaveMarketButton";
 import { calcProb, calcOdds, rankedOutcomes } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
@@ -891,6 +892,7 @@ export const MarketDetailPage: FC = () => {
                 )}
                 Nu {Number(m.totalPool).toLocaleString()}
               </div>
+              <SaveMarketButton marketId={m.id} variant="pill" />
               <button
                 onClick={() => setShareOpen(true)}
                 style={{

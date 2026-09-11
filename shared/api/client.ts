@@ -755,6 +755,46 @@ export function getResolvedMarkets(): Promise<ResolvedMarket[]> {
   return request<ResolvedMarket[]>("/markets/resolved");
 }
 
+// ─── Saved markets ────────────────────────────────────────────────────────────
+
+/**
+ * A market the signed-in user has bookmarked.
+ *
+ * Identical in shape to a feed market — the server hydrates it through the same
+ * code path — plus when it was saved, which is what the list is ordered by.
+ */
+export interface SavedMarket extends Market {
+  savedAt: string;
+}
+
+export function getSavedMarkets(): Promise<SavedMarket[]> {
+  return request<SavedMarket[]>("/users/me/saved-markets");
+}
+
+/**
+ * Another predictor's list, for their public profile. Capped server-side.
+ */
+export function getUserSavedMarkets(userId: string): Promise<SavedMarket[]> {
+  return request<SavedMarket[]>(`/users/${userId}/saved-markets`);
+}
+
+/**
+ * Just the ids, newest save first. Every surface that draws a bookmark asks
+ * for this once rather than asking per card.
+ */
+export function getSavedMarketIds(): Promise<string[]> {
+  return request<string[]>("/users/me/saved-markets/ids");
+}
+
+/** Idempotent both ways — the button is a toggle, so a double tap must not fail. */
+export function saveMarket(marketId: string): Promise<{ saved: boolean }> {
+  return request(`/markets/${marketId}/save`, { method: "POST" });
+}
+
+export function unsaveMarket(marketId: string): Promise<{ saved: boolean }> {
+  return request(`/markets/${marketId}/save`, { method: "DELETE" });
+}
+
 // ─── Bets ─────────────────────────────────────────────────────────────────────
 
 export interface PlaceBetPayload {

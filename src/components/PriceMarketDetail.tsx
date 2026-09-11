@@ -22,6 +22,7 @@ import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { SaveMarketButton } from "@shared/components/SaveMarketButton";
 
 // Shared "trading" palette lifted straight from the TER / BTC price cards so the
 // whole detail page reads as one surface with the chart card.
@@ -239,6 +240,12 @@ export const PriceMarketDetail: FC<Props> = ({
             <ArrowLeft size={15} />
             Back
           </button>
+          <SaveMarketButton
+            marketId={market.id}
+            variant="inherit"
+            accent={P.accent}
+            style={{ ...barBtn, marginLeft: "auto", marginRight: 8 }}
+          />
           <button onClick={() => setShareOpen(true)} style={barBtn}>
             <Share2 size={15} />
             Share

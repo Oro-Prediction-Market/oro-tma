@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
+import { SaveMarketButton } from "@shared/components/SaveMarketButton";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Clock, ShieldAlert, Trophy } from "lucide-react";
 import type { Market, Outcome, MyDispute } from "@shared/api/client";
@@ -239,6 +240,12 @@ export function EplMarketDetail({
             <ArrowLeft size={15} />
             Back
           </button>
+          <SaveMarketButton
+            marketId={market.id}
+            variant="inherit"
+            accent={ACCENT}
+            style={{ ...iconBtn, marginLeft: "auto", marginRight: 8 }}
+          />
           <button onClick={() => setShareOpen(true)} style={iconBtn}>
             <Share2 size={15} />
             Share
