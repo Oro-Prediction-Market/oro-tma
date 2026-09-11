@@ -36,7 +36,7 @@ import { useTrack } from "@shared/hooks/useTrack";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown, Share2, ArrowLeft } from "lucide-react";
-import { calcProb, calcOdds } from "./WorldCupHubPage";
+import { calcProb, calcOdds, rankedOutcomes } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
 import { isUfcMarket } from "./UfcHubPage";
@@ -1435,7 +1435,7 @@ export const MarketDetailPage: FC = () => {
               return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
             })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {m.outcomes.map((outcome, idx) => {
+              {rankedOutcomes(m).map((outcome) => {
                 // calcProb uses LMSR only when every outcome has a value
                 // (mixed LMSR/pool sources don't sum to 100), else the
                 // Laplace-smoothed pool ratio.
@@ -1451,6 +1451,12 @@ export const MarketDetailPage: FC = () => {
                     ? Math.round(outcome.intelligenceProb * 100) -
                       Math.round(rawPct)
                     : null;
+                // The row is ranked, but colour belongs to the OUTCOME, not
+                // to where it happens to sit today. The chart above picks its
+                // line colours from this same market order, so reading the
+                // palette off the rank would have drifted the two apart every
+                // time a price moved.
+                const idx = m.outcomes.findIndex((o) => o.id === outcome.id);
                 const colors = isResolved
                   ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
                   : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
