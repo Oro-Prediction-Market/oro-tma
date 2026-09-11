@@ -307,7 +307,11 @@ function TableRow({
         </div>
       </div>
 
-      {/* Picks */}
+      {/* Picks — scoped to the window being shown, like Win % and Vol beside
+          it. The monthly payload carries `weeklyPredictions` (settled picks
+          since the 1st); the all-time payload does not, so its absence is what
+          selects the career figure. Without this the row read "338 picks ·
+          29%", pairing a career count with a month's win rate. */}
       <div
         style={{
           textAlign: "right",
@@ -317,7 +321,7 @@ function TableRow({
           color: "var(--text-muted)",
         }}
       >
-        {entry.totalPredictions}
+        {entry.weeklyPredictions ?? entry.totalPredictions}
       </div>
 
       {/* Win % */}
