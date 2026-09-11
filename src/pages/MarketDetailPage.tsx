@@ -505,10 +505,12 @@ export const MarketDetailPage: FC = () => {
       : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
     return chartData.map((h) => {
       const idx = mkt.outcomes.findIndex((o) => o.id === h.outcomeId);
+      const odds = calcOdds(mkt, h.outcomeId);
       return {
         label: h.label,
         color: palette[(idx >= 0 ? idx : 0) % palette.length],
         points: h.points,
+        odds: odds ? `${Math.min(99, odds).toFixed(2)}x` : undefined,
       };
     });
   }, [chartData, liveMarket, market]);
@@ -811,9 +813,13 @@ export const MarketDetailPage: FC = () => {
             </button>
           </div>
 
-          {/* Header Section */}
+          {/* Header Section — sticky so the title, pool and timeline stay
+              visible while the outcomes below are scrolled. */}
           <div
             style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 5,
               background: "var(--bg-card)",
               border: "1px solid var(--glass-border)",
               borderRadius: "var(--radius-lg)",
@@ -933,36 +939,19 @@ export const MarketDetailPage: FC = () => {
                 {m.description}
               </p>
             )}
-          </div>
 
-          {/* TER Price Panel */}
-          {m.externalSource === "ter" && m.metadata?.isTer && (
-            <TerPricePanel market={m} />
-          )}
-
-          {/* Timeline */}
-          <div
-            style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: "var(--radius-lg)",
-              padding: "20px",
-              boxShadow: "var(--shadow-premium)",
-            }}
-          >
+            {/* Timeline — folded into the sticky header so it stays visible
+                without a second card competing for space. */}
             <div
               style={{
-                fontSize: "0.65rem",
-                fontWeight: 800,
-                color: "var(--text-subtle)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                marginBottom: 14,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "4px 14px",
+                marginTop: 14,
+                paddingTop: 12,
+                borderTop: "1px solid var(--glass-border)",
               }}
             >
-              Timeline
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { label: "Opens", date: m.opensAt },
                 { label: "Closes", date: m.closesAt },
@@ -973,15 +962,11 @@ export const MarketDetailPage: FC = () => {
                 date ? (
                   <div
                     key={label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 5 }}
                   >
                     <span
                       style={{
-                        fontSize: "0.78rem",
+                        fontSize: "0.62rem",
                         fontWeight: 700,
                         color: "var(--text-subtle)",
                       }}
@@ -990,7 +975,7 @@ export const MarketDetailPage: FC = () => {
                     </span>
                     <span
                       style={{
-                        fontSize: "0.78rem",
+                        fontSize: "0.62rem",
                         fontWeight: 800,
                         color: "var(--text-main)",
                       }}
@@ -1009,6 +994,11 @@ export const MarketDetailPage: FC = () => {
               )}
             </div>
           </div>
+
+          {/* TER Price Panel */}
+          {m.externalSource === "ter" && m.metadata?.isTer && (
+            <TerPricePanel market={m} />
+          )}
 
           {/* Resolution Criteria */}
           {m.resolutionCriteria && (
@@ -1453,16 +1443,16 @@ export const MarketDetailPage: FC = () => {
                     ? Math.round(outcome.intelligenceProb * 100) -
                       Math.round(rawPct)
                     : null;
-                // The row is ranked, but colour belongs to the OUTCOME, not
-                // to where it happens to sit today. The chart above picks its
-                // line colours from this same market order, so reading the
-                // palette off the rank would have drifted the two apart every
-                // time a price moved.
-                const idx = m.outcomes.findIndex((o) => o.id === outcome.id);
-                const colors = isResolved
-                  ? ["#22c55e", "#ef4444", "#f59e0b", "#3b82f6", "#8b5cf6"]
-                  : ["#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4", "#f97316"];
-                const color = colors[idx % colors.length];
+                // One flat colour for every outcome rather than a rainbow per
+                // index — the winner still stands out once a market resolves.
+                // Rows are ranked by probability; with a single colour there is
+                // no per-index palette left for that ordering to drift against.
+                const color =
+                  isResolved && outcome.id === m.resolvedOutcomeId
+                    ? "#22c55e"
+                    : isResolved
+                      ? "var(--text-subtle)"
+                      : "#3b82f6";
                 const signal = outcome.reputationSignal;
                 const barWidth = Math.max(4, Math.min(100, pct));
                 const eliminated = !!outcome.isEliminated;
