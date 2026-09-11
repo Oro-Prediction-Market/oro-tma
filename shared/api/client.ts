@@ -943,6 +943,21 @@ export interface LeaderboardEntry {
  * volume among users who clear the floors. Show the pot and the rules; never
  * put a prize against a row.
  */
+/**
+ * Oro's public track record: for each settled market, the share of the pool
+ * that backed the outcome that won. Served by the same service the admin
+ * dashboard reads, so the public page and the internal one cannot disagree.
+ */
+export interface PlatformAccuracy {
+  overallAccuracyPct: number;
+  totalMarkets: number;
+  trend: { week: string; marketCount: number; avgAccuracyPct: number }[];
+}
+
+export function getPlatformAccuracy(): Promise<PlatformAccuracy> {
+  return request<PlatformAccuracy>("/insights/platform-accuracy");
+}
+
 export interface LeaderboardPrize {
   /** Rank (1-3) to amount. */
   amounts: Record<string, number>;

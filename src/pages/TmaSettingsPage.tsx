@@ -1178,6 +1178,19 @@ export const TmaSettingsPage: FC = () => {
             </SettingsRow>
 
             <SettingsRow
+              icon={<Target size={17} />}
+              label="Platform Accuracy"
+              value="How often the crowd gets it right"
+              onClick={() => navigate("/accuracy")}
+            >
+              <ChevronLeft
+                size={15}
+                color="var(--text-subtle)"
+                style={{ transform: "rotate(180deg)" }}
+              />
+            </SettingsRow>
+
+            <SettingsRow
               icon={<MessageCircle size={17} />}
               label="Support"
               value="Contact our support team"
