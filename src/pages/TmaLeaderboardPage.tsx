@@ -2028,10 +2028,14 @@ export const TmaLeaderboardPage: FC = () => {
 
               The rules run to three paragraphs and they belong in the sheet,
               not above the standings — but a bare info icon would hide the
-              fact that there is money at all, which is the whole point. So the
-              pot stays on the face of it and the small print moves behind the
-              tap. Monthly tab only: the all-time board pays nothing. */}
-          {selectedPeriod === "week" && lb?.prize && (
+              fact that there is anything to win, which is the whole point.
+
+              On both boards: the prize is a standing fact about the month, not
+              a property of the tab being looked at, and someone reading the
+              all-time table should still learn that the month pays. The label
+              says "Monthly" so the all-time board never implies it pays out
+              itself. */}
+          {lb?.prize && (
             <div style={{ padding: "0 16px 10px" }}>
               <button
                 onClick={() => setShowPrize(true)}
@@ -2051,13 +2055,7 @@ export const TmaLeaderboardPage: FC = () => {
                 }}
               >
                 <Trophy size={12} />
-                <span>
-                  {fmtPrize(
-                    Object.values(lb.prize.amounts).reduce((s, n) => s + n, 0),
-                    lb.prize.currency,
-                  )}{" "}
-                  in prizes this month
-                </span>
+                <span>Monthly Top Players</span>
                 <Info size={12} style={{ opacity: 0.8 }} />
               </button>
             </div>
