@@ -44,8 +44,8 @@ type StandRow = {
 type StatRow = { player: string; clubShort: string; crest: string; value: number };
 type StatBoard = {
   id: StatCat;
-  label: string;
-  heading: string;
+  label: string; // tile label on the selector, e.g. "Goals"
+  heading: string; // section heading — frames the board as a season-long prediction
   icon: React.ReactNode;
   accent: string;
   rows: StatRow[];
@@ -740,8 +740,8 @@ const STAT_DEFS: {
   icon: React.ReactNode;
   accent: string;
 }[] = [
-  { id: "goals", label: "Goals", heading: "Top Scorers", icon: <Goal size={14} />, accent: BLUE },
-  { id: "assists", label: "Assists", heading: "Most Assists", icon: <Handshake size={14} />, accent: "#3ddc97" },
+  { id: "goals", label: "Goals", heading: "Top Scorer This Season?", icon: <Goal size={14} />, accent: BLUE },
+  { id: "assists", label: "Assists", heading: "Most Assists This Season?", icon: <Handshake size={14} />, accent: "#3ddc97" },
 ];
 
 function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat) => void }) {
