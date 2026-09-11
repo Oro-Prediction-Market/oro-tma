@@ -1,7 +1,14 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Target, Trophy } from "lucide-react";
-import { SavedMarketsShortcut } from "@shared/components/SavedMarketsShortcut";
+import {
+  ArrowLeft,
+  Bookmark,
+  CalendarDays,
+  ChevronRight,
+  Target,
+  Trophy,
+} from "lucide-react";
+import { SAVED_ACCENT } from "@shared/components/SaveMarketButton";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { getPublicProfile, avatarFallback, type PublicProfile } from "@shared/api/client";
@@ -29,7 +36,9 @@ export function TmaPublicProfilePage() {
     ? `@${profile.username}`
     : `${profile.firstName ?? "Predictor"}${profile.lastName ? ` ${profile.lastName}` : ""}`;
   const badges = getFeaturedBadges(profile);
-  const statCards = getStatCards(profile);
+  const statCards = getStatCards(profile, () =>
+    navigate(`/saved/${profile.id}`),
+  );
 
   return (
     <Page>
@@ -159,18 +168,6 @@ export function TmaPublicProfilePage() {
             <CompactStatCard key={card.title} {...card} />
           ))}
         </div>
-
-        {/* ── Saved markets ───────────────────────────────────────
-            The same row this predictor sees on their own profile, opening the
-            same list read-only. A profile is a page about how someone
-            predicts, and what they are watching belongs on it. */}
-        <SavedMarketsShortcut
-          owner="them"
-          ownerName={name}
-          count={profile.savedMarketCount ?? 0}
-          onOpen={() => navigate(`/saved/${profile.id}`)}
-          style={{ marginTop: 16 }}
-        />
       </main>
     </Page>
   );
@@ -198,7 +195,10 @@ function getFeaturedBadges(profile: PublicProfile) {
   });
 }
 
-function getStatCards(profile: PublicProfile) {
+function getStatCards(
+  profile: PublicProfile,
+  onOpenSaved: () => void,
+) {
   return [
     ...((profile.betStreak ?? 0) > 0
       ? [
@@ -245,6 +245,20 @@ function getStatCards(profile: PublicProfile) {
           },
         ]
       : []),
+    // Last, so it fills whichever slot the optional cards above leave free
+    // rather than pushing them around. The only tile that goes anywhere.
+    {
+      icon: <Bookmark size={14} />,
+      title: "Saved Markets",
+      // Kept short so it survives the one-line ellipsis on a phone, where
+      // "N markets they are watching" truncated mid-phrase.
+      text: profile.savedMarketCount
+        ? `Watching ${profile.savedMarketCount} market${profile.savedMarketCount === 1 ? "" : "s"}`
+        : "Nothing saved yet",
+      color: SAVED_ACCENT,
+      bg: "rgba(6,182,212,.14)",
+      onClick: onOpenSaved,
+    },
   ];
 }
 
@@ -332,21 +346,32 @@ function SignatureCrest({ badges }: { badges: CollectibleBadge[] }) {
   );
 }
 
+/**
+ * One tile in the profile's stat grid.
+ *
+ * Renders as a button when it has somewhere to go — the saved-markets tile is
+ * the only one that does — so a tappable card keeps the exact border, padding
+ * and icon of the cards beside it instead of being a lookalike that drifts.
+ */
 function CompactStatCard({
   icon,
   title,
   text,
   color,
   bg,
+  onClick,
 }: {
   icon: ReactNode;
   title: string;
   text: string;
   color: string;
   bg: string;
+  onClick?: () => void;
 }) {
+  const Tag = onClick ? "button" : "section";
   return (
-    <section
+    <Tag
+      onClick={onClick}
       style={{
         minHeight: 74,
         padding: 11,
@@ -354,9 +379,15 @@ function CompactStatCard({
         border: `1px solid ${color}55`,
         background: "var(--bg-card)",
         display: "grid",
-        gridTemplateColumns: "28px minmax(0,1fr)",
+        gridTemplateColumns: onClick
+          ? "28px minmax(0,1fr) 14px"
+          : "28px minmax(0,1fr)",
         gap: 9,
         alignItems: "center",
+        width: "100%",
+        textAlign: "left",
+        font: "inherit",
+        cursor: onClick ? "pointer" : "default",
       }}
     >
       <div
@@ -398,6 +429,7 @@ function CompactStatCard({
           {text}
         </span>
       </div>
-    </section>
+      {onClick && <ChevronRight size={14} color="var(--text-subtle)" />}
+    </Tag>
   );
 }
