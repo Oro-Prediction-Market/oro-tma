@@ -24,11 +24,17 @@ export const SystemNotificationModal: FC = () => {
         // market win/loss + transaction notifications are routine — they live
         // in the notification center (bell) rather than interrupting with a
         // popup. Excluded here means they stay unread in the center, not seen.
+        //
+        // Replies and likes are routine in the same way, and worse: they are
+        // the one kind that arrives in bulk. Six overnight replies became six
+        // full-screen modals to tap through before reaching the app.
         const POPUP_MUTED = new Set([
           "achievement",
           "market_won",
           "market_lost",
           "transaction",
+          "comment_reply",
+          "comment_like",
         ]);
         const shown = list.filter((n) => !POPUP_MUTED.has(n.type));
         if (!cancelled && shown.length) setQueue(shown);
