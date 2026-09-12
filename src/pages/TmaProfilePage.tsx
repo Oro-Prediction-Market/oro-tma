@@ -18,7 +18,10 @@ import { Page } from "@/components/Page";
 import { StreakBenefitsModal } from "@/components/StreakBenefitsModal";
 import { ProfileShareCard } from "@/components/ProfileShareCard";
 import { tierChip } from "@shared/reputation/tiers";
-import { tierProgress as tierProgressFor } from "@shared/reputation/tiers";
+import {
+  tierProgress as tierProgressFor,
+  nextTierMeta,
+} from "@shared/reputation/tiers";
 import { TierMapSheet } from "@shared/components/TierMapSheet";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { useSavedMarkets } from "@shared/hooks/useSavedMarkets";
@@ -203,6 +206,9 @@ export const TmaProfilePage: FC = () => {
   // threshold the backend has stopped using — they were previously hardcoded
   // here and in the leaderboard, against the old four-rung ladder.
   const tierProgress = tierProgressFor(tier, total, acc);
+  // The rung being climbed towards, wearing its own icon from the ladder —
+  // the tile sits beside Latest call, which already owns Target.
+  const NextTierIcon = nextTierMeta(tier)?.Icon ?? Target;
 
 
   const closePopup = () => {
@@ -549,8 +555,8 @@ export const TmaProfilePage: FC = () => {
           </div>
         </div>
 
-        {/* ── Cards grid: streak + tier progress (two-col on desktop) ─── */}
-        <div className="profile-two-col" style={{ display: "contents" }}>
+        {/* ── Streak: a full-width row, incl. on desktop ─────────────── */}
+        <div className="profile-full-width" style={{ display: "contents" }}>
         {/* ── Streak Status ─────────────────────────────────────── */}
         {(user?.betStreakCount ?? 0) > 0 && (
           <button
@@ -626,6 +632,13 @@ export const TmaProfilePage: FC = () => {
           </button>
         )}
 
+        </div>{/* close profile-full-width (streak) */}
+
+        {/* ── Cards grid: tier progress + the four shortcuts + latest call.
+            Six cells, so the desktop grid fills three even rows instead of
+            leaving a hole beside the last one. ─────────────────────── */}
+        <div className="profile-two-col" style={{ display: "contents" }}>
+
         {/* ── Tier Progress ─────────────────────────────────────── */}
         {/* Both branches open the tier map. A Legend has no "next rung" card,
             but is the most likely person to want to see the whole ladder —
@@ -637,78 +650,131 @@ export const TmaProfilePage: FC = () => {
             onClick={() => setTierMapOpen(true)}
             style={{
               margin: "0 16px",
-              padding: "10px 14px",
-              background: "rgba(245,158,11,0.1)",
-              borderRadius: 12,
-              border: "1px solid rgba(245,158,11,0.25)",
+              borderRadius: 14,
+              padding: "14px 16px",
+              background: "var(--bg-card)",
+              border: "1px solid rgba(245,158,11,0.35)",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 12,
               cursor: "pointer",
               textAlign: "left",
+              boxShadow: "var(--shadow-sm)",
               fontFamily: "inherit",
             }}
           >
-            <Trophy size={14} color="#f59e0b" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b" }}>
-              You've reached the top — Legend tier!
-            </span>
-            <span
+            <div
               style={{
-                marginLeft: "auto",
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "rgba(245,158,11,0.15)",
                 display: "flex",
                 alignItems: "center",
-                gap: 2,
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--text-muted)",
+                justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              All tiers
-              <ChevronRight size={12} />
-            </span>
+              <Trophy size={20} color="#f59e0b" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b" }}
+              >
+                Legend tier
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-subtle)",
+                  marginTop: 2,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                You've reached the top of the ladder
+              </div>
+            </div>
+            <ChevronRight size={16} color="var(--text-muted)" />
           </button>
         ) : tierProgress ? (
           <button
             onClick={() => setTierMapOpen(true)}
             style={{
               margin: "0 16px",
-              padding: "12px 14px",
+              borderRadius: 14,
+              padding: "14px 16px",
               background: "var(--bg-card)",
-              borderRadius: 12,
               border: "1px solid var(--glass-border)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
               cursor: "pointer",
-              textAlign: "left",
+              boxShadow: "var(--shadow-sm)",
               fontFamily: "inherit",
             }}
           >
+            {/* Same icon / title / subtitle / chevron row as the five
+                shortcuts it now shares a grid with — the progress bar is the
+                only thing this card adds, and it sits below the row so the
+                shared rhythm survives. */}
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 8,
+                gap: 12,
+                width: "100%",
               }}
             >
-              <span
+              <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "var(--text-muted)",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: `${tierProgress.nextColor}1f`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
-                {tierProgress.label}
-              </span>
+                <NextTierIcon size={20} color={tierProgress.nextColor} />
+              </div>
+              <div style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  {tierProgress.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-subtle)",
+                    marginTop: 2,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tierProgress.hint}
+                </div>
+              </div>
               <span
                 style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 800,
                   color: tierProgress.nextColor,
+                  flexShrink: 0,
                 }}
               >
                 {Math.round(tierProgress.progress * 100)}%
               </span>
+              <ChevronRight size={16} color="var(--text-muted)" />
             </div>
             <div
               style={{
@@ -716,7 +782,7 @@ export const TmaProfilePage: FC = () => {
                 borderRadius: 99,
                 background: "var(--bg-secondary)",
                 overflow: "hidden",
-                marginBottom: 7,
+                width: "100%",
               }}
             >
               <div
@@ -729,48 +795,9 @@ export const TmaProfilePage: FC = () => {
                 }}
               />
             </div>
-            {/* The affordance shares the hint's line rather than the header
-                row, which already carries the percentage. Keeps the card's
-                three-line rhythm. */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-subtle)",
-                  fontWeight: 600,
-                }}
-              >
-                {tierProgress.hint}
-              </span>
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "var(--text-muted)",
-                  flexShrink: 0,
-                }}
-              >
-                All tiers
-                <ChevronRight size={12} />
-              </span>
-            </div>
           </button>
         ) : null}
 
-        </div>{/* close profile-two-col (streak + tier) */}
-
-        {/* ── Collectibles + Wallet shortcut: two-col on desktop ─── */}
-        <div className="profile-two-col" style={{ display: "contents" }}>
         {/* ── Collectibles row (tappable) ───────────────────────── */}
         <button
           onClick={() => setCollectiblesOpen(true)}
@@ -939,7 +966,7 @@ export const TmaProfilePage: FC = () => {
 
         {recentCalls[0] && <RecentCallTile call={recentCalls[0]} onOpen={() => navigate("/results")} />}
 
-        </div>{/* close profile-two-col (collectibles + wallet) */}
+        </div>{/* close profile-two-col (tier + shortcuts + latest call) */}
 
         {/* ── Invite & Referral ─────────────────────────────────── */}
         <div className="profile-full-width" style={{ padding: "0 16px" }}>
