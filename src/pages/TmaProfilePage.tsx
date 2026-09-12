@@ -653,7 +653,7 @@ export const TmaProfilePage: FC = () => {
               borderRadius: 14,
               padding: "14px 16px",
               background: "var(--bg-card)",
-              border: "1px solid rgba(245,158,11,0.35)",
+              border: "1px solid var(--glass-border)",
               display: "flex",
               alignItems: "center",
               gap: 12,
@@ -1515,7 +1515,7 @@ const heroCard: React.CSSProperties = {
 
 function RecentCallTile({ call, onOpen }: { call: Bet; onOpen: () => void }) {
   const color = call.status === "won" ? "#22c55e" : call.status === "lost" ? "#f87171" : "#fbbf24";
-  return <button onClick={onOpen} style={{ margin: "8px 16px 0", borderRadius: 14, padding: "14px 16px", background: "var(--bg-card)", border: `1px solid ${color}55`, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", boxShadow: "var(--shadow-sm)", textAlign: "left" }}><div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}1f`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Target size={20} /></div><div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>Latest call</div><div style={{ fontSize: 11, color: "var(--text-subtle)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{call.outcome?.label ?? "Selected outcome"} · {call.status}</div></div><ChevronRight size={16} color="var(--text-muted)" /></button>;
+  return <button onClick={onOpen} style={{ margin: "8px 16px 0", borderRadius: 14, padding: "14px 16px", background: "var(--bg-card)", border: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", boxShadow: "var(--shadow-sm)", textAlign: "left" }}><div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}1f`, color, display: "grid", placeItems: "center", flexShrink: 0 }}><Target size={20} /></div><div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>Latest call</div><div style={{ fontSize: 11, color: "var(--text-subtle)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{call.outcome?.label ?? "Selected outcome"} · {call.status}</div></div><ChevronRight size={16} color="var(--text-muted)" /></button>;
 }
 
 function ProfileBadgeDock({

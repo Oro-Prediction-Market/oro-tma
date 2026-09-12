@@ -388,7 +388,9 @@ function CompactStatCard({
         minHeight: 74,
         padding: 11,
         borderRadius: 14,
-        border: `1px solid ${color}55`,
+        // Neutral, not the card's accent — the colour stays on the icon,
+        // where it labels the stat instead of ringing the whole tile.
+        border: "1px solid var(--glass-border)",
         background: "var(--bg-card)",
         display: "grid",
         gridTemplateColumns: onClick
