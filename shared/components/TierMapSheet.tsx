@@ -40,13 +40,21 @@ export function TierMapSheet({
   correctPredictions,
 }: TierMapSheetProps) {
   // Telegram reads an unlocked body behind a sheet as a page swipe and
-  // collapses the Mini App. The other hand-rolled overlays in this codebase
-  // skip this; they get away with it because they are shorter than the viewport.
+  // collapses the Mini App.
+  //
+  // <html> AND <body>: body's overflow only reaches the viewport while html's
+  // is `visible`, and the PWA sets an explicit `overflow-y: auto` on html — so
+  // the body-only lock this used to do was inert there, and the page scrolled
+  // on behind the open sheet.
   useEffect(() => {
-    const previous = document.body.style.overflow;
+    const root = document.documentElement;
+    const prevRoot = root.style.overflow;
+    const prevBody = document.body.style.overflow;
+    root.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = previous;
+      root.style.overflow = prevRoot;
+      document.body.style.overflow = prevBody;
     };
   }, []);
 
@@ -62,10 +70,13 @@ export function TierMapSheet({
       style={{
         position: "fixed",
         inset: 0,
-        // Above the 1000 bottom nav and the leaderboard's My Stats sheet
-        // (1000/1001), which is one of the two places this opens from. Below
-        // the 3000 badge-unlock popup, which should win over anything.
-        zIndex: 2000,
+        // Above the 1000 bottom nav, the leaderboard's My Stats sheet
+        // (1000/1001) which is one of the two places this opens from, and the
+        // PWA's fixed 3000 header — at 2000 that header painted over the top
+        // of the sheet, clipping its title and first rung. Still below the
+        // badge-unlock popup, which should win over anything and was raised to
+        // 3200 to keep that true.
+        zIndex: 3100,
         background: "rgba(0,0,0,0.7)",
         display: "flex",
         justifyContent: "center",

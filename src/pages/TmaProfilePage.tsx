@@ -1295,7 +1295,9 @@ export const TmaProfilePage: FC = () => {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 3000,
+            // Wins over everything, including the 3100 tier-map sheet — which
+            // had to clear the PWA's own 3000 header.
+            zIndex: 3200,
             background: "rgba(0,0,0,0.82)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",

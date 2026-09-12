@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useEffect } from "react";
 import { X, Flame, Zap, Trophy, ShieldCheck, Star } from "lucide-react";
 
 interface StreakBenefitsModalProps {
@@ -12,6 +12,31 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
   onClose,
   streakCount,
 }) => {
+  // Freeze the page behind the modal. overscroll-behavior on the panel alone
+  // is not enough — it only stops scroll chaining once a gesture starts on the
+  // panel, and the backdrop fills most of a phone screen.
+  //
+  // <html> AND <body>, not body alone: body's overflow only propagates to the
+  // viewport while html's is `visible`, and this app sets an explicit
+  // `overflow-y: auto` on html. So the usual body-only lock is inert here —
+  // the page scrolls right on behind the modal.
+  //
+  // Both are restored to whatever they were rather than to a hardcoded
+  // "visible", so opening this over another locked surface cannot leave the
+  // page permanently unscrollable.
+  useEffect(() => {
+    if (!isOpen) return;
+    const root = document.documentElement;
+    const prevRoot = root.style.overflow;
+    const prevBody = document.body.style.overflow;
+    root.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = prevRoot;
+      document.body.style.overflow = prevBody;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -19,7 +44,11 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 2000,
+        // Above the PWA's fixed header (3000) and either app's bottom nav.
+        // At 2000 the header painted over the top of the panel — invisible
+        // while a 15vh top offset happened to start the panel below it, and
+        // obvious the moment the panel was centred and grew taller.
+        zIndex: 4000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -42,22 +71,35 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
           0%, 100% { filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.4)); }
           50% { filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.6)); }
         }
+        /* Five benefit rows plus the header run past a phone's height, so the
+           panel is capped and scrolls inside itself. dvh where it exists —
+           with plain vh the cap is measured against the viewport WITH mobile
+           browser chrome retracted, which is taller than what is on screen,
+           and the bottom of the panel sits under the address bar. */
+        .streak-modal-panel { max-height: calc(100vh - 32px); }
+        @supports (height: 100dvh) {
+          .streak-modal-panel { max-height: calc(100dvh - 32px); }
+        }
       `}</style>
 
       <div
+        className="streak-modal-panel"
         style={{
           width: "100%",
           maxWidth: 400,
-          maxHeight: "calc(100dvh - 32px)",
           background: "linear-gradient(135deg, #1e293b, #0f172a)",
           borderRadius: 24,
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
           position: "relative",
           animation: "modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-          overflowY: "auto",
-          overscrollBehavior: "contain",
-          WebkitOverflowScrolling: "touch",
+          // Scrolling lives on the content below, not here: the decorative
+          // glow is 120% wide, and a scroll container would turn its overhang
+          // into a horizontal scrollbar. hidden keeps it clipped to the
+          // rounded corners.
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -98,7 +140,14 @@ export const StreakBenefitsModal: FC<StreakBenefitsModalProps> = ({
           <X size={18} />
         </button>
 
-        <div style={{ padding: "32px 24px" }}>
+        <div
+          style={{
+            padding: "32px 24px",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
             <div
               style={{
