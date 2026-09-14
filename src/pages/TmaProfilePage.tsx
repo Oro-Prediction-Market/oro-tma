@@ -25,6 +25,7 @@ import {
 import { TierMapSheet } from "@shared/components/TierMapSheet";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { useSavedMarkets } from "@shared/hooks/useSavedMarkets";
+import { SHEET_EASE, useSheetDismiss } from "@shared/hooks/useSheetDismiss";
 import { SavedMarketsShortcut } from "@shared/components/SavedMarketsShortcut";
 import {
   BadgeGrid,
@@ -58,6 +59,9 @@ export const TmaProfilePage: FC = () => {
   const [streakModalOpen, setStreakModalOpen] = useState(false);
   const [showProfileShare, setShowProfileShare] = useState(false);
   const [collectiblesOpen, setCollectiblesOpen] = useState(false);
+  // Keeps the collectibles sheet mounted while it slides back down.
+  const { closing: collectiblesClosing, dismiss: closeCollectibles } =
+    useSheetDismiss(collectiblesOpen, () => setCollectiblesOpen(false));
   const [tierMapOpen, setTierMapOpen] = useState(false);
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
   const [recentCalls, setRecentCalls] = useState<Bet[]>([]);
@@ -244,8 +248,26 @@ export const TmaProfilePage: FC = () => {
         .collectibles-sheet {
           animation: sheetRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
+        /* Leaving, the same travel backwards — the page holds the sheet
+           mounted for exactly that long. See useSheetDismiss.
+
+           Separate keyframes rather than the entrance ones run with
+           a reversed direction: changing only the direction of an animation
+           that has already finished does not restart it, it just re-evaluates
+           the finished fill, which snaps the sheet off screen in one frame. */
+        @keyframes sheetFall {
+          from { transform: translateY(0); }
+          to   { transform: translateY(100%); }
+        }
+        @keyframes scrimFadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .collectibles-scrim.is-closing { animation: scrimFadeOut 0.25s ease both; }
+        .collectibles-sheet.is-closing {
+          animation: sheetFall 0.25s ${SHEET_EASE} both;
+          pointer-events: none;
+        }
         @media (prefers-reduced-motion: reduce) {
-          .collectibles-scrim, .collectibles-sheet { animation: none; }
+          .collectibles-scrim, .collectibles-sheet,
+          .collectibles-scrim.is-closing, .collectibles-sheet.is-closing { animation: none; }
         }
         @keyframes badgeUnlockPop {
           0%   { transform: scale(0.3) rotate(-15deg); opacity: 0; }
@@ -1093,8 +1115,8 @@ export const TmaProfilePage: FC = () => {
       {/* ── Collectibles Modal ────────────────────────────────── */}
       {collectiblesOpen && (
         <div
-          className="collectibles-scrim"
-          onClick={() => setCollectiblesOpen(false)}
+          className={`collectibles-scrim${collectiblesClosing ? " is-closing" : ""}`}
+          onClick={closeCollectibles}
           style={{
             position: "fixed",
             inset: 0,
@@ -1108,7 +1130,7 @@ export const TmaProfilePage: FC = () => {
           }}
         >
           <div
-            className="collectibles-sheet"
+            className={`collectibles-sheet${collectiblesClosing ? " is-closing" : ""}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "var(--bg-card)",
@@ -1158,7 +1180,7 @@ export const TmaProfilePage: FC = () => {
                   Collectibles
                 </span>
                 <button
-                  onClick={() => setCollectiblesOpen(false)}
+                  onClick={closeCollectibles}
                   style={{
                     background: "none",
                     border: "none",

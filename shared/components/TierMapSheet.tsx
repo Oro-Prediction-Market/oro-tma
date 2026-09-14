@@ -7,6 +7,7 @@ import {
   tierProgress,
   tierRequirement,
 } from "@shared/reputation/tiers";
+import { SHEET_EASE, useSheetDismiss } from "@shared/hooks/useSheetDismiss";
 
 /**
  * The whole reputation ladder, with what every rung actually costs.
@@ -58,6 +59,10 @@ export function TierMapSheet({
     };
   }, []);
 
+  // Mounted only while open, so `open` is always true here — the hook's job on
+  // this sheet is purely to hold it on screen while it slides back down.
+  const { closing, dismiss } = useSheetDismiss(true, onClose);
+
   const currentOrder = tierMeta(tier).order;
   const accuracy =
     totalPredictions > 0 ? correctPredictions / totalPredictions : 0;
@@ -65,8 +70,8 @@ export function TierMapSheet({
 
   return (
     <div
-      className="tier-map-scrim"
-      onClick={onClose}
+      className={`tier-map-scrim${closing ? " is-closing" : ""}`}
+      onClick={dismiss}
       style={{
         position: "fixed",
         inset: 0,
@@ -99,6 +104,24 @@ export function TierMapSheet({
              decelerates hard so it arrives settled rather than abruptly. */
           animation: tierMapRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
+        /* Leaving, the same travel backwards. The sheet is kept mounted for
+           exactly this long — see useSheetDismiss.
+
+           These are separate keyframes rather than the entrance ones run with
+           a reversed direction, because changing only the direction of an
+           animation that has already finished does not restart it — the
+           browser just re-evaluates the finished fill, which snaps the panel
+           to its off-screen position in a single frame. A different
+           animation-name is what makes the exit actually play. */
+        .tier-map-scrim.is-closing { animation: tierMapScrimOut 0.25s ease both; }
+        .tier-map-panel.is-closing {
+          animation: tierMapFall 0.25s ${SHEET_EASE} both;
+        }
+        @keyframes tierMapScrimOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes tierMapFall {
+          from { transform: translateY(0); }
+          to   { transform: translateY(100%); }
+        }
         @keyframes tierMapScrim { from { opacity: 0; } to { opacity: 1; } }
         @keyframes tierMapRise {
           from { transform: translateY(100%); }
@@ -115,6 +138,13 @@ export function TierMapSheet({
                so at this width it lifts and settles in place instead. */
             animation-name: tierMapPop;
           }
+          /* Settles back the way it arrived rather than dropping off a bottom
+             edge it is not attached to at this width. */
+          .tier-map-panel.is-closing { animation-name: tierMapPopOut; }
+          @keyframes tierMapPopOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to   { opacity: 0; transform: translateY(14px) scale(0.97); }
+          }
           .tier-map-handle { display: none; }
           @keyframes tierMapPop {
             from { opacity: 0; transform: translateY(14px) scale(0.97); }
@@ -122,19 +152,22 @@ export function TierMapSheet({
           }
         }
         @media (prefers-reduced-motion: reduce) {
-          .tier-map-scrim, .tier-map-panel { animation: none; }
+          .tier-map-scrim, .tier-map-panel,
+          .tier-map-scrim.is-closing, .tier-map-panel.is-closing { animation: none; }
         }
       `}</style>
 
       <div
-        className="tier-map-panel"
+        className={`tier-map-panel${closing ? " is-closing" : ""}`}
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--bg-card)",
           overflowY: "auto",
+          // Nothing inside a sheet on its way out should still be tappable.
+          pointerEvents: closing ? "none" : undefined,
         }}
       >
-        <Header onClose={onClose} />
+        <Header onClose={dismiss} />
 
         <div style={{ padding: "0 16px" }}>
           {TIER_ORDER.map((key) => {
