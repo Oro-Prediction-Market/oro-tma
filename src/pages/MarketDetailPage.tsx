@@ -37,7 +37,13 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown, Share2, ArrowLeft } from "lucide-react";
 import { SaveMarketButton } from "@shared/components/SaveMarketButton";
-import { calcProb, calcOdds, rankedOutcomes } from "./WorldCupHubPage";
+import {
+  getWCFlag,
+  isWCMarket,
+  calcProb,
+  calcOdds,
+  rankedOutcomes,
+} from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
 import { isUfcMarket } from "./UfcHubPage";
@@ -247,6 +253,9 @@ export const MarketDetailPage: FC = () => {
   const [shareOpen, setShareOpen] = useState(false);
   /** The outcome whose stake sheet is open, as on every themed market view. */
   const [activeBet, setActiveBet] = useState<string | null>(null);
+  // One flag for the whole list: if the market's artwork 404s it does so for
+  // every row, and falling back per row would leave a half-broken column.
+  const [imgError, setImgError] = useState(false);
   const [market, setMarket] = useState<Market | null>(null);
   const [history, setHistory] = useState<OutcomeHistory[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -265,7 +274,6 @@ export const MarketDetailPage: FC = () => {
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [disputeError, setDisputeError] = useState<string | null>(null);
   const [disputeSuccess, setDisputeSuccess] = useState(false);
-  const [hasBet, setHasBet] = useState(false);
   const [userBets, setUserBets] = useState<Bet[]>([]);
 
   // ── Live WebSocket updates ─────────────────────────────────────────────────
@@ -320,7 +328,6 @@ export const MarketDetailPage: FC = () => {
       .then((bets) => {
         const marketBets = bets.filter((b) => b.marketId === id);
         setUserBets(marketBets);
-        setHasBet(marketBets.length > 0);
       })
       .catch(() => {});
   }, [id]);
@@ -1433,16 +1440,6 @@ export const MarketDetailPage: FC = () => {
                 // Laplace-smoothed pool ratio.
                 const pct = calcProb(m, outcome.id) * 100;
 
-                // Intelligence delta: show expert vs crowd gap (only when hasBet & both values exist)
-                const rawPct =
-                  outcome.lmsrProbability != null && outcome.lmsrProbability > 0
-                    ? outcome.lmsrProbability * 100
-                    : null;
-                const delta =
-                  hasBet && outcome.intelligenceProb != null && rawPct != null
-                    ? Math.round(outcome.intelligenceProb * 100) -
-                      Math.round(rawPct)
-                    : null;
                 // One flat colour for every outcome rather than a rainbow per
                 // index — the winner still stands out once a market resolves.
                 // Rows are ranked by probability; with a single colour there is
@@ -1453,9 +1450,25 @@ export const MarketDetailPage: FC = () => {
                     : isResolved
                       ? "var(--text-subtle)"
                       : "#3b82f6";
-                const signal = outcome.reputationSignal;
-                const barWidth = Math.max(4, Math.min(100, pct));
                 const eliminated = !!outcome.isEliminated;
+
+                // Artwork belongs to the OUTCOME, not to where it happens to
+                // sit today: imageUrl/imageUrlAlt are "first side, second
+                // side", so reading them off the rank would put the wrong
+                // crest on the row once a price moved.
+                const idx = m.outcomes.findIndex((o) => o.id === outcome.id);
+                const wcFlag = isWCMarket(m) ? getWCFlag(outcome.label) : "";
+                const avatarUrl =
+                  wcFlag ||
+                  (!imgError
+                    ? (outcome as any).imageUrl ||
+                      (idx === 0
+                        ? m.imageUrl
+                        : idx === 1
+                          ? m.imageUrlAlt || m.imageUrl
+                          : null)
+                    : null);
+                const vis = getCategoryVisual(m.category);
                 const pickable = isOpen && !eliminated;
                 return (
                   // Opens the stake sheet in place, the way every other market
@@ -1480,205 +1493,184 @@ export const MarketDetailPage: FC = () => {
                       cursor: pickable ? "pointer" : "default",
                     }}
                   >
+                    {/* Header row: who, at what price, and the call to act.
+                        Mirrors oro-pwa's "Pick your outcome" list so the same
+                        market reads identically in both apps. */}
                     <div
                       style={{
-                        position: "relative",
-                        borderRadius: 14,
-                        overflow: "hidden",
-                        background: "var(--bg-secondary)",
-                        border: `1.5px solid ${color}30`,
-                        boxShadow: `0 2px 8px rgba(0,0,0,0.18), inset 0 0 0 1px ${color}18`,
-                        cursor: isOpen && !eliminated ? "pointer" : "default",
-                        transition:
-                          "transform 0.12s ease, box-shadow 0.15s ease",
-                      }}
-                      onMouseDown={(e) => {
-                        if (!isOpen || eliminated) return;
-                        const el = e.currentTarget as HTMLDivElement;
-                        el.style.transform = "scale(0.982)";
-                        el.style.boxShadow = `inset 3px 3px 8px rgba(0,0,0,0.28), inset 0 0 0 1px ${color}50`;
-                      }}
-                      onMouseUp={(e) => {
-                        const el = e.currentTarget as HTMLDivElement;
-                        el.style.transform = "scale(1)";
-                        el.style.boxShadow = `0 2px 8px rgba(0,0,0,0.18), inset 0 0 0 1px ${color}18`;
-                      }}
-                      onMouseLeave={(e) => {
-                        const el = e.currentTarget as HTMLDivElement;
-                        el.style.transform = "scale(1)";
-                        el.style.boxShadow = `0 2px 8px rgba(0,0,0,0.18), inset 0 0 0 1px ${color}18`;
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 6,
+                        gap: 8,
                       }}
                     >
-                      {/* probability fill */}
                       <div
                         style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          bottom: 0,
-                          width: `${barWidth}%`,
-                          background: `linear-gradient(90deg, ${color}55 0%, ${color}28 60%, transparent 100%)`,
-                          borderRadius: "14px 0 0 14px",
-                          transition: "width 1s ease",
-                          pointerEvents: "none",
-                        }}
-                      />
-
-                      {/* shimmer sweep — only on open markets */}
-                      {isOpen && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            overflow: "hidden",
-                            borderRadius: 14,
-                            pointerEvents: "none",
-                          }}
-                        >
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              bottom: 0,
-                              width: "40%",
-                              background: `linear-gradient(90deg, transparent, ${color}18, transparent)`,
-                              animation:
-                                "shimmer-slide 2.4s ease-in-out infinite",
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      {/* content */}
-                      <div
-                        style={{
-                          position: "relative",
-                          padding: "13px 16px",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 8,
+                          gap: 12,
+                          minWidth: 0,
                         }}
                       >
                         <div
                           style={{
+                            flexShrink: 0,
+                            width: 36,
+                            height: 36,
+                            borderRadius: wcFlag ? 6 : "var(--radius-full)",
+                            overflow: "hidden",
+                            background: wcFlag ? "transparent" : vis.gradient,
                             display: "flex",
-                            flexDirection: "column",
-                            gap: 3,
-                            minWidth: 0,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: wcFlag ? "none" : "2px solid #fff",
+                            boxShadow: wcFlag ? "none" : "var(--shadow-sm)",
                           }}
                         >
-                          <span
-                            style={{
-                              fontSize: "0.92rem",
-                              fontWeight: 800,
-                              color: "var(--text-main)",
-                              letterSpacing: "-0.01em",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {outcome.label}
-                          </span>
-                          {signal != null && hasBet && (
+                          {avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt=""
+                              onError={() => setImgError(true)}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                display: "block",
+                              }}
+                            />
+                          ) : (
                             <span
                               style={{
-                                fontSize: "0.65rem",
-                                fontWeight: 700,
-                                color: "#f59e0b",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 3,
+                                fontSize: 14,
+                                fontWeight: 900,
+                                color: "#fff",
                               }}
                             >
-                              <svg
-                                width="8"
-                                height="8"
-                                viewBox="0 0 24 24"
-                                fill="#f59e0b"
-                                stroke="none"
-                              >
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                              Experts {Math.round(signal * 100)}%
+                              {outcome.label.charAt(0).toUpperCase()}
                             </span>
                           )}
                         </div>
-
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            color: "var(--text-main)",
+                            fontSize: "1rem",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {outcome.label}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          background: `${color}15`,
+                          color: color,
+                          padding: "4px 10px",
+                          borderRadius: "var(--radius-full)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span style={{ fontSize: "0.85rem", fontWeight: 900 }}>
+                          {(() => {
+                            const odds = calcOdds(m, outcome.id);
+                            return odds
+                              ? `${Math.min(99, odds).toFixed(2)}x`
+                              : "—";
+                          })()}
+                        </span>
+                      </div>
+                      {pickable && (
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
+                            background: color,
+                            color: "#fff",
+                            fontSize: "0.62rem",
+                            fontWeight: 800,
+                            padding: "4px 10px",
+                            borderRadius: "var(--radius-full)",
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
                             flexShrink: 0,
                           }}
                         >
-                          {delta !== null && delta !== 0 && (
-                            <span
-                              style={{
-                                fontSize: "0.65rem",
-                                fontWeight: 700,
-                                color: delta > 0 ? "#22c55e" : "#ef4444",
-                              }}
-                            >
-                              {delta > 0 ? "+" : ""}
-                              {delta}%
-                            </span>
-                          )}
-                          <div
-                            style={{
-                              background: `${color}22`,
-                              border: `1.5px solid ${color}50`,
-                              color: color,
-                              padding: "4px 14px",
-                              borderRadius: 99,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              lineHeight: 1.15,
-                            }}
-                          >
-                            <span style={{ fontSize: "1rem", fontWeight: 900, letterSpacing: "-0.01em" }}>{(() => {
-                              const odds = calcOdds(m, outcome.id);
-                              return odds ? `${Math.min(99, odds).toFixed(2)}x` : "—";
-                            })()}</span>
-                            <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.75 }}>{pct.toFixed(0)}%</span>
-                          </div>
-                          {eliminated ? (
-                            <div
-                              style={{
-                                background: "rgba(239,68,68,0.15)",
-                                color: "#ef4444",
-                                border: "1px solid rgba(239,68,68,0.35)",
-                                fontSize: "0.65rem",
-                                fontWeight: 800,
-                                padding: "4px 10px",
-                                borderRadius: 99,
-                                letterSpacing: "0.06em",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              Out
-                            </div>
-                          ) : isOpen && (
-                            <div
-                              style={{
-                                background: color,
-                                color: "#fff",
-                                fontSize: "0.65rem",
-                                fontWeight: 800,
-                                padding: "4px 10px",
-                                borderRadius: 99,
-                                letterSpacing: "0.06em",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              Predict
-                            </div>
-                          )}
+                          Predict
                         </div>
+                      )}
+                      {eliminated && isOpen && (
+                        <div
+                          style={{
+                            background: "rgba(239,68,68,0.15)",
+                            color: "#ef4444",
+                            border: "1px solid rgba(239,68,68,0.35)",
+                            fontSize: "0.62rem",
+                            fontWeight: 800,
+                            padding: "4px 10px",
+                            borderRadius: "var(--radius-full)",
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Out
+                        </div>
+                      )}
+                    </div>
+                    {/* Battery-style: the % sits centered inside the bar
+                        itself rather than in a separate number, so the fill
+                        level and its readout are always the same glance. */}
+                    <div
+                      style={{
+                        background: "var(--bg-secondary)",
+                        borderRadius: "var(--radius-full)",
+                        height: "20px",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: color,
+                          height: "100%",
+                          width: `${pct}%`,
+                          borderRadius: "var(--radius-full)",
+                          transition:
+                            "width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                          boxShadow: `0 0 12px ${color}40`,
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.68rem",
+                          fontWeight: 800,
+                          color: "#fff",
+                          textShadow: "0 1px 2px rgba(0,0,0,0.55)",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        {pct.toFixed(0)}%
                       </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-subtle)",
+                        marginTop: "6px",
+                        fontWeight: 700,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      Nu {Number(outcome.totalBetAmount).toLocaleString()} total
+                      predicted
                     </div>
                   </div>
                 );
