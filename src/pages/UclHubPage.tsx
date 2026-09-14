@@ -15,6 +15,7 @@ import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import type {
   Market,
+  Outcome,
   UclStandings,
   UclStats,
   UclBracket,
@@ -49,8 +50,33 @@ type StatBoard = {
   icon: React.ReactNode;
   accent: string;
   rows: StatRow[];
-  marketId?: string; // set when a bettable market exists for this stat
+  // The whole market, not just its id: each row resolves its own outcome from
+  // it to stake from the leaderboard, the way the EPL hub's stats tab does.
+  market?: Market;
 };
+
+// Normalises player names so a live API name ("E. Haaland") can match a
+// betting-market outcome ("Erling Haaland") — by full name or last name.
+// Same pair the EPL hub uses, for the same reason.
+const normName = (s: string) =>
+  (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^a-z ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const lastToken = (s: string) => {
+  const p = normName(s).split(" ");
+  return p[p.length - 1] ?? "";
+};
+function findStatOutcome(market: Market, player: string): Outcome | undefined {
+  const full = normName(player);
+  const ln = lastToken(player);
+  return (market.outcomes ?? []).find((o) => {
+    const on = normName(o.label);
+    return on === full || (ln.length > 2 && lastToken(o.label) === ln);
+  });
+}
 
 // Which market subcategory backs each stat board (matches the backend).
 // Only goals & assists have a free-tier CL data source (no cards feed exists).
@@ -744,7 +770,13 @@ const STAT_DEFS: {
   { id: "assists", label: "Assists", heading: "Most Assists This Season?", icon: <Handshake size={14} />, accent: "#3ddc97" },
 ];
 
-function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat) => void }) {
+function StatsTab({
+  boards,
+  onBet,
+}: {
+  boards: StatBoard[];
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
   const [cat, setCat] = useState<StatCat>("goals");
   const active = boards.find((c) => c.id === cat) ?? boards[0];
 
@@ -793,31 +825,14 @@ function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat)
 
       <Heading>{active.heading}</Heading>
 
-      {/* Bet CTA — shown when a bettable market exists for this stat */}
-      {active.marketId ? (
-        <button
-          onClick={() => onBet(active.id)}
-          style={{
-            width: "100%",
-            marginBottom: 12,
-            padding: "12px 14px",
-            borderRadius: 12,
-            border: `1px solid ${active.accent}66`,
-            background: `linear-gradient(180deg, ${active.accent}26, ${active.accent}0d)`,
-            color: "#fff",
-            fontSize: 12.5,
-            fontWeight: 900,
-            letterSpacing: "0.03em",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 7,
-          }}
-        >
-          <Star size={13} color={GOLD} fill={GOLD} />
-          Predict the {active.label} winner »
-        </button>
+      {/* No "predict the winner" CTA into the market page: each row below is
+          the bet affordance, so a player is staked from the leaderboard you
+          are already reading — same as the EPL hub's stats tab. */}
+      {active.market ? (
+        <div style={{ fontSize: 11, color: SILVER, marginTop: -4, marginBottom: 12 }}>
+          Tap a player to predict · Nu{" "}
+          {Number(active.market.totalPool).toLocaleString()} pool
+        </div>
       ) : (
         <div style={{ fontSize: 11, color: SILVER, marginTop: -4, marginBottom: 12 }}>
           Live leaderboard — betting opens once the market is live.
@@ -828,9 +843,19 @@ function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat)
         <EmptyState>Leaderboard loads once the competition is underway.</EmptyState>
       ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {active.rows.map((s, i) => (
+        {active.rows.map((s, i) => {
+          // A player is bettable only when the market carries a matching
+          // outcome. The live feed lists far more players than any market
+          // prices, so the unmatched ones stay as plain leaderboard rows.
+          const market = active.market;
+          const outcome = market ? findStatOutcome(market, s.player) : undefined;
+          const odds = market && outcome ? calcOdds(market, outcome.id) : null;
+          const bettable = !!(market && outcome);
+          return (
           <div
             key={`${s.player}-${i}`}
+            onClick={bettable ? () => onBet(market!.id, outcome!.id) : undefined}
+            role={bettable ? "button" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
@@ -838,7 +863,8 @@ function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat)
               padding: "11px 13px",
               borderRadius: 12,
               background: NAVY,
-              border: "1px solid rgba(43,107,255,0.16)",
+              border: `1px solid ${bettable ? `${active.accent}44` : "rgba(43,107,255,0.16)"}`,
+              cursor: bettable ? "pointer" : "default",
             }}
           >
             <span style={{ width: 18, fontSize: 13, fontWeight: 900, color: i === 0 ? active.accent : SILVER, textAlign: "center" }}>{i + 1}</span>
@@ -851,8 +877,24 @@ function StatsTab({ boards, onBet }: { boards: StatBoard[]; onBet: (id: StatCat)
               <span style={{ display: "inline-flex" }}>{active.icon}</span>
               <span style={{ fontSize: 16, fontWeight: 900 }}>{s.value}</span>
             </div>
+            {odds !== null && (
+              <span
+                style={{
+                  flexShrink: 0,
+                  padding: "4px 8px",
+                  borderRadius: 8,
+                  background: `${active.accent}1f`,
+                  color: active.accent,
+                  fontSize: 11.5,
+                  fontWeight: 900,
+                }}
+              >
+                {odds.toFixed(2)}x
+              </span>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
       )}
     </div>
@@ -1278,7 +1320,10 @@ function BracketTab({ bracket }: { bracket: UclBracket | null }) {
 
 export function UclHubPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<UclTab>("matches");
+  // Season, not Matches: it is the first tab in TABS, so landing anywhere else
+  // opened the hub with the second tab selected and the first one sitting
+  // unread to its left.
+  const [tab, setTab] = useState<UclTab>("season");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [liveStandings, setLiveStandings] = useState<UclStandings | null>(null);
   const [liveStats, setLiveStats] = useState<UclStats | null>(null);
@@ -1314,8 +1359,8 @@ export function UclHubPage() {
   }));
 
   // A bettable stat market for this board (auto-created by the keeper).
-  const statMarketId = (cat: StatCat): string | undefined =>
-    markets.find((m) => (m.subcategory ?? "").toLowerCase() === STAT_SUBCAT[cat])?.id;
+  const statMarket = (cat: StatCat): Market | undefined =>
+    markets.find((m) => (m.subcategory ?? "").toLowerCase() === STAT_SUBCAT[cat]);
 
   // Live leaderboard rows for a stat board (goals/assists only).
   const rowsFor = (cat: StatCat): StatRow[] =>
@@ -1333,7 +1378,7 @@ export function UclHubPage() {
     icon: c.icon,
     accent: c.accent,
     rows: rowsFor(c.id),
-    marketId: statMarketId(c.id),
+    market: statMarket(c.id),
   }));
 
   const sub = (m: Market) => (m.subcategory ?? "").toLowerCase();
@@ -1500,13 +1545,7 @@ export function UclHubPage() {
           {tab === "bracket" && <BracketTab bracket={bracket} />}
           {tab === "standings" && <StandingsTab rows={standRows} />}
           {tab === "stats" && (
-            <StatsTab
-              boards={boards}
-              onBet={(cat) => {
-                const id = statMarketId(cat);
-                if (id) openMarket(id);
-              }}
-            />
+            <StatsTab boards={boards} onBet={openBet} />
           )}
         </div>
 
