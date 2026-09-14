@@ -86,21 +86,6 @@ function fmtDay(ms: number): string {
   });
 }
 
-function fmtMoment(ms: number, spanMs: number): string {
-  const d = new Date(ms);
-  // Inside a couple of days the date alone repeats on every tick, so the clock
-  // is what distinguishes them.
-  if (spanMs < 48 * 3600_000) {
-    return d.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  }
-  return fmtDay(ms);
-}
-
 /** Index of the last point at or before `t`, or -1 if `t` predates the series. */
 function indexAt(points: ChartPoint[], t: number): number {
   if (points.length === 0 || t < points[0].t) return -1;
@@ -216,9 +201,6 @@ export function ProbabilityChart({
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [w, setW] = useState(0);
   const [cursor, setCursor] = useState<number | null>(null);
-  // Height of the pointer in viewBox units — what decides which line is being
-  // read when several are on screen.
-  const [cursorY, setCursorY] = useState<number | null>(null);
   const scrubbing = useRef(false);
   const startX = useRef(0);
 
@@ -310,9 +292,8 @@ export function ProbabilityChart({
       const plotW = Math.max(W - PAD.left - PAD.right, 1);
       const x = Math.min(Math.max(frac * W - PAD.left, 0), plotW);
       setCursor(tMin + (x / plotW) * tSpan);
-      setCursorY(((e.clientY - r.top) / (r.height || 1)) * H);
     },
-    [W, H, tMin, tSpan],
+    [W, tMin, tSpan],
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
@@ -341,34 +322,13 @@ export function ProbabilityChart({
   const endScrub = useCallback(() => {
     scrubbing.current = false;
     setCursor(null);
-    setCursorY(null);
   }, []);
 
   if (!series.length || !hasPlottableHistory(series)) return null;
 
-  /**
-   * The line the pointer is nearest, vertically, at the hovered instant.
-   *
-   * With five outcomes on one chart the crosshair alone does not say which
-   * number is being read, so the nearest line is brought forward and the rest
-   * are pushed back. Measured against each line's own height at that instant —
-   * the value the reader is looking at — not against its last point.
-   */
-  const active = (() => {
-    if (cursor === null || cursorY === null) return null;
-    let best: string | null = null;
-    let bestGap = Infinity;
-    for (const l of lines) {
-      const v = valueAt(l.points, cursor);
-      if (v === null) continue;
-      const gap = Math.abs(l.toY(v) - cursorY);
-      if (gap < bestGap) {
-        bestGap = gap;
-        best = l.label;
-      }
-    }
-    return best;
-  })();
+  // No nearest-line highlight. Every line keeps its own weight and opacity at
+  // all times — with the name and price now printed on each line, singling one
+  // out by fading the others took the chart further from readable, not closer.
 
   // The crosshair follows the pointer rather than jumping to the nearest
   // vertex, and the value under it is the last point at or before the cursor —
@@ -399,6 +359,66 @@ export function ProbabilityChart({
     return cursor === null ? last : (valueAt(l.points, cursor) ?? last);
   };
 
+  /**
+   * A label per line, carrying that outcome's name and its price at whatever
+   * moment is being read — the old single tooltip, split into one box each and
+   * put on the line it describes.
+   *
+   * It rides its own line in both directions: sideways with the cursor, and up
+   * and down to the height that line stood at, so the reader never has to match
+   * a colour in a list back to a curve. With no cursor the labels rest at the
+   * end of their lines showing the latest price.
+   *
+   * Laid out then pushed apart, because two outcomes a point apart would
+   * otherwise print on top of each other. The stack is nudged down, then lifted
+   * wholesale if it runs past the floor.
+   */
+  const LABEL_H = 15;
+  const endLabels = (() => {
+    const avail = W - PAD.left - PAD.right;
+    // Below this there is no room for a label that is not mostly ellipsis.
+    if (avail < 150) return [];
+    const CHAR = 5.3; // ≈ one char at 9.5px, weight 700
+    const maxW = Math.min(avail - 14, 172);
+
+    const items = lines.map((l) => {
+      const pct = `${Math.round(valueOf(l) * 100)}%`;
+      const fits = (name: string) =>
+        (name.length + 1 + pct.length) * CHAR + 16 <= maxW;
+      let name = l.label;
+      if (!fits(name)) {
+        let n = name.length;
+        while (n > 1 && !fits(`${name.slice(0, n)}…`)) n--;
+        name = `${name.slice(0, n)}…`;
+      }
+      const text = `${name} ${pct}`;
+      return {
+        key: l.label,
+        color: l.color,
+        text,
+        width: text.length * CHAR + 16,
+        // Sideways: the crosshair while scrubbing, the line's own end at rest.
+        anchorX: cursorX ?? l.cx,
+        y: l.toY(valueOf(l)),
+      };
+    });
+
+    const ordered = [...items].sort((a, b) => a.y - b.y);
+    const top = PAD.top + LABEL_H / 2;
+    const bottom = H - PAD.bottom - LABEL_H / 2;
+    let prev = -Infinity;
+    for (const it of ordered) {
+      it.y = Math.max(it.y, prev + LABEL_H + 2);
+      prev = it.y;
+    }
+    const overflow = ordered.length
+      ? ordered[ordered.length - 1].y - bottom
+      : 0;
+    if (overflow > 0) for (const it of ordered) it.y -= overflow;
+    for (const it of ordered) it.y = Math.min(Math.max(it.y, top), bottom);
+    return ordered;
+  })();
+
   const legend = (
     <div
       style={{
@@ -410,7 +430,6 @@ export function ProbabilityChart({
       }}
     >
       {lines.map((l) => {
-        const dim = active !== null && active !== l.label;
         return (
           <span
             key={l.label}
@@ -418,7 +437,6 @@ export function ProbabilityChart({
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
-              opacity: dim ? 0.4 : 1,
             }}
           >
             <span
@@ -531,7 +549,6 @@ export function ProbabilityChart({
             one half and nothing is dimmed. */}
         {lines.map((l) => {
           const { past, future } = splitStep(l.points, cursor, l.toX, l.toY);
-          const dim = active !== null && active !== l.label;
           return (
             <g key={l.label}>
               {future && (
@@ -542,7 +559,7 @@ export function ProbabilityChart({
                   strokeWidth={2}
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                  opacity={dim ? 0.1 : 0.25}
+                  opacity={0.25}
                 />
               )}
               {past && (
@@ -550,12 +567,9 @@ export function ProbabilityChart({
                   d={past}
                   fill="none"
                   stroke={l.color}
-                  // Weight as well as opacity: on a phone, colour alone at
-                  // this stroke width is not enough separation to read.
-                  strokeWidth={active === l.label ? 3 : 2}
+                  strokeWidth={2}
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                  opacity={dim ? 0.3 : 1}
                 />
               )}
             </g>
@@ -586,68 +600,64 @@ export function ProbabilityChart({
           }
           const v = valueAt(l.points, cursor);
           if (v === null || cursorX === null) return null;
-          const dim = active !== null && active !== l.label;
           return (
             <circle
               key={l.label}
               cx={cursorX}
               cy={l.toY(v)}
-              r={active === l.label ? 4.5 : 3.5}
+              r={3.5}
               fill={l.color}
               stroke={surface}
               strokeWidth={1.5}
-              opacity={dim ? 0.35 : 1}
             />
+          );
+        })}
+
+        {/* Each label in the panel the old tooltip wore, one per line. Sits to
+            the left of its anchor so it trails the line rather than covering
+            what is ahead of it, and flips to the right where there is no room
+            left — at the very start of the range a left-hand box would be cut
+            off by the axis. */}
+        {endLabels.map((it) => {
+          const left = it.anchorX - 8 - it.width;
+          const x =
+            left >= PAD.left
+              ? left
+              : Math.min(it.anchorX + 8, W - PAD.right - it.width);
+          return (
+            <g key={it.key} pointerEvents="none">
+              <rect
+                x={x}
+                y={it.y - LABEL_H / 2}
+                width={it.width}
+                height={LABEL_H}
+                rx={4}
+                fill={tooltipFill}
+                stroke={stroke}
+                strokeWidth={1}
+              />
+              <rect
+                x={x + 4}
+                y={it.y - LABEL_H / 2 + 3.5}
+                width={2.5}
+                height={LABEL_H - 7}
+                rx={1.25}
+                fill={it.color}
+              />
+              <text
+                x={x + 10}
+                y={it.y + 3.4}
+                fontSize={9.5}
+                fontWeight={700}
+                fill={textFill}
+              >
+                {it.text}
+              </text>
+            </g>
           );
         })}
       </svg>
 
-      {cursor !== null && cursorX !== null && (
-        <div
-          style={{
-            position: "absolute",
-            // Clamped inside the plot so a cursor at either end does not push
-            // the tooltip out past the card's rounded corner.
-            left: Math.min(Math.max(cursorX, 68), W - 68),
-            top: 6,
-            transform: "translateX(-50%)",
-            pointerEvents: "none",
-            background: tooltipFill,
-            border: `1px solid ${stroke}`,
-            borderRadius: radius,
-            padding: "6px 8px",
-            fontSize: "0.65rem",
-            fontWeight: 700,
-            lineHeight: 1.5,
-            color: textFill,
-            whiteSpace: "nowrap",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          <div style={{ color: axisFill, marginBottom: 2 }}>
-            {fmtMoment(cursor, tSpan)}
-          </div>
-          {lines.map((l) => {
-            const v = valueAt(l.points, cursor);
-            if (v === null) return null;
-            const dim = active !== null && active !== l.label;
-            return (
-              <div
-                key={l.label}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  opacity: dim ? 0.45 : 1,
-                }}
-              >
-                <span style={{ color: mutedFill }}>{l.label}</span>
-                <span style={{ color: l.color }}>{(v * 100).toFixed(1)}%</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 
