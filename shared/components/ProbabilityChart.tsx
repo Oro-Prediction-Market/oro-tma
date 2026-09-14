@@ -369,9 +369,10 @@ export function ProbabilityChart({
    * a colour in a list back to a curve. With no cursor the labels rest at the
    * end of their lines showing the latest price.
    *
-   * Laid out then pushed apart, because two outcomes a point apart would
-   * otherwise print on top of each other. The stack is nudged down, then lifted
-   * wholesale if it runs past the floor.
+   * Two outcomes a point apart would print on top of each other, so colliding
+   * labels are spread — but only the ones that collide, and only around their
+   * own average height, so every other label stays exactly on its line. What
+   * is left over gets a leader back to the line it belongs to.
    */
   const LABEL_H = 15;
   const endLabels = (() => {
@@ -399,24 +400,68 @@ export function ProbabilityChart({
         width: text.length * CHAR + 16,
         // Sideways: the crosshair while scrubbing, the line's own end at rest.
         anchorX: cursorX ?? l.cx,
+        // Where the line actually is, kept apart from the height the label
+        // ends up drawn at so a displaced label can be tied back to it.
+        target: l.toY(valueOf(l)),
         y: l.toY(valueOf(l)),
       };
     });
 
-    const ordered = [...items].sort((a, b) => a.y - b.y);
+    const ordered = [...items].sort((a, b) => a.target - b.target);
     const top = PAD.top + LABEL_H / 2;
     const bottom = H - PAD.bottom - LABEL_H / 2;
-    let prev = -Infinity;
+    const SPAN = LABEL_H + 2;
+
+    // Only labels that actually collide get moved, and a colliding group
+    // spreads around the average of its own members rather than cascading
+    // downwards from the topmost one. An outcome with clear air either side
+    // therefore keeps the exact height of its line.
+    type Cluster = { items: typeof ordered; start: number };
+    const clusters: Cluster[] = [];
+    const recentre = (c: Cluster) => {
+      const mean =
+        c.items.reduce((s, it) => s + it.target, 0) / c.items.length;
+      c.start = mean - ((c.items.length - 1) * SPAN) / 2;
+    };
     for (const it of ordered) {
-      it.y = Math.max(it.y, prev + LABEL_H + 2);
-      prev = it.y;
+      clusters.push({ items: [it], start: it.target });
+      // Absorb the cluster above while the two would overlap, then re-centre —
+      // a merge can push the group up into the one before it, so loop.
+      while (clusters.length > 1) {
+        const b = clusters[clusters.length - 1];
+        const a = clusters[clusters.length - 2];
+        if (a.start + a.items.length * SPAN <= b.start) break;
+        clusters.splice(clusters.length - 2, 2, {
+          items: [...a.items, ...b.items],
+          start: 0,
+        });
+        recentre(clusters[clusters.length - 1]);
+      }
     }
-    const overflow = ordered.length
-      ? ordered[ordered.length - 1].y - bottom
-      : 0;
-    if (overflow > 0) for (const it of ordered) it.y -= overflow;
-    for (const it of ordered) it.y = Math.min(Math.max(it.y, top), bottom);
-    return ordered;
+
+    // Hold the groups inside the plot, walking down then back up so a tall
+    // group pinned to one edge cannot shove another off the other edge.
+    for (const c of clusters) {
+      c.start = Math.max(c.start, top);
+      c.start = Math.min(c.start, bottom - (c.items.length - 1) * SPAN);
+    }
+    for (let i = 1; i < clusters.length; i++) {
+      const a = clusters[i - 1];
+      const floor = a.start + a.items.length * SPAN;
+      if (clusters[i].start < floor) clusters[i].start = floor;
+    }
+    for (let i = clusters.length - 2; i >= 0; i--) {
+      const b = clusters[i + 1];
+      const ceil = b.start - clusters[i].items.length * SPAN;
+      if (clusters[i].start > ceil) clusters[i].start = ceil;
+    }
+
+    for (const c of clusters) {
+      c.items.forEach((it, i) => {
+        it.y = Math.min(Math.max(c.start + i * SPAN, top), bottom);
+      });
+    }
+    return clusters.flatMap((c) => c.items);
   })();
 
   const legend = (
@@ -618,6 +663,26 @@ export function ProbabilityChart({
             what is ahead of it, and flips to the right where there is no room
             left — at the very start of the range a left-hand box would be cut
             off by the axis. */}
+        {/* Drawn before every box, so a leader passing a crowded neighbour
+            runs under that neighbour's panel instead of across its text. */}
+        {endLabels.map((it) => {
+          if (Math.abs(it.y - it.target) < 1.5) return null;
+          const left = it.anchorX - 8 - it.width;
+          const onLeft = left >= PAD.left;
+          const edgeX = onLeft ? left + it.width : Math.min(it.anchorX + 8, W - PAD.right - it.width);
+          return (
+            <path
+              key={`lead-${it.key}`}
+              d={`M${edgeX} ${it.y} L${it.anchorX} ${it.target}`}
+              stroke={it.color}
+              strokeWidth={1}
+              strokeOpacity={0.5}
+              fill="none"
+              pointerEvents="none"
+            />
+          );
+        })}
+
         {endLabels.map((it) => {
           const left = it.anchorX - 8 - it.width;
           const x =
