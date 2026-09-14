@@ -89,12 +89,20 @@ export function TierMapSheet({
           it becomes the centred dialog oro-pwa's siblings use. The breakpoint
           matches the one the profile page already switches its own layout on. */}
       <style>{`
-        .tier-map-scrim { align-items: flex-end; }
+        .tier-map-scrim { align-items: flex-end; animation: tierMapScrim 0.2s ease both; }
         .tier-map-panel {
           width: 100%;
           max-height: 88vh;
           border-radius: 20px 20px 0 0;
           padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+          /* Rises off the bottom edge, the way a sheet should. The easing
+             decelerates hard so it arrives settled rather than abruptly. */
+          animation: tierMapRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes tierMapScrim { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tierMapRise {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
         }
         @media (min-width: 640px) {
           .tier-map-scrim { align-items: center; }
@@ -103,8 +111,18 @@ export function TierMapSheet({
             max-height: 84vh;
             border-radius: 20px;
             padding-bottom: 20px;
+            /* A centred dialog does not rise off an edge it is nowhere near,
+               so at this width it lifts and settles in place instead. */
+            animation-name: tierMapPop;
           }
           .tier-map-handle { display: none; }
+          @keyframes tierMapPop {
+            from { opacity: 0; transform: translateY(14px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tier-map-scrim, .tier-map-panel { animation: none; }
         }
       `}</style>
 
