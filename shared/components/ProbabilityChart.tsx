@@ -72,6 +72,10 @@ export interface ChartTheme {
 const DEFAULT_H = 208;
 const PAD = { top: 12, right: 10, bottom: 24, left: 34 };
 
+/** Approximate width of one character at 9.5px, weight 700. */
+const LABEL_CHAR = 5.3;
+const LABEL_H = 15;
+
 /** Fallback width for the frame before the container has been measured. */
 const ASSUMED_W = 320;
 
@@ -107,6 +111,41 @@ function indexAt(points: ChartPoint[], t: number): number {
 function valueAt(points: ChartPoint[], t: number): number | null {
   const i = indexAt(points, t);
   return i < 0 ? null : points[i].p;
+}
+
+/**
+ * Which side of its anchor an end label's box sits on.
+ *
+ * Right by default, flipping left when the right would run past the frame —
+ * which is what happens as the crosshair approaches the right edge, and at
+ * rest, where the anchor IS the right edge.
+ *
+ * This is the mirror of what the chart used to do: it preferred the left and
+ * flipped right where the y-axis would clip it. Only the preferred side
+ * changed. The plot still spans the full frame, so a label always overlays the
+ * lines somewhere — the choice is only which way it falls from the point it
+ * describes, and leading away from the cursor's direction of travel keeps it
+ * off the stretch being read.
+ *
+ * Exported so the placement can be swept across every anchor position without
+ * a browser — a clipped label is this function's only failure mode, and it
+ * fails silently.
+ */
+export function endLabelX(
+  anchorX: number,
+  width: number,
+  W: number,
+): { x: number; onRight: boolean } {
+  const right = anchorX + 8;
+  if (right + width <= W - 2) return { x: right, onRight: true };
+  // No room on the right. Sit left of the anchor, clamped so the box stays
+  // inside the frame — and, for a label too wide to fit anywhere, pinned to
+  // the frame's left edge so the name is readable rather than its tail.
+  const x = Math.min(
+    Math.max(PAD.left, anchorX - 8 - width),
+    Math.max(2, W - 2 - width),
+  );
+  return { x, onRight: false };
 }
 
 /**
@@ -374,12 +413,11 @@ export function ProbabilityChart({
    * own average height, so every other label stays exactly on its line. What
    * is left over gets a leader back to the line it belongs to.
    */
-  const LABEL_H = 15;
   const endLabels = (() => {
     const avail = W - PAD.left - PAD.right;
     // Below this there is no room for a label that is not mostly ellipsis.
     if (avail < 150) return [];
-    const CHAR = 5.3; // ≈ one char at 9.5px, weight 700
+    const CHAR = LABEL_CHAR;
     const maxW = Math.min(avail - 14, 172);
 
     const items = lines.map((l) => {
@@ -659,17 +697,17 @@ export function ProbabilityChart({
         })}
 
         {/* Each label in the panel the old tooltip wore, one per line. Sits to
-            the left of its anchor so it trails the line rather than covering
-            what is ahead of it, and flips to the right where there is no room
-            left — at the very start of the range a left-hand box would be cut
-            off by the axis. */}
+            the RIGHT of its anchor so it leads the line rather than trailing
+            it, and flips to the left where there is no room right — near the
+            end of the range, and at rest, where the anchor is the last point.
+            See `endLabelX`. */}
         {/* Drawn before every box, so a leader passing a crowded neighbour
             runs under that neighbour's panel instead of across its text. */}
         {endLabels.map((it) => {
           if (Math.abs(it.y - it.target) < 1.5) return null;
-          const left = it.anchorX - 8 - it.width;
-          const onLeft = left >= PAD.left;
-          const edgeX = onLeft ? left + it.width : Math.min(it.anchorX + 8, W - PAD.right - it.width);
+          const { x, onRight } = endLabelX(it.anchorX, it.width, W);
+          // Leader runs from whichever edge faces the line back to it.
+          const edgeX = onRight ? x : x + it.width;
           return (
             <path
               key={`lead-${it.key}`}
@@ -684,11 +722,7 @@ export function ProbabilityChart({
         })}
 
         {endLabels.map((it) => {
-          const left = it.anchorX - 8 - it.width;
-          const x =
-            left >= PAD.left
-              ? left
-              : Math.min(it.anchorX + 8, W - PAD.right - it.width);
+          const { x } = endLabelX(it.anchorX, it.width, W);
           return (
             <g key={it.key} pointerEvents="none">
               <rect
