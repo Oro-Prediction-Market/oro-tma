@@ -2,6 +2,8 @@ import { useState, useEffect, memo, type FC } from "react";
 import { formatOdds } from "@/pages/WorldCupHubPage";
 import type { Market, Outcome } from "@shared/api/client";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { VISIBLE_OUTCOMES } from "@shared/feedCardMetrics";
+import { FEED_CARD_H, MORE_LINE_H, TITLE_BLOCK_H } from "./feedCardHeight";
 import { BottomSheet } from "@/components/ui/Modal";
 import { MarketShareCard } from "@/components/MarketShareCard";
 
@@ -12,7 +14,8 @@ import { MarketShareCard } from "@/components/MarketShareCard";
 
 const YES_COLOR = "#22c55e";
 const NO_COLOR = "#ef4444";
-const DEFAULT_VISIBLE_CANDIDATES = 4;
+// Matches every other card in the feed — see shared/feedCardMetrics.ts.
+const DEFAULT_VISIBLE_CANDIDATES = VISIBLE_OUTCOMES;
 
 function useCountdown(targetAt: string | null): string {
   const [label, setLabel] = useState("Open");
@@ -101,7 +104,6 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
   ({ markets, onBet, referralId }) => {
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
     const [shareOpen, setShareOpen] = useState(false);
-    const [showAll, setShowAll] = useState(false);
     const first = markets[0];
     const title = (first.groupTitle || first.title).trim();
     const vis = getCategoryVisual(first.category);
@@ -129,9 +131,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
         };
       })
       .sort((a, b) => b.pct - a.pct);
-    const visibleRows = showAll
-      ? rows
-      : rows.slice(0, DEFAULT_VISIBLE_CANDIDATES);
+    const visibleRows = rows.slice(0, DEFAULT_VISIBLE_CANDIDATES);
     const hiddenRows = rows.length - DEFAULT_VISIBLE_CANDIDATES;
 
     const betButton = (
@@ -208,6 +208,8 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           display: "flex",
           flexDirection: "column",
           height: "100%",
+          // The one feed height, shared with every other card type.
+          minHeight: FEED_CARD_H,
           boxSizing: "border-box",
           position: "relative",
           boxShadow:
@@ -271,6 +273,8 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
               display: "-webkit-box",
               WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
+              // Reserved so a one-line group title does not shorten the card.
+              minHeight: TITLE_BLOCK_H,
               fontFamily: "var(--font-display)",
               letterSpacing: "-0.01em",
             }}
@@ -404,35 +408,23 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                 </div>
               );
             })}
-            {rows.length > DEFAULT_VISIBLE_CANDIDATES && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAll(!showAll);
-                }}
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border)",
-                  padding: "5px 10px",
-                  borderRadius: "var(--radius-md)",
-                  fontSize: "0.7rem",
-                  color: "var(--text-muted)",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  textAlign: "center",
-                  width: "100%",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = "var(--text-subtle)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = "var(--border)")
-                }
-              >
-                {showAll ? "Show Less" : `+ ${hiddenRows} more`}
-              </button>
-            )}
+            {/* Overflow hint. Reserved even when nothing is hidden, so a
+                two-candidate group is not a line shorter than a ten-candidate
+                one. Does not navigate: each row is its own market, so there is
+                no single market to open and no group route to show them all. */}
+            <div
+              style={{
+                height: MORE_LINE_H,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+                fontWeight: 800,
+                color: "var(--text-subtle)",
+              }}
+            >
+              {hiddenRows > 0 ? `+${hiddenRows} more` : ""}
+            </div>
           </div>
 
           {/* Settlement source */}

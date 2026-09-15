@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo, type FC } from "react";
+import { FEED_CARD_H, PRICE_CHART_H } from "./feedCardHeight";
 import { useNavigate } from "react-router-dom";
 import { getTerPrice, getTerPriceHistory, type Market, type TerPrice } from "@shared/api/client";
 
@@ -384,6 +385,9 @@ export const TerMarketCard: FC<Props> = memo(
           marginBottom: 14,
           display: "flex",
           flexDirection: "column",
+          // The one feed height, shared with the market cards around it.
+          minHeight: FEED_CARD_H,
+          boxSizing: "border-box",
           fontFamily: FONT,
           WebkitFontSmoothing: "antialiased",
         }}
@@ -464,11 +468,15 @@ export const TerMarketCard: FC<Props> = memo(
         </div>
 
         {/* Chart */}
-        {priceHistory.length >= 2 && (
-          <div style={{ height: 150, background: "rgba(0,0,0,0.18)" }}>
+        {/* The well is always here, even before price history arrives. It
+            used to render only once there were two points, so the card stood
+            short and then jumped taller mid-session — out of step with the rest
+            of the feed twice over. */}
+        <div style={{ height: PRICE_CHART_H, background: "rgba(0,0,0,0.18)" }}>
+          {priceHistory.length >= 2 && (
             <TerSparkline history={priceHistory} refPrice={refPrice} />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Actions */}
         <div style={{ padding: "10px 16px 14px", display: "flex", flexDirection: "column", gap: 10 }}>

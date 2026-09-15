@@ -22,6 +22,14 @@ import { Flame, TrendingUp, UsersRound, Vote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EplBanner } from "@shared/components/EplBanner";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { VISIBLE_OUTCOMES } from "@shared/feedCardMetrics";
+import {
+  FEED_CARD_H,
+  MORE_LINE_H,
+  OUTCOMES_BLOCK_H,
+  SOURCE_LINE_H,
+  TITLE_BLOCK_H,
+} from "../components/feedCardHeight";
 import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
 import {
   isBplMarket,
@@ -823,7 +831,9 @@ function useCountdown(targetAt: string | null): string {
 // Tuned to sit just within the height of the TER/BTC chart cards: enough to fill
 // the space next to them, but not so many that a multi-outcome market (e.g. Ballon
 // d'Or) grows taller than its neighbours and drags the whole grid row up.
-const DEFAULT_VISIBLE_OUTCOMES = 4;
+// Matches the PWA and every other card in this feed — it is what fixes the
+// card's height. See shared/feedCardMetrics.ts.
+const DEFAULT_VISIBLE_OUTCOMES = VISIBLE_OUTCOMES;
 
 const MarketCard = memo(function MarketCard({
   market,
@@ -837,7 +847,6 @@ const MarketCard = memo(function MarketCard({
   telegramId?: string | number | null;
   userPickedOutcomeId?: string;
 }) {
-  const [showAll, setShowAll] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -878,9 +887,8 @@ const MarketCard = memo(function MarketCard({
     });
   })();
 
-  const displayOutcomes = showAll
-    ? sentiment
-    : sentiment.slice(0, DEFAULT_VISIBLE_OUTCOMES);
+  const displayOutcomes = sentiment.slice(0, DEFAULT_VISIBLE_OUTCOMES);
+  const hiddenOutcomes = market.outcomes.length - DEFAULT_VISIBLE_OUTCOMES;
   return (
     <div
       style={{
@@ -892,6 +900,11 @@ const MarketCard = memo(function MarketCard({
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        // One height for every card in the feed. This app is a single-column
+        // stack, so unlike the PWA there is no grid row to equalise against —
+        // each card's height stands alone and has to be set here.
+        minHeight: FEED_CARD_H,
+        boxSizing: "border-box",
         position: "relative",
         boxShadow: hasLegendBet
           ? "6px 6px 16px rgba(0,0,0,0.35), -3px -3px 10px rgba(255,255,255,0.04), 0 0 0 1px rgba(245,158,11,0.2), 0 0 18px rgba(245,158,11,0.18)"
@@ -975,7 +988,6 @@ const MarketCard = memo(function MarketCard({
             <Link
               to={`/market/${market.id}`}
               style={{
-                display: "block",
                 textDecoration: "none",
                 fontSize: 15,
                 fontWeight: 700,
@@ -983,6 +995,14 @@ const MarketCard = memo(function MarketCard({
                 color: "var(--text-main)",
                 fontFamily: "var(--font-display)",
                 cursor: "pointer",
+                // This title had no clamp at all, so a long one grew the card
+                // without limit. Two lines, and two lines reserved, so a short
+                // title does not shorten it either.
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                minHeight: TITLE_BLOCK_H,
               }}
             >
               {market.title}
@@ -991,10 +1011,18 @@ const MarketCard = memo(function MarketCard({
         );
       })()}
 
-      {/* Settlement source */}
+      {/* Settlement source. The slot is always here — most markets have no
+          source line, and letting it collapse made those cards shorter. */}
+      {!(market.externalSource === "ter" || market.settlementSource) && (
+        <div style={{ height: SOURCE_LINE_H }} />
+      )}
       {(market.externalSource === "ter" || market.settlementSource) && (
         <div
           style={{
+            height: SOURCE_LINE_H,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
             fontSize: "0.68rem",
             color: "var(--text-subtle)",
             fontWeight: 600,
@@ -1029,7 +1057,18 @@ const MarketCard = memo(function MarketCard({
       )}
 
       {/* ── Outcome buttons ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Fixed: `open` renders outcome rows here, while resolving, closed and
+          upcoming each swap in a banner of their own height. */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          height: OUTCOMES_BLOCK_H,
+          overflow: "hidden",
+          justifyContent: "center",
+        }}
+      >
         {isResolving ? (
           <Link to={`/market/${market.id}`} style={{ textDecoration: "none" }}>
             <div
@@ -1360,29 +1399,29 @@ const MarketCard = memo(function MarketCard({
         )}
       </div>
 
-      {market.outcomes.length > DEFAULT_VISIBLE_OUTCOMES && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowAll(!showAll);
-          }}
+      {/* Overflow hint. Opens the market rather than expanding in place —
+          expanding was what made the card's height unknowable, since a
+          36-outcome market grew by roughly 2,000px. Reserved even when nothing
+          is hidden, so a binary market (94% of the feed) is not a line shorter
+          than the rest. */}
+      {hiddenOutcomes > 0 ? (
+        <Link
+          to={`/market/${market.id}`}
           style={{
-            background: "transparent",
-            border: "1.5px solid var(--glass-border)",
-            padding: "9px 12px",
-            borderRadius: 12,
+            height: MORE_LINE_H,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             fontSize: "0.75rem",
-            color: "var(--text-muted)",
             fontWeight: 700,
-            cursor: "pointer",
-            textAlign: "center",
-            width: "100%",
+            color: "var(--text-subtle)",
+            textDecoration: "none",
           }}
         >
-          {showAll
-            ? "Show Less ▲"
-            : `+${market.outcomes.length - DEFAULT_VISIBLE_OUTCOMES} more outcomes`}
-        </button>
+          {`+${hiddenOutcomes} more outcomes`}
+        </Link>
+      ) : (
+        <div style={{ height: MORE_LINE_H }} />
       )}
 
       <div
