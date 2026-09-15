@@ -31,6 +31,8 @@ import { TmaBetModal } from "@/components/TmaBetModal";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { marketArtwork } from "@shared/helpers/marketImage";
+import { MarketThumb } from "@shared/components/MarketThumb";
 import { OutcomeRow } from "@shared/components/OutcomeRow";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
@@ -848,18 +850,33 @@ export const MarketDetailPage: FC = () => {
             >
               Market Details
             </div>
-            <h1
+            <div
               style={{
-                fontSize: "1.4rem",
-                fontWeight: 900,
-                color: "var(--text-main)",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
                 marginBottom: 12,
-                lineHeight: 1.2,
-                fontFamily: "var(--font-display)",
               }}
             >
-              {m.title}
-            </h1>
+              <MarketThumb
+                src={marketArtwork(m)}
+                alt={m.title}
+                size={52}
+                rounded={10}
+              />
+              <h1
+                style={{
+                  fontSize: "1.4rem",
+                  fontWeight: 900,
+                  color: "var(--text-main)",
+                  margin: 0,
+                  lineHeight: 1.2,
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                {m.title}
+              </h1>
+            </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               <div
                 style={{
@@ -1456,22 +1473,13 @@ export const MarketDetailPage: FC = () => {
                       : "#3b82f6";
                 const eliminated = !!outcome.isEliminated;
 
-                // Artwork belongs to the OUTCOME, not to where it happens to
-                // sit today: imageUrl/imageUrlAlt are "first side, second
-                // side", so reading them off the rank would put the wrong
-                // crest on the row once a price moved.
-                const idx = m.outcomes.findIndex((o) => o.id === outcome.id);
+                // Artwork belongs to the OUTCOME. The market image used to sit
+                // on the end of this chain as a positional fallback, which made
+                // the market's own picture the face of its first outcome. It
+                // has its own slot beside the title now.
                 const wcFlag = isWCMarket(m) ? getWCFlag(outcome.label) : "";
                 const avatarUrl =
-                  wcFlag ||
-                  (!imgError
-                    ? (outcome as any).imageUrl ||
-                      (idx === 0
-                        ? m.imageUrl
-                        : idx === 1
-                          ? m.imageUrlAlt || m.imageUrl
-                          : null)
-                    : null);
+                  wcFlag || (!imgError ? outcome.imageUrl || null : null);
                 const vis = getCategoryVisual(m.category);
                 const pickable = isOpen && !eliminated;
                 return (

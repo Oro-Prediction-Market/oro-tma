@@ -7,6 +7,8 @@ import {
   type SavedMarket,
 } from "../api/client";
 import { getCategoryVisual } from "../helpers/visuals";
+import { marketArtwork } from "../helpers/marketImage";
+import { MarketThumb } from "./MarketThumb";
 import { timeAgo } from "../helpers/relativeTime";
 import { useSavedMarkets } from "../hooks/useSavedMarkets";
 import { SAVED_ACCENT } from "./SaveMarketButton";
@@ -108,20 +110,28 @@ const SavedRow: FC<{
         opacity: settled ? 0.72 : 1,
       }}
     >
+      {/* The category gradient backs the tile and the artwork sits on top of
+          it. This used to be a CSS `background-image`, which has no `onError`,
+          so a saved market whose image had gone dead showed an empty square.
+          Now a dead image simply uncovers the gradient. Unlike the feed card,
+          the slot is reserved: a list needs its left column to line up. */}
       <div
         style={{
           width: 42,
           height: 42,
           borderRadius: 10,
           flexShrink: 0,
-          background: market.imageUrl ? "var(--bg-secondary)" : visual.gradient,
-          backgroundImage: market.imageUrl
-            ? `url(${market.imageUrl})`
-            : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          overflow: "hidden",
+          background: visual.gradient,
         }}
-      />
+      >
+        <MarketThumb
+          src={marketArtwork(market)}
+          alt={market.title}
+          size={42}
+          rounded={10}
+        />
+      </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div

@@ -22,6 +22,8 @@ import { Flame, TrendingUp, UsersRound, Vote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EplBanner } from "@shared/components/EplBanner";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { marketArtwork } from "@shared/helpers/marketImage";
+import { MarketThumb } from "@shared/components/MarketThumb";
 import { VISIBLE_OUTCOMES } from "@shared/feedCardMetrics";
 import {
   FEED_CARD_H,
@@ -984,29 +986,46 @@ const MarketCard = memo(function MarketCard({
                 </span>
               )}
             </div>
-            {/* Title — tappable → open market detail */}
-            <Link
-              to={`/market/${market.id}`}
-              style={{
-                textDecoration: "none",
-                fontSize: 15,
-                fontWeight: 700,
-                lineHeight: 1.35,
-                color: "var(--text-main)",
-                fontFamily: "var(--font-display)",
-                cursor: "pointer",
-                // This title had no clamp at all, so a long one grew the card
-                // without limit. Two lines, and two lines reserved, so a short
-                // title does not shorten it either.
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                minHeight: TITLE_BLOCK_H,
-              }}
-            >
-              {market.title}
-            </Link>
+            {/* Title row — artwork, then the title. The thumbnail is 40px
+                against a title block reserved at 42px, so a card with a
+                picture is exactly as tall as one without.
+
+                `MarketThumb` is a direct child, not wrapped in a link: it
+                renders nothing when there is no image, and an empty wrapper
+                would still take the flex `gap` and indent the title. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <MarketThumb
+                src={marketArtwork(market)}
+                alt={market.title}
+                size={40}
+              />
+              <Link
+                to={`/market/${market.id}`}
+                style={{
+                  textDecoration: "none",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: 1.35,
+                  color: "var(--text-main)",
+                  fontFamily: "var(--font-display)",
+                  cursor: "pointer",
+                  // Lets the clamp work as a flex child instead of the title
+                  // pushing the thumbnail off the row.
+                  flex: 1,
+                  minWidth: 0,
+                  // This title had no clamp at all, so a long one grew the card
+                  // without limit. Two lines, and two lines reserved, so a short
+                  // title does not shorten it either.
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  minHeight: TITLE_BLOCK_H,
+                }}
+              >
+                {market.title}
+              </Link>
+            </div>
           </div>
         );
       })()}
@@ -1155,19 +1174,14 @@ const MarketCard = memo(function MarketCard({
             Opens {countdown}
           </div>
         ) : (
-          displayOutcomes.map((s, idx) => {
+          displayOutcomes.map((s) => {
             const barWidth = Math.max(4, Math.min(100, s.pct));
-            // Per-outcome avatar: WC flag > explicit imageUrl > market images
+            // Per-outcome avatar: the outcome's own image, or its flag. The
+            // market image used to sit on the end of this chain, which turned
+            // the market's artwork into the face of whichever outcome was
+            // listed first. It has its own slot beside the title now.
             const wcFlag = isWCMarket(market) ? getWCFlag(s.label) : "";
-            const avatarUrl = !imgError
-              ? (s as any).imageUrl ||
-                wcFlag ||
-                (idx === 0
-                  ? market.imageUrl
-                  : idx === 1
-                    ? market.imageUrlAlt || null
-                    : null)
-              : null;
+            const avatarUrl = !imgError ? s.imageUrl || wcFlag || null : null;
             const vis = getCategoryVisual(market.category);
             return (
               <button
