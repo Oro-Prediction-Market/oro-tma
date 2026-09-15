@@ -117,8 +117,7 @@ function valueAt(points: ChartPoint[], t: number): number | null {
  * Which side of its anchor an end label's box sits on.
  *
  * Right by default, flipping left when the right would run past the frame —
- * which is what happens as the crosshair approaches the right edge, and at
- * rest, where the anchor IS the right edge.
+ * which is what happens as the crosshair approaches the right edge.
  *
  * This is the mirror of what the chart used to do: it preferred the left and
  * flipped right where the y-axis would clip it. Only the preferred side
@@ -405,8 +404,14 @@ export function ProbabilityChart({
    *
    * It rides its own line in both directions: sideways with the cursor, and up
    * and down to the height that line stood at, so the reader never has to match
-   * a colour in a list back to a curve. With no cursor the labels rest at the
-   * end of their lines showing the latest price.
+   * a colour in a list back to a curve.
+   *
+   * Shown only while a cursor is on the chart. The labels have to overlay the
+   * plot — the lines run the full width and there is nowhere else to put them —
+   * so leaving them up at rest meant the chart's own shape was permanently
+   * obscured by boxes repeating what the legend underneath already says. On
+   * hover they are worth the cover because they answer a question that is
+   * being asked; at rest they answer nothing and hide the curve.
    *
    * Two outcomes a point apart would print on top of each other, so colliding
    * labels are spread — but only the ones that collide, and only around their
@@ -414,6 +419,7 @@ export function ProbabilityChart({
    * is left over gets a leader back to the line it belongs to.
    */
   const endLabels = (() => {
+    if (cursor === null) return [];
     const avail = W - PAD.left - PAD.right;
     // Below this there is no room for a label that is not mostly ellipsis.
     if (avail < 150) return [];
@@ -696,11 +702,10 @@ export function ProbabilityChart({
           );
         })}
 
-        {/* Each label in the panel the old tooltip wore, one per line. Sits to
-            the RIGHT of its anchor so it leads the line rather than trailing
-            it, and flips to the left where there is no room right — near the
-            end of the range, and at rest, where the anchor is the last point.
-            See `endLabelX`. */}
+        {/* Each label in the panel the old tooltip wore, one per line, drawn
+            only while the chart is being hovered or scrubbed. Sits to the
+            RIGHT of the crosshair so it leads the line rather than trailing
+            it, and flips left near the end of the range. See `endLabelX`. */}
         {/* Drawn before every box, so a leader passing a crowded neighbour
             runs under that neighbour's panel instead of across its text. */}
         {endLabels.map((it) => {
