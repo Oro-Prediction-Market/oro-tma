@@ -89,6 +89,25 @@ export function getMyNotifications(): Promise<UserNotification[]> {
 }
 
 /** Mark notifications seen (by id, or all unseen when omitted) so they don't pop again. */
+/**
+ * Record that this user accepted the platform consent.
+ *
+ * Deliberately not `.catch()`-swallowed like the calls around it: the consent
+ * gate must stay open if the write fails, or someone passes through with
+ * nothing recorded — which is the situation the gate exists to end.
+ */
+export function recordConsent(
+  version: string,
+): Promise<{ consentedAt: string; consentVersion: string }> {
+  return request<{ consentedAt: string; consentVersion: string }>(
+    "/users/me/consent",
+    { method: "POST", body: JSON.stringify({ version }) },
+  ).then((r) => {
+    bustCache("/users/me");
+    return r;
+  });
+}
+
 export function markNotificationsSeen(
   ids?: string[],
 ): Promise<{ ok: boolean }> {
@@ -230,6 +249,13 @@ export interface AuthUser {
   balance: string;
   creditsBalance?: number;
   createdAt?: string;
+  /**
+   * When this user accepted the platform consent. Null or absent means they
+   * have not, and the consent gate blocks the app until they do.
+   */
+  consentedAt?: string | null;
+  /** Which consent text they accepted. "0" was grandfathered by the migration. */
+  consentVersion?: string | null;
   // DK Bank linking fields
   dkCid?: string | null;
   dkAccountName?: string | null;

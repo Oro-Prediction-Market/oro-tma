@@ -17,6 +17,9 @@ import {
 } from "@shared/components/DeepLinkRedirect";
 import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanner";
 import { SystemNotificationModal } from "@/components/SystemNotificationModal";
+import { ConsentGate } from "@shared/components/ConsentGate";
+import { useConsentRequired } from "@shared/hooks/useConsentRequired";
+import { TermsPage } from "@/pages/TermsPage";
 import { trackEvent } from "@shared/api/client";
 
 export function App() {
@@ -26,6 +29,12 @@ export function App() {
   const { loading, requiresKYC } = auth;
   const shouldOnboard = useOnboarding();
   const [showOnboarding, setShowOnboarding] = useState(shouldOnboard);
+  // Only once a real account exists — a user still in the signup wizard has no
+  // row to record consent against.
+  const { consentRequired, acceptConsent } = useConsentRequired(
+    !loading && !requiresKYC,
+  );
+  const [showTerms, setShowTerms] = useState(false);
 
   const isDark =
     theme === "dark" ||
@@ -72,6 +81,31 @@ export function App() {
         >
           <ChallengeContextBanner />
           <SystemNotificationModal />
+          {/* Blocks the app until this user has consented. Mounted here, beside
+              the notification modal, because it is the same shape of thing: an
+              app-level overlay that gates itself on a server-side flag. Below
+              the requiresKYC gate above, so a user still registering is not
+              asked to consent to an account that does not exist yet. */}
+          <ConsentGate
+            open={consentRequired}
+            onAccept={acceptConsent}
+            onDecline={auth.logout}
+            onOpenTerms={() => setShowTerms(true)}
+            onOpenPrivacy={() => setShowTerms(true)}
+          />
+          {showTerms && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 10000,
+                overflowY: "auto",
+                background: "var(--bg-main, #0f0f23)",
+              }}
+            >
+              <TermsPage onBack={() => setShowTerms(false)} />
+            </div>
+          )}
           <Suspense
             fallback={
               <div
