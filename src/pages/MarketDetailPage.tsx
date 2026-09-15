@@ -31,6 +31,7 @@ import { TmaBetModal } from "@/components/TmaBetModal";
 import { ShareCTA } from "@shared/components/ShareCTA";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { getCategoryVisual } from "@shared/helpers/visuals";
+import { OutcomeRow } from "@shared/components/OutcomeRow";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
 import { useTrack } from "@shared/hooks/useTrack";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -1433,7 +1434,10 @@ export const MarketDetailPage: FC = () => {
                 : null;
               return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
             })()}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* 8, not 16: the gap was sized to separate three-band rows ~83px
+                tall. Against a ~52px row that much air re-lengthens the card
+                the compaction was meant to shorten. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {rankedOutcomes(m).map((outcome) => {
                 // calcProb uses LMSR only when every outcome has a value
                 // (mixed LMSR/pool sources don't sum to 100), else the
@@ -1475,204 +1479,27 @@ export const MarketDetailPage: FC = () => {
                   // in this app does. It used to navigate to /dkbank-bet, which
                   // left the market behind and opened on a "pick a side" step
                   // that asked for the outcome you had just tapped.
-                  <div
+                  <OutcomeRow
                     key={outcome.id}
-                    role={pickable ? "button" : undefined}
-                    tabIndex={pickable ? 0 : undefined}
-                    onClick={() => pickable && setActiveBet(outcome.id)}
-                    onKeyDown={(e) => {
-                      if (!pickable) return;
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setActiveBet(outcome.id);
-                      }
-                    }}
-                    style={{
-                      display: "block",
-                      opacity: eliminated ? 0.5 : 1,
-                      cursor: pickable ? "pointer" : "default",
-                    }}
-                  >
-                    {/* Header row: who, at what price, and the call to act.
-                        Mirrors oro-pwa's "Pick your outcome" list so the same
-                        market reads identically in both apps. */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 6,
-                        gap: 8,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          minWidth: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            flexShrink: 0,
-                            width: 36,
-                            height: 36,
-                            borderRadius: wcFlag ? 6 : "var(--radius-full)",
-                            overflow: "hidden",
-                            background: wcFlag ? "transparent" : vis.gradient,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: wcFlag ? "none" : "2px solid #fff",
-                            boxShadow: wcFlag ? "none" : "var(--shadow-sm)",
-                          }}
-                        >
-                          {avatarUrl ? (
-                            <img
-                              src={avatarUrl}
-                              alt=""
-                              onError={() => setImgError(true)}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                display: "block",
-                              }}
-                            />
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 900,
-                                color: "#fff",
-                              }}
-                            >
-                              {outcome.label.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          style={{
-                            fontWeight: 800,
-                            color: "var(--text-main)",
-                            fontSize: "1rem",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {outcome.label}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          background: `${color}15`,
-                          color: color,
-                          padding: "4px 10px",
-                          borderRadius: "var(--radius-full)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <span style={{ fontSize: "0.85rem", fontWeight: 900 }}>
-                          {(() => {
-                            const odds = calcOdds(m, outcome.id);
-                            return odds
-                              ? `${Math.min(99, odds).toFixed(2)}x`
-                              : "—";
-                          })()}
-                        </span>
-                      </div>
-                      {pickable && (
-                        <div
-                          style={{
-                            background: color,
-                            color: "#fff",
-                            fontSize: "0.62rem",
-                            fontWeight: 800,
-                            padding: "4px 10px",
-                            borderRadius: "var(--radius-full)",
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
-                            flexShrink: 0,
-                          }}
-                        >
-                          Predict
-                        </div>
-                      )}
-                      {eliminated && isOpen && (
-                        <div
-                          style={{
-                            background: "rgba(239,68,68,0.15)",
-                            color: "#ef4444",
-                            border: "1px solid rgba(239,68,68,0.35)",
-                            fontSize: "0.62rem",
-                            fontWeight: 800,
-                            padding: "4px 10px",
-                            borderRadius: "var(--radius-full)",
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
-                            flexShrink: 0,
-                          }}
-                        >
-                          Out
-                        </div>
-                      )}
-                    </div>
-                    {/* Battery-style: the % sits centered inside the bar
-                        itself rather than in a separate number, so the fill
-                        level and its readout are always the same glance. */}
-                    <div
-                      style={{
-                        background: "var(--bg-secondary)",
-                        borderRadius: "var(--radius-full)",
-                        height: "20px",
-                        overflow: "hidden",
-                        position: "relative",
-                      }}
-                    >
-                      <div
-                        style={{
-                          background: color,
-                          height: "100%",
-                          width: `${pct}%`,
-                          borderRadius: "var(--radius-full)",
-                          transition:
-                            "width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                          boxShadow: `0 0 12px ${color}40`,
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.68rem",
-                          fontWeight: 800,
-                          color: "#fff",
-                          textShadow: "0 1px 2px rgba(0,0,0,0.55)",
-                          pointerEvents: "none",
-                        }}
-                      >
-                        {pct.toFixed(0)}%
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "var(--text-subtle)",
-                        marginTop: "6px",
-                        fontWeight: 700,
-                        display: "flex",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      Nu {Number(outcome.totalBetAmount).toLocaleString()} total
-                      predicted
-                    </div>
-                  </div>
+                    label={outcome.label}
+                    avatarUrl={avatarUrl || null}
+                    fallbackInitial={outcome.label.charAt(0).toUpperCase()}
+                    gradient={vis.gradient}
+                    isFlag={!!wcFlag}
+                    pct={pct}
+                    // Null on an empty pool, which hides the pill. There is no
+                    // price to quote before anyone has staked, and the dash
+                    // this used to print read as missing data.
+                    odds={calcOdds(m, outcome.id)}
+                    totalStaked={Number(outcome.totalBetAmount)}
+                    currencyLabel="Nu"
+                    color={color}
+                    pickable={pickable}
+                    eliminated={eliminated}
+                    showOutChip={isOpen}
+                    onPick={() => setActiveBet(outcome.id)}
+                    onImageError={() => setImgError(true)}
+                  />
                 );
               })}
             </div>
