@@ -142,29 +142,29 @@ export function ConsentGate({
             WebkitOverflowScrolling: "touch",
           }}
         >
-          {CONSENT_BODY.map((p) => (
-            <div key={p.heading} style={{ marginBottom: 14 }}>
-              <div
+          {CONSENT_BODY.map((line) => (
+            <div
+              key={line}
+              style={{
+                display: "flex",
+                gap: 9,
+                marginBottom: 10,
+                fontSize: "0.88rem",
+                lineHeight: 1.5,
+                color: "var(--text-main, #e2e8f0)",
+              }}
+            >
+              <span
                 style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--text-subtle, #64748b)",
-                  marginBottom: 3,
+                  flexShrink: 0,
+                  width: 5,
+                  height: 5,
+                  marginTop: 8,
+                  borderRadius: "50%",
+                  background: "var(--color-primary, #2775d0)",
                 }}
-              >
-                {p.heading}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.85rem",
-                  lineHeight: 1.6,
-                  color: "var(--text-main, #e2e8f0)",
-                }}
-              >
-                {p.body}
-              </div>
+              />
+              <span>{line}</span>
             </div>
           ))}
 

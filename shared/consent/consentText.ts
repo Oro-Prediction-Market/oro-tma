@@ -24,50 +24,43 @@
  */
 export const CONSENT_VERSION = "1.0";
 
-export interface ConsentParagraph {
-  heading: string;
-  body: string;
-}
-
-/** What Oro is and how it settles — the summary the user reads before agreeing. */
-export const CONSENT_BODY: ConsentParagraph[] = [
-  {
-    heading: "What Oro is",
-    body: "Oro is a prediction market platform. You stake on what you think will happen, and the platform aggregates everyone's positions into a consensus forecast. Oro is not a bank, a broker, or an investment service, and nothing on it is financial advice.",
-  },
-  {
-    heading: "How the pool works",
-    body: "Oro runs a parimutuel pool. All stakes on a market go into a single shared pool. When the market resolves, the total pool minus the platform fee is distributed proportionally among everyone who predicted the winning outcome.",
-  },
-  {
-    heading: "Why your payout moves",
-    body: "Odds shift in real time as more people predict. The more people who pick the same outcome as you, the smaller each person's share of the pool — and the lower your payout. Any figure shown before you confirm is an estimate, and your final amount is settled from the pool at close.",
-  },
-  {
-    heading: "The platform fee",
-    body: "Oro deducts a platform fee from each pool before it is distributed. The fee applying to a market is shown on that market before you confirm a prediction.",
-  },
-  {
-    heading: "How markets are settled",
-    body: "Each market states the source its outcome is settled from, and is resolved against that source after it closes. Where a resolution is disputed, the dispute process in the Terms applies.",
-  },
-  {
-    heading: "The risk",
-    body: "Participation involves the risk of total loss of the funds you commit to a position. Only take part with money you can afford to lose. Past accuracy on Oro does not guarantee future accuracy.",
-  },
+/**
+ * How Oro works, in the fewest words that still say it.
+ *
+ * One short line each, no headings and no paragraphs: this is read once, by
+ * someone who wants to get into the app, on a phone. A screen of prose is
+ * scrolled past, and consent to text nobody read is worth little. Everything
+ * here is the plain-English version of wording that already exists in the FAQ,
+ * `PayoutBreakdown` and Terms §12.1; the full detail is a tap away on the
+ * Terms page rather than inlined.
+ */
+export const CONSENT_BODY: string[] = [
+  "Oro is a prediction market. You stake on what you think will happen.",
+  // The mechanism is named once, in brackets, because ST asked for it
+  // explicitly — but the sentence still reads without knowing the word.
+  "Every stake on a market goes into one shared pool (a parimutuel pool).",
+  "When the market closes, the pool — minus Oro's fee — is split between everyone who got it right.",
+  "Odds move as other people predict, so any payout you see beforehand is an estimate, not a promise.",
+  "You can lose everything you stake. Only use money you can afford to lose.",
 ];
 
 /**
- * The three declarations, verbatim from the Telegram signup wizard.
+ * The three declarations.
  *
- * The first contains the Terms and Privacy link, which the gate renders in
- * place of the {links} marker — the two apps route there differently, so the
+ * Plain-English rewrites of the wording the Telegram signup wizard used, which
+ * was dense enough that ticking it without reading was the likely outcome. The
+ * meaning is unchanged — agreement to the Terms, eligibility where you live,
+ * and truthful details — but this is the half of the form with legal weight, so
+ * the original phrasing is worth a second opinion before it ships.
+ *
+ * The first carries the Terms and Privacy link, which the gate renders in place
+ * of the {links} marker — the two apps route there differently, so the
  * destination is the gate's problem, not this file's.
  */
 export const CONSENT_CHECKS: string[] = [
-  "I confirm that I have read, understood, and agree to be bound by the {links} of this platform.",
-  "I confirm that I am eligible to participate in this platform and that my participation is permitted under the laws, regulations, and policies applicable in my country or jurisdiction of residence.",
-  "I declare that the information provided by me during onboarding is true, accurate, and complete.",
+  "I have read and agree to Oro's {links}.",
+  "I'm allowed to use Oro where I live.",
+  "The details I gave are true.",
 ];
 
 /** The marker inside the first check, replaced with the Terms/Privacy links. */
