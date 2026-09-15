@@ -24,10 +24,12 @@ import { EplBanner } from "@shared/components/EplBanner";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { marketArtwork } from "@shared/helpers/marketImage";
 import { MarketThumb } from "@shared/components/MarketThumb";
-import { VISIBLE_OUTCOMES } from "@shared/feedCardMetrics";
+import { ROWS_LAYER, useFittedRows } from "@shared/hooks/useFittedRows";
 import {
   FEED_CARD_H,
   MORE_LINE_H,
+  OUTCOME_GAP,
+  OUTCOME_ROW_H,
   OUTCOMES_BLOCK_H,
   SOURCE_LINE_H,
   TITLE_BLOCK_H,
@@ -835,7 +837,6 @@ function useCountdown(targetAt: string | null): string {
 // d'Or) grows taller than its neighbours and drags the whole grid row up.
 // Matches the PWA and every other card in this feed — it is what fixes the
 // card's height. See shared/feedCardMetrics.ts.
-const DEFAULT_VISIBLE_OUTCOMES = VISIBLE_OUTCOMES;
 
 const MarketCard = memo(function MarketCard({
   market,
@@ -889,8 +890,18 @@ const MarketCard = memo(function MarketCard({
     });
   })();
 
-  const displayOutcomes = sentiment.slice(0, DEFAULT_VISIBLE_OUTCOMES);
-  const hiddenOutcomes = market.outcomes.length - DEFAULT_VISIBLE_OUTCOMES;
+  // Two outcomes are guaranteed; a third appears when the card's row is tall
+  // enough to hold one, instead of that space sitting blank.
+  const { blockRef, visibleRows } = useFittedRows({
+    rowH: OUTCOME_ROW_H,
+    gap: OUTCOME_GAP,
+    // The "+N more" hint is a sibling of this block here, not a child, so it
+    // costs the block nothing.
+    reserveH: 0,
+    total: sentiment.length,
+  });
+  const displayOutcomes = sentiment.slice(0, visibleRows);
+  const hiddenOutcomes = market.outcomes.length - displayOutcomes.length;
   return (
     <div
       style={{
@@ -1079,15 +1090,15 @@ const MarketCard = memo(function MarketCard({
       {/* Fixed: `open` renders outcome rows here, while resolving, closed and
           upcoming each swap in a banner of their own height. */}
       <div
+        ref={blockRef}
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          height: OUTCOMES_BLOCK_H,
+          minHeight: OUTCOMES_BLOCK_H,
+          flex: 1,
+          position: "relative",
           overflow: "hidden",
-          justifyContent: "center",
         }}
       >
+      <div style={{ ...ROWS_LAYER, gap: 8, justifyContent: "center" }}>
         {isResolving ? (
           <Link to={`/market/${market.id}`} style={{ textDecoration: "none" }}>
             <div
@@ -1411,6 +1422,7 @@ const MarketCard = memo(function MarketCard({
             );
           })
         )}
+      </div>
       </div>
 
       {/* Overflow hint. Opens the market rather than expanding in place —

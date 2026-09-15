@@ -53,6 +53,12 @@ export interface FeedCardMetrics {
    * vertical padding, and the gaps between sections.
    */
   chromeH: number;
+  /**
+   * Whether the "+N more" hint is rendered inside the outcomes block (PWA) or
+   * as a sibling beneath it (Telegram). It changes which gap the hint consumes,
+   * and therefore how tall the block has to be to hold its guaranteed rows.
+   */
+  moreLineInBlock: boolean;
 }
 
 /**
@@ -67,11 +73,32 @@ export function feedCardHeight(m: FeedCardMetrics): number {
   return (
     m.chromeH +
     TITLE_LINES * m.titleLineH +
-    VISIBLE_OUTCOMES * m.outcomeRowH +
-    (VISIBLE_OUTCOMES - 1) * m.outcomeGap +
-    m.moreLineH +
+    outcomesBlockHeight(m) +
+    // Counted here only when the block does not already contain it.
+    (m.moreLineInBlock ? 0 : m.moreLineH) +
     m.sourceLineH
   );
+}
+
+/**
+ * The outcomes block: the rows every card is guaranteed, the gaps between them,
+ * and — in the apps that nest it there — the "+N more" line.
+ *
+ * The two apps genuinely differ here. In the PWA the hint is a flex child of the
+ * block, so it costs its own height *and* a gap; counting only the gaps between
+ * rows left that block 6px shorter than its own contents, which `overflow:
+ * hidden` quietly clipped. In the Telegram app the hint is a sibling of the
+ * block and its gap already lives in `chromeH`. Encoding that as a flag beats
+ * picking one shape and silently mis-sizing the other app by a row's worth of
+ * space.
+ *
+ * This is the floor, not the ceiling: `useFittedRows` measures the block at
+ * runtime and fills whatever the grid row actually gave it.
+ */
+export function outcomesBlockHeight(m: FeedCardMetrics): number {
+  const rows =
+    VISIBLE_OUTCOMES * m.outcomeRowH + (VISIBLE_OUTCOMES - 1) * m.outcomeGap;
+  return m.moreLineInBlock ? rows + m.outcomeGap + m.moreLineH : rows;
 }
 
 /**

@@ -1,7 +1,7 @@
 import {
   feedCardHeight,
+  outcomesBlockHeight,
   priceChartHeight,
-  VISIBLE_OUTCOMES,
   type FeedCardMetrics,
 } from "@shared/feedCardMetrics";
 
@@ -27,6 +27,8 @@ const TMA_CARD: FeedCardMetrics = {
   // Five gaps, not four: unlike the PWA, this card's "+N more" hint is a
   // sibling of the outcomes list rather than a child of it.
   chromeH: 136,
+  // The hint is a sibling of the block here, and its gap is in `chromeH`.
+  moreLineInBlock: false,
 };
 
 /** Every card in the Telegram feed lands on exactly this height. */
@@ -47,9 +49,22 @@ export const TITLE_BLOCK_H = TMA_CARD.titleLineH * 2;
  * Only `open` markets render outcome rows — resolving, closed and upcoming each
  * swap the list for a single banner, and all four statuses appear in one feed.
  */
-export const OUTCOMES_BLOCK_H =
-  VISIBLE_OUTCOMES * TMA_CARD.outcomeRowH +
-  (VISIBLE_OUTCOMES - 1) * TMA_CARD.outcomeGap;
+export const OUTCOMES_BLOCK_H = outcomesBlockHeight(TMA_CARD);
+
+/**
+ * One outcome row and the gap below it, exported so a card can work out how
+ * many rows fit the space the grid actually gave it — see `useFittedRows`.
+ */
+export const OUTCOME_ROW_H = TMA_CARD.outcomeRowH;
+export const OUTCOME_GAP = TMA_CARD.outcomeGap;
+
+/**
+ * A grouped card's candidate row: avatar, name, chance and the Yes/No buttons.
+ * Taller than a plain outcome row, and constant only because the candidate name
+ * is clamped to one line — a wrapping name made the row grow and took the whole
+ * card with it.
+ */
+export const GROUP_ROW_H = 50;
 
 /**
  * Chart well for the TER/BTC cards.
