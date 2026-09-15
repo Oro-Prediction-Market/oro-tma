@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, type FC } from "react";
+import { useNavigate } from "react-router-dom";
 import { formatOdds } from "@/pages/WorldCupHubPage";
 import type { Market, Outcome } from "@shared/api/client";
 import { getCategoryVisual } from "@shared/helpers/visuals";
@@ -14,8 +15,8 @@ import { MarketShareCard } from "@/components/MarketShareCard";
 // candidate (each candidate is its own Yes/No child market on the backend),
 // with the candidate's image, chance % and Yes/No quick-bet buttons.
 
-const YES_COLOR = "#22c55e";
-const NO_COLOR = "#ef4444";
+export const YES_COLOR = "#22c55e";
+export const NO_COLOR = "#ef4444";
 // Matches every other card in the feed — see shared/feedCardMetrics.ts.
 const DEFAULT_VISIBLE_CANDIDATES = VISIBLE_OUTCOMES;
 
@@ -54,13 +55,13 @@ export function candidateName(m: Market): string {
   return parts.length > 1 ? parts[parts.length - 1].trim() : m.title;
 }
 
-function findOutcome(m: Market, label: "yes" | "no"): Outcome | undefined {
+export function findOutcome(m: Market, label: "yes" | "no"): Outcome | undefined {
   return m.outcomes?.find((o) => o.label?.trim().toLowerCase() === label);
 }
 
 /** Chance % of an outcome (Laplace-smoothed pool share once bets exist, else
  *  initial LMSR odds). */
-function chanceOf(m: Market, o: Outcome | undefined): number {
+export function chanceOf(m: Market, o: Outcome | undefined): number {
   if (!o) return 50;
   const prior = 1000;
   const n = m.outcomes.length || 1;
@@ -83,7 +84,7 @@ function chanceOf(m: Market, o: Outcome | undefined): number {
 
 
 
-function outcomeOdds(m: Market, o: Outcome, stake = 100): number | null {
+export function outcomeOdds(m: Market, o: Outcome, stake = 100): number | null {
   const totalPool = Number(m.totalPool) || 0;
   const outcomePool = Number(o.totalBetAmount) || 0;
   const edge = Number(m.houseEdgePct) || 0;
@@ -106,6 +107,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
   ({ markets, onBet, referralId }) => {
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
     const [shareOpen, setShareOpen] = useState(false);
+    const navigate = useNavigate();
     const first = markets[0];
     const title = (first.groupTitle || first.title).trim();
     const vis = getCategoryVisual(first.category);
@@ -270,6 +272,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <MarketThumb src={groupArtwork(first)} alt={title} size={40} />
             <h3
+              onClick={() => first.groupId && navigate(`/group/${first.groupId}`)}
               style={{
                 fontSize: "0.95rem",
                 fontWeight: 800,
@@ -278,6 +281,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                 margin: 0,
                 flex: 1,
                 minWidth: 0,
+                cursor: "pointer",
                 overflow: "hidden",
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
@@ -420,9 +424,11 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
             })}
             {/* Overflow hint. Reserved even when nothing is hidden, so a
                 two-candidate group is not a line shorter than a ten-candidate
-                one. Does not navigate: each row is its own market, so there is
-                no single market to open and no group route to show them all. */}
+                one. It opens the group page, which lists every candidate —
+                before that page existed this line led nowhere, and the
+                candidates past the second were unreachable from the feed. */}
             <div
+              onClick={() => first.groupId && navigate(`/group/${first.groupId}`)}
               style={{
                 height: MORE_LINE_H,
                 display: "flex",
@@ -431,6 +437,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                 fontSize: "0.7rem",
                 fontWeight: 800,
                 color: "var(--text-subtle)",
+                cursor: first.groupId ? "pointer" : "default",
               }}
             >
               {hiddenRows > 0 ? `+${hiddenRows} more` : ""}

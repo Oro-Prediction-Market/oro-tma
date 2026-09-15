@@ -2,6 +2,7 @@ import { lazy, type ComponentType, type JSX } from "react";
 
 import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
+import { GroupDetailPage } from "@/pages/GroupDetailPage";
 import { PlatformAccuracyPage } from "@/pages/PlatformAccuracyPage";
 import { SavedMarketsPage } from "@/pages/SavedMarketsPage";
 import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
@@ -96,6 +97,7 @@ export const routes: Route[] = [
   // { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
   { path: "/markets", Component: MarketsPage },
   { path: "/market/:id", Component: MarketDetailPage },
+  { path: "/group/:groupId", Component: GroupDetailPage },
   { path: "/ton-bet/:id", Component: TONBetPage, title: "Trade with TON" },
   {
     path: "/dkbank-bet/:id",
