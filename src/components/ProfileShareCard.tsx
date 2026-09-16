@@ -2,6 +2,7 @@ import { FC, useRef, useEffect, useState } from "react";
 import { Share2, Download } from "lucide-react";
 import { avatarUrl } from "@shared/api/client";
 import { tierLabel } from "@shared/reputation/tiers";
+import { shareCard } from "@shared/share/shareCard";
 
 interface ProfileShareCardProps {
   userName: string;
@@ -369,9 +370,14 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
     setRendering(true);
     renderProfileCard(canvas, props)
       .then(() => {
-        canvas.toBlob((blob) => {
-          if (blob) setBlobUrl(URL.createObjectURL(blob));
-        }, "image/png");
+        canvas.toBlob(
+          (blob) => {
+            if (blob) setBlobUrl(URL.createObjectURL(blob));
+          },
+          // JPEG, not PNG: Telegram's prepared-message photo accepts JPEG only.
+          "image/jpeg",
+          0.92,
+        );
       })
       .finally(() => setRendering(false));
   }, [
@@ -388,26 +394,30 @@ export const ProfileShareCard: FC<ProfileShareCardProps> = (props) => {
     if (!blobUrl) return;
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = "oro-profile.png";
+    a.download = "oro-profile.jpg";
     a.click();
   };
 
   const handleShare = async () => {
     if (!blobUrl) return;
     const tier = tierLabel(props.reputationTier);
-    const shareText = `I'm a ${tier} on Oro Predict. Can you beat my record?\n\nhttps://t.me/${BOT_USERNAME}${props.referralId ? `?startapp=ref_${props.referralId}` : ""}`;
+    const link = `https://t.me/${BOT_USERNAME}${props.referralId ? `?startapp=ref_${props.referralId}` : ""}`;
+    const shareText = `I'm a ${tier} on Oro Predict. Can you beat my record?`;
     try {
       const blob = await fetch(blobUrl).then((r) => r.blob());
-      const file = new File([blob], "oro-profile.png", { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: shareText });
-        return;
-      }
-    } catch {}
-    // Fallback: open Telegram share
-    const encoded = encodeURIComponent(shareText);
-    const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/${BOT_USERNAME}`)}&text=${encoded}`;
-    window.open(tgUrl, "_blank");
+      // Telegram first, then the OS sheet, then text — see shared/share/shareCard.
+      // This card reached Android users as text only, because `navigator.share`
+      // does not exist in Telegram's Android WebView.
+      await shareCard({
+        blob,
+        text: shareText,
+        url: link,
+        buttonText: "Beat my record",
+        fileName: "oro-profile.jpg",
+      });
+    } catch (err: any) {
+      if (err?.name !== "AbortError") console.warn("Share failed:", err);
+    }
   };
 
   return (

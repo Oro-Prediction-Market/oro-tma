@@ -1,5 +1,6 @@
 import { FC, useRef, useEffect, useState } from "react";
 import { Share2, Download } from "lucide-react";
+import { shareCard } from "@shared/share/shareCard";
 
 declare global {
   interface Window {
@@ -253,13 +254,18 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
     setRendering(true);
     renderCard(canvasRef.current, props)
       .then(() => {
-        canvasRef.current!.toBlob((b) => {
-          if (b) {
-            setBlob(b);
-            setBlobUrl(URL.createObjectURL(b));
-          }
-          setRendering(false);
-        }, "image/png");
+        canvasRef.current!.toBlob(
+          (b) => {
+            if (b) {
+              setBlob(b);
+              setBlobUrl(URL.createObjectURL(b));
+            }
+            setRendering(false);
+          },
+          // JPEG, not PNG: Telegram's prepared-message photo accepts JPEG only.
+          "image/jpeg",
+          0.92,
+        );
       })
       .catch(() => setRendering(false));
     return () => {
@@ -274,32 +280,17 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
   const handleShare = async () => {
     if (sharing) return;
     setSharing(true);
-
     try {
-      // Strategy 1: Native share with image file (works in Telegram mobile)
-      if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], "oro-bet.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "My Oro Prediction",
-            text: shareText,
-          });
-          return;
-        }
-      }
-      // Strategy 2: Native share text + url
-      if (navigator.share) {
-        await navigator.share({ text: shareText, url: refLink });
-        return;
-      }
-      // Strategy 3: Telegram WebApp (text-only fallback)
-      const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
-      if (window.Telegram?.WebApp?.openTelegramLink) {
-        window.Telegram.WebApp.openTelegramLink(telegramShareUrl);
-        return;
-      }
-      window.open(telegramShareUrl, "_blank");
+      // Telegram first, then the OS sheet, then text — see shared/share/shareCard.
+      // Sharing the image used to be Android-broken because `navigator.share`
+      // does not exist in Telegram's Android WebView.
+      await shareCard({
+        blob,
+        text: shareText,
+        url: refLink,
+        buttonText: "Predict on Oro",
+        fileName: "oro-bet.jpg",
+      });
     } catch (err: any) {
       if (err?.name !== "AbortError") console.warn("Share failed:", err);
     } finally {
@@ -311,14 +302,14 @@ export const BetShareCard: FC<BetShareCardProps> = (props) => {
     if (!blobUrl) return;
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = "oro-bet.png";
+    a.download = "oro-bet.jpg";
     a.click();
   };
 
-  const canShareImage =
-    typeof navigator !== "undefined" &&
-    !!navigator.share &&
-    !!navigator.canShare;
+  // Previously gated on the Web Share API, which hid the image share on every
+  // Android device. The Telegram path needs neither `navigator.share` nor
+  // `canShare`, and every remaining route ends in a working share.
+  const canShareImage = true;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
