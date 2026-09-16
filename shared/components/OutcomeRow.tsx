@@ -36,7 +36,15 @@ export interface OutcomeRowProps {
    * market has no price — a dash read as missing data, and a number derived
    * from the prior was worse, because it looked like a real quote.
    */
-  odds: number | null;
+  /**
+   * The multiple, already formatted — `~1.35x`, `refund`, or `—`. A string, not
+   * a number, because a market too lopsided to fund a payout has no multiple to
+   * print: it refunds. Two different upstream formulas used to feed this prop,
+   * and the component applied a cap of its own on top; formatting upstream via
+   * `formatQuote` is what stops the same outcome reading differently on two
+   * pages. Null hides the pill entirely.
+   */
+  odds: string | null;
   /** Staked on this outcome, already in the viewer's currency. */
   totalStaked: number;
   /** Currency symbol or short code, e.g. "Nu" or "$". */
@@ -197,7 +205,7 @@ export function OutcomeRow({
             }}
           >
             <span style={{ fontSize: "0.78rem", fontWeight: 900 }}>
-              {Math.min(99, odds).toFixed(2)}x
+              {odds}
             </span>
             <span style={{ fontSize: "0.58rem", fontWeight: 700, opacity: 0.75 }}>
               {pct.toFixed(0)}%

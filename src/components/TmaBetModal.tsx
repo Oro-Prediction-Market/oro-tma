@@ -9,6 +9,7 @@ import { BetShareCard } from "@shared/components/BetShareCard";
 import { ChallengeAFriend } from "@shared/components/ChallengeAFriend";
 import { StreakBanner } from "@shared/components/StreakBanner";
 import { useAuth } from "@shared/hooks/useAuth";
+import { quotePayout, REFUND_NOTICE, type PayoutQuote } from "@shared/payout";
 
 const QUICK_AMOUNTS_DEFAULT = [100, 500, 1000];
 const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
@@ -139,22 +140,25 @@ export function TmaBetModal({
     creditsBalance !== null && creditsBalance >= betAmount;
   const canPlaceBet = isValidAmount && hasEnoughBalance && status === "idle";
 
-  const estPayout = (() => {
-    if (!isValidAmount || !outcome) return 0;
-    const houseEdge = Number(market.houseEdgePct) || 0;
-    const outcomePool = (Number(outcome.totalBetAmount) || 0) + betAmount;
-    const totalPool = (Number(market.totalPool) || 0) + betAmount;
-    if (outcomePool <= 0 || isNaN(outcomePool) || isNaN(totalPool)) return 0;
-    const parimutuel = betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
-    // Winners are guaranteed a 1.05x floor (funded by the house edge at settlement).
-    return Math.max(parimutuel, betAmount * 1.05);
-  })();
+  const estQuote: PayoutQuote =
+    !isValidAmount || !outcome
+      ? { kind: "no_pool" }
+      : quotePayout({
+          stake: betAmount,
+          outcomePool: Number(outcome.totalBetAmount) || 0,
+          totalPool: Number(market.totalPool) || 0,
+          houseEdgePct: Number(market.houseEdgePct) || 0,
+        });
+  // Zero unless payable: below the engine's floor the market refunds, so there
+  // is no payout figure to show.
+  const estPayout = estQuote.kind === "quote" ? estQuote.payout : 0;
+  const wouldRefund = estQuote.kind === "refund";
   const estProfit = estPayout - betAmount;
   // The live parimutuel multiple on this side right now. Because winners split
   // the pool, this number FALLS as more money backs the same outcome — the
   // "lock it in now" hook. It's specific to this user's stake and needs no
   // crowd, so it works even when only a handful have predicted.
-  const estMultiple = betAmount > 0 ? estPayout / betAmount : 0;
+  const estMultiple = estQuote.kind === "quote" ? estQuote.multiple : 0;
   // No one has placed a bet on this market yet — the user would be the first
   // predictor, so there's no pool to compute a meaningful payout against.
   const poolEmpty = (Number(market.totalPool) || 0) === 0;
@@ -1075,6 +1079,24 @@ export function TmaBetModal({
                       </span>
                     </div>
                   )}
+                  {wouldRefund && (
+                    /* No payout figure when the pool is too lopsided to fund
+                       one — the engine refunds every stake instead. */
+                    <div
+                      style={{
+                        background: "rgba(245,158,11,0.1)",
+                        border: "1px solid rgba(245,158,11,0.35)",
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                        marginBottom: 10,
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      <strong>Stake back, not a payout.</strong> {REFUND_NOTICE}
+                    </div>
+                  )}
                   <div
                     style={{
                       display: "flex",
@@ -1092,7 +1114,7 @@ export function TmaBetModal({
                         letterSpacing: "0.06em",
                       }}
                     >
-                      Est. payout
+                      {wouldRefund ? "Settles as" : "Est. payout"}
                     </div>
                     <div
                       style={{
@@ -1101,7 +1123,12 @@ export function TmaBetModal({
                         color: estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                       }}
                     >
-                      {estProfit >= 0 ? `Nu ${fmtPayout(estPayout)}` : "—"}
+                      {/* Too lopsided to fund a payout — the engine refunds. */}
+                      {wouldRefund
+                        ? "Refund"
+                        : estProfit >= 0
+                          ? `Nu ${fmtPayout(estPayout)}`
+                          : "—"}
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>

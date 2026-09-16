@@ -9,7 +9,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { MIN_PAYOUT_MULTIPLE } from "@/pages/WorldCupHubPage";
+import { quotePayout } from "@shared/payout";
 
 const configMinBet = config.payments.dkBank.minBet;
 
@@ -107,22 +107,22 @@ export const DKBankBetPage: FC = () => {
   const contrarianInfo = isContrarianPick(market, selectedOutcomeId);
 
   let winAmount = 0;
+  let wouldRefund = false;
   let priceImpact: { from: number; to: number } | null = null;
 
   if (selectedOutcome && betAmount >= minBet) {
     const totalPool = Number(market.totalPool) || 0;
     const outcomePool = Number(selectedOutcome.totalBetAmount) || 0;
-    const newOutcomePool = outcomePool + betAmount;
-    const newTotalPool = totalPool + betAmount;
-    const houseEdge = Number(market.houseEdgePct) / 100;
-    if (newOutcomePool > 0 && !isNaN(newOutcomePool) && !isNaN(newTotalPool)) {
-      const parimutuel =
-        (betAmount / newOutcomePool) * newTotalPool * (1 - houseEdge);
-      // Winners are guaranteed a 1.05x floor (funded by the house edge at
-      // settlement), so the preview must never show less than that. Shares the
-      // constant with calcOdds so the card and this page cannot drift apart.
-      winAmount = Math.max(parimutuel, betAmount * MIN_PAYOUT_MULTIPLE);
-    }
+    // One rule for every surface — see shared/payout.ts. Below the engine's
+    // floor the market refunds, so there is no payout to preview.
+    const quote = quotePayout({
+      stake: betAmount,
+      outcomePool,
+      totalPool,
+      houseEdgePct: Number(market.houseEdgePct) || 0,
+    });
+    winAmount = quote.kind === "quote" ? quote.payout : 0;
+    wouldRefund = quote.kind === "refund";
 
     // Price impact: LMSR softmax before and after this bet
     const b = Number(market.liquidityParam) || 1000;
@@ -569,7 +569,7 @@ export const DKBankBetPage: FC = () => {
               </div>
 
               {/* Win amount + price impact */}
-              {winAmount > 0 && (
+              {(winAmount > 0 || wouldRefund) && (
                 <div
                   style={{
                     display: "flex",
@@ -599,7 +599,7 @@ export const DKBankBetPage: FC = () => {
                           letterSpacing: "0.06em",
                         }}
                       >
-                        Est. payout if win
+                        {wouldRefund ? "Settles as" : "Est. payout if win"}
                       </div>
                       <div
                         style={{
@@ -608,7 +608,7 @@ export const DKBankBetPage: FC = () => {
                           color: "#16a34a",
                         }}
                       >
-                        {formatNu(winAmount)}
+                        {wouldRefund ? "Refund — stake back" : formatNu(winAmount)}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>

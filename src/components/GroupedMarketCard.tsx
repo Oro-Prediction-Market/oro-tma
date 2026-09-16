@@ -1,6 +1,11 @@
 import { useState, useEffect, memo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatOdds } from "@/pages/WorldCupHubPage";
+import {
+  formatQuote,
+  ODDS_PROBE_BTN,
+  quotePayout,
+  type PayoutQuote,
+} from "@shared/payout";
 import type { Market, Outcome } from "@shared/api/client";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { groupArtwork } from "@shared/helpers/marketImage";
@@ -88,15 +93,25 @@ export function chanceOf(m: Market, o: Outcome | undefined): number {
 
 
 
-export function outcomeOdds(m: Market, o: Outcome, stake = 100): number | null {
-  const totalPool = Number(m.totalPool) || 0;
-  const outcomePool = Number(o.totalBetAmount) || 0;
-  const edge = Number(m.houseEdgePct) || 0;
-  if (totalPool <= 0) return null;
-  return Math.min(
-    99,
-    ((totalPool + stake) * (1 - edge / 100)) / (outcomePool + stake),
-  );
+/**
+ * What a stake would return right now — or why it would not.
+ *
+ * Hands plain numbers to `quotePayout`, the only place the multiple is decided.
+ * This used to cap at 99× and floor at nothing, which is how a candidate holding
+ * 99% of the pool came to advertise `~0.91x` — a losing "win" the engine refunds
+ * rather than pays.
+ */
+export function outcomeQuote(
+  m: Market,
+  o: Outcome,
+  stake = ODDS_PROBE_BTN,
+): PayoutQuote {
+  return quotePayout({
+    stake,
+    outcomePool: Number(o.totalBetAmount) || 0,
+    totalPool: Number(m.totalPool) || 0,
+    houseEdgePct: Number(m.houseEdgePct) || 0,
+  });
 }
 
 interface GroupedMarketCardProps {
@@ -157,7 +172,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
       color: string,
     ) => {
       const disabled = !o || o.isEliminated || m.status !== "open";
-      const odds = o ? outcomeOdds(m, o) : null;
+      const quote = o ? outcomeQuote(m, o) : null;
       return (
         <button
           disabled={disabled}
@@ -208,7 +223,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           </span>
           {o && (
             <span style={{ fontSize: "0.55rem", fontWeight: 700, opacity: 0.8 }}>
-              {formatOdds(odds)}
+              {quote ? formatQuote(quote) : "—"}
             </span>
           )}
         </button>

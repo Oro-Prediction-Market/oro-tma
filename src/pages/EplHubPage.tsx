@@ -1072,7 +1072,7 @@ export function EplHubPage() {
                             <>
                               <div style={{ textAlign: "center", minWidth: 46, flexShrink: 0 }}>
                                 <div style={{ fontSize: 14, fontWeight: 900, color: cat.color, lineHeight: 1 }}>{Math.round((prob ?? 0) * 100)}%</div>
-                                <div style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", marginTop: 3 }}>{formatOdds(odds)}</div>
+                                <div style={{ fontSize: 12, fontWeight: 800, color: "#fbbf24", marginTop: 3 }}>{odds ? formatOdds(odds) : "—"}</div>
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); openBet(market!.id, outcome.id); }}

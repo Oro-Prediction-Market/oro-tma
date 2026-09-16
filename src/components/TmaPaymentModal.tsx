@@ -13,6 +13,7 @@ import type {
   PaymentResponse,
 } from "@shared/types/payment";
 import { PayoutBreakdown } from "@shared/components/PayoutBreakdown";
+import { quotePayout, type PayoutQuote } from "@shared/payout";
 
 const QUICK_AMOUNTS_DEFAULT = [50, 100, 200, 500];
 const QUICK_AMOUNTS_TER = [10, 25, 50, 100];
@@ -116,18 +117,17 @@ export function TmaPaymentModal({
     hasEnoughCredits &&
     status === "idle";
 
-  const estPayout = (() => {
-    if (!isValidAmount || !outcome) return 0;
-    const houseEdge = Number(market.houseEdgePct) || 0;
-    const outcomePool = (Number(outcome.totalBetAmount) || 0) + betAmount;
-    const totalPool = (Number(market.totalPool) || 0) + betAmount;
-    if (outcomePool <= 0 || isNaN(outcomePool) || isNaN(totalPool)) return 0;
-    const parimutuel =
-      betAmount * ((totalPool * (1 - houseEdge / 100)) / outcomePool);
-    // Winners are guaranteed a 1.05x floor (funded by the house edge at
-    // settlement), so the preview must never show less than that.
-    return Math.max(parimutuel, betAmount * 1.05);
-  })();
+  const estQuote: PayoutQuote =
+    !isValidAmount || !outcome
+      ? { kind: "no_pool" }
+      : quotePayout({
+          stake: betAmount,
+          outcomePool: Number(outcome.totalBetAmount) || 0,
+          totalPool: Number(market.totalPool) || 0,
+          houseEdgePct: Number(market.houseEdgePct) || 0,
+        });
+  const estPayout = estQuote.kind === "quote" ? estQuote.payout : 0;
+  const wouldRefund = estQuote.kind === "refund";
   const estProfit = estPayout - betAmount;
 
   useEffect(() => {
@@ -1234,7 +1234,7 @@ export function TmaPaymentModal({
                             letterSpacing: "0.06em",
                           }}
                         >
-                          Est. payout if win
+                          {wouldRefund ? "Settles as" : "Est. payout if win"}
                         </div>
                         <div
                           style={{
@@ -1244,7 +1244,11 @@ export function TmaPaymentModal({
                               estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                           }}
                         >
-                          {estProfit >= 0 ? `Nu ${Math.floor(estPayout).toLocaleString()}` : "—"}
+                          {wouldRefund
+                            ? "Refund — stake back"
+                            : estProfit >= 0
+                              ? `Nu ${Math.floor(estPayout).toLocaleString()}`
+                              : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>
@@ -1619,7 +1623,7 @@ export function TmaPaymentModal({
                             letterSpacing: "0.06em",
                           }}
                         >
-                          Est. payout if win
+                          {wouldRefund ? "Settles as" : "Est. payout if win"}
                         </div>
                         <div
                           style={{
@@ -1629,7 +1633,11 @@ export function TmaPaymentModal({
                               estProfit >= 0 ? "#16a34a" : "var(--text-muted)",
                           }}
                         >
-                          {estProfit >= 0 ? `Nu ${Math.floor(estPayout).toLocaleString()}` : "—"}
+                          {wouldRefund
+                            ? "Refund — stake back"
+                            : estProfit >= 0
+                              ? `Nu ${Math.floor(estPayout).toLocaleString()}`
+                              : "—"}
                         </div>
                       </div>
                       <div style={{ textAlign: "right" }}>

@@ -16,6 +16,7 @@ import {
 import { getMyBets, type Bet } from "@shared/api/client";
 // import { useAuth } from "@shared/hooks/useAuth";
 import { BetShareCard } from "@shared/components/BetShareCard";
+import { DEFAULT_HOUSE_EDGE_PCT, quotePayout } from "@shared/payout";
 
 const STATUS_COLOR: Record<Bet["status"], string> = {
   pending: "#f59e0b",
@@ -49,13 +50,22 @@ function BetCard({ bet, onBrag }: { bet: Bet; onBrag: (bet: Bet) => void }) {
   const color = STATUS_COLOR[bet.status];
   const Icon = STATUS_ICON[bet.status];
   const pool = bet.market ? Number(bet.market.totalPool) : 0;
-  const edge = bet.market ? Number(bet.market.houseEdgePct) : 5;
+  // The engine's default edge is 10, not 5 — see fee.constants.ts. The old
+  // fallback made every bet card quote odds better than the market's.
+  const edge = bet.market ? Number(bet.market.houseEdgePct) : DEFAULT_HOUSE_EDGE_PCT;
   const outcomePool = bet.outcome ? Number(bet.outcome.totalBetAmount) : 0;
 
   const displayOdds = useMemo(() => {
-    if (outcomePool > 0 && pool > 0) {
-      return ((pool * (1 - edge / 100)) / outcomePool).toFixed(2);
-    }
+    // This card is a record of a placed bet, so it quotes the market as it
+    // stands with no probe stake — the money is already in the pool.
+    const quote = quotePayout({
+      stake: 0,
+      outcomePool,
+      totalPool: pool,
+      houseEdgePct: edge,
+    });
+    if (quote.kind === "quote") return quote.multiple.toFixed(2);
+    if (quote.kind === "refund") return "refund";
     return bet.oddsAtPlacement ? Number(bet.oddsAtPlacement).toFixed(2) : "—";
   }, [pool, edge, outcomePool, bet.oddsAtPlacement]);
 

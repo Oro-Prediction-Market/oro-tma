@@ -12,6 +12,7 @@ import {
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
+import { formatQuote, quotePayout, type PayoutQuote } from "@shared/payout";
 
 // ── Country flag map ──────────────────────────────────────────────────────────
 
@@ -316,13 +317,6 @@ export function calcProb(market: Market, outcomeId: string): number {
 export const ODDS_REFERENCE_STAKE = 100;
 
 /**
- * Winners are guaranteed at least this multiple of their stake at settlement,
- * funded by reducing the house edge. Mirrors the payout floor in the backend's
- * parimutuel engine — keep the two in step.
- */
-export const MIN_PAYOUT_MULTIPLE = 1.05;
-
-/**
  * Renders a listed multiplier for display.
  *
  * The leading "~" is load-bearing, not decoration. Listed odds are quoted for
@@ -334,8 +328,8 @@ export const MIN_PAYOUT_MULTIPLE = 1.05;
  * without a stake box can honestly offer. The exact figure is computed from
  * the real amount on the bet page.
  */
-export function formatOdds(odds: number | null | undefined): string {
-  return odds ? `~${odds.toFixed(2)}x` : "—";
+export function formatOdds(q: PayoutQuote): string {
+  return formatQuote(q);
 }
 
 /**
@@ -357,21 +351,15 @@ export function calcOdds(
   market: Market,
   outcomeId: string,
   stake = ODDS_REFERENCE_STAKE,
-): number | null {
+): PayoutQuote {
   const o = market.outcomes?.find((x) => x.id === outcomeId);
-  if (!o) return null;
-  const totalPool = Number(market.totalPool) || 0;
-  const outcomePool = Number(o.totalBetAmount) || 0;
-  const houseEdge = Number(market.houseEdgePct) || 0;
-  if (totalPool <= 0) return null;
-  const raw =
-    ((totalPool + stake) * (1 - houseEdge / 100)) / (outcomePool + stake);
-  // Settlement guarantees winners 1.05x their stake, funded out of the house
-  // edge. Without this the card shows a sub-1.0x multiple ("bet 100, win 90")
-  // on any outcome holding most of the pool — a guaranteed loss for being
-  // right, which is not what would actually be paid. DKBankBetPage already
-  // applies the same floor.
-  return Math.max(raw, MIN_PAYOUT_MULTIPLE);
+  if (!o) return { kind: "no_pool" };
+  return quotePayout({
+    stake,
+    outcomePool: Number(o.totalBetAmount) || 0,
+    totalPool: Number(market.totalPool) || 0,
+    houseEdgePct: Number(market.houseEdgePct) || 0,
+  });
 }
 
 

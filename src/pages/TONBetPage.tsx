@@ -20,6 +20,7 @@ import { Page } from "@/components/Page";
 import { getMarket, placeBetWithWallet, Market } from "@shared/api/client";
 import { calcProb } from "./WorldCupHubPage";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
+import { formatQuote, ODDS_PROBE_BTN, quotePayout } from "@shared/payout";
 
 export const TONBetPage: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -171,11 +172,17 @@ export const TONBetPage: FC = () => {
             const probability =
               calcProb(market, outcome.id) || 1 / market.outcomes.length;
             const probabilityPercent = Math.round(probability * 100);
-            // No fabricated multiplier before the first bet
-            const decimalOdds =
-              Number(market.totalPool) > 0 && probability > 0
-                ? `${(1 / probability).toFixed(2)}x`
-                : "—";
+            // `1 / probability` ignored the house edge entirely, so this cell
+            // quoted a multiple ~10% above anything the engine would pay — and
+            // showed a number at all on markets that would refund.
+            const decimalOdds = formatQuote(
+              quotePayout({
+                stake: ODDS_PROBE_BTN,
+                outcomePool: Number(outcome.totalBetAmount) || 0,
+                totalPool: Number(market.totalPool) || 0,
+                houseEdgePct: Number(market.houseEdgePct) || 0,
+              }),
+            );
 
             return (
               <Cell

@@ -17,12 +17,12 @@ import { ProbabilityChart, type ChartSeries } from "@shared/components/Probabili
 import { groupArtwork } from "@shared/helpers/marketImage";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { TmaBetModal } from "@/components/TmaBetModal";
-import { formatOdds } from "./WorldCupHubPage";
+import { formatQuote } from "@shared/payout";
 import {
   candidateName,
   chanceOf,
   findOutcome,
-  outcomeOdds,
+  outcomeQuote,
   YES_COLOR,
   NO_COLOR,
 } from "@/components/GroupedMarketCard";
@@ -343,7 +343,7 @@ export function GroupDetailPage() {
         <span style={{ fontSize: "0.72rem", fontWeight: 900 }}>{o?.label ?? label}</span>
         {o && (
           <span style={{ fontSize: "0.55rem", fontWeight: 700, opacity: 0.8 }}>
-            {formatOdds(outcomeOdds(m, o))}
+            {formatQuote(outcomeQuote(m, o))}
           </span>
         )}
       </button>

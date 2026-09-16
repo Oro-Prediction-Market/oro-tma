@@ -45,6 +45,7 @@ import {
   isWCMarket,
   calcProb,
   calcOdds,
+  formatOdds,
   rankedOutcomes,
 } from "./WorldCupHubPage";
 import { isEsportsMarket } from "./EsportsHubPage";
@@ -520,7 +521,9 @@ export const MarketDetailPage: FC = () => {
         label: h.label,
         color: palette[(idx >= 0 ? idx : 0) % palette.length],
         points: h.points,
-        odds: odds ? `${Math.min(99, odds).toFixed(2)}x` : undefined,
+        // Same formatter as every other surface, so the legend and the
+        // outcome pill below it cannot read differently for one outcome.
+        odds: odds.kind === "no_pool" ? undefined : formatOdds(odds),
       };
     });
   }, [chartData, liveMarket, market]);
@@ -1498,7 +1501,10 @@ export const MarketDetailPage: FC = () => {
                     // Null on an empty pool, which hides the pill. There is no
                     // price to quote before anyone has staked, and the dash
                     // this used to print read as missing data.
-                    odds={calcOdds(m, outcome.id)}
+                    odds={(() => {
+                      const q = calcOdds(m, outcome.id);
+                      return q.kind === "no_pool" ? null : formatOdds(q);
+                    })()}
                     totalStaked={Number(outcome.totalBetAmount)}
                     currencyLabel="Nu"
                     color={color}

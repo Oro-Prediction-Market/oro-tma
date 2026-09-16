@@ -13,6 +13,7 @@ import {
   findMarketForSlot,
   type BracketSlot,
 } from "@shared/data/wcKnockout";
+import { formatQuote, quotePayout } from "../payout";
 
 const ACCENT = "#A78BFA";
 
@@ -49,16 +50,27 @@ function outcomeProb(
   return (Number(outcome.totalBetAmount) + prior / n) / (tPool + prior);
 }
 
-// Parimutuel payout multiplier — matches the bet modal's estimated payout.
-function outcomeOdds(
+/**
+ * Parimutuel payout multiplier, already formatted — `~1.35x`, `refund` or `—`.
+ *
+ * Quoted with no probe stake, unlike the cards: a bracket tile lists the market
+ * as it stands. It previously had no floor and no cap of its own, with the cap
+ * applied at the two render sites instead, so the same outcome could read
+ * differently here than on the card that links to it.
+ */
+function outcomeOddsLabel(
   market: Market,
   outcome: Market["outcomes"][number],
-): number | null {
-  const totalPool = Number(market.totalPool) || 0;
-  const outcomePool = Number(outcome.totalBetAmount) || 0;
-  const houseEdge = Number(market.houseEdgePct) || 0;
-  if (totalPool <= 0 || outcomePool <= 0) return null;
-  return (totalPool * (1 - houseEdge / 100)) / outcomePool;
+): string | null {
+  const quote = quotePayout({
+    stake: 0,
+    outcomePool: Number(outcome.totalBetAmount) || 0,
+    totalPool: Number(market.totalPool) || 0,
+    houseEdgePct: Number(market.houseEdgePct) || 0,
+  });
+  return quote.kind === "no_pool" || quote.kind === "unbacked"
+    ? null
+    : formatQuote(quote);
 }
 
 function fmtDate(iso: string | null | undefined): string {
@@ -111,7 +123,7 @@ function FinalTeamRow({
   onClick?: () => void;
   won?: boolean;
   pct?: number | null;
-  odds?: number | null;
+  odds?: string | null;
   isPick?: boolean;
 }) {
   const tappable = !!onClick;
@@ -202,7 +214,7 @@ function FinalTeamRow({
             </span>
             {odds != null && (
               <span style={{ fontSize: 10, fontWeight: 800, color: GOLD }}>
-                {Math.min(99, odds).toFixed(2)}x
+                {odds}
               </span>
             )}
           </span>
@@ -228,7 +240,7 @@ function TeamRow({
   /** Live win-probability 0–100. null when there's no open market (TBD slot). */
   pct?: number | null;
   /** Payout multiplier, shown next to the percentage when available. */
-  odds?: number | null;
+  odds?: string | null;
   /** The current user has already backed this outcome. */
   isPick?: boolean;
 }) {
@@ -340,7 +352,7 @@ function TeamRow({
             >
               {odds != null && (
                 <span style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24" }}>
-                  {Math.min(99, odds).toFixed(2)}x
+                  {odds}
                 </span>
               )}
               <span style={{ fontSize: 12, fontWeight: 900, color: ACCENT }}>
@@ -514,8 +526,8 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
     // bar. null until the match has an open market with named outcomes.
     let pct1: number | null = null;
     let pct2: number | null = null;
-    let odds1: number | null = null;
-    let odds2: number | null = null;
+    let odds1: string | null = null;
+    let odds2: string | null = null;
     if (market) {
       // The two outcomes ARE the teams — admin names them when creating the
       // match (e.g. "Germany", "France"). Tapping a row bets on that outcome.
@@ -524,13 +536,13 @@ export function WorldCupBracket({ markets, onBet, getFlag, pickedOutcomeIds }: P
         team1 = o[0].label;
         out1 = o[0].id;
         pct1 = outcomeProb(market, o[0]) * 100;
-        odds1 = outcomeOdds(market, o[0]);
+        odds1 = outcomeOddsLabel(market, o[0]);
       }
       if (o[1]) {
         team2 = o[1].label;
         out2 = o[1].id;
         pct2 = outcomeProb(market, o[1]) * 100;
-        odds2 = outcomeOdds(market, o[1]);
+        odds2 = outcomeOddsLabel(market, o[1]);
       }
     }
     // No market yet (or unnamed teams): project the winners advancing from the

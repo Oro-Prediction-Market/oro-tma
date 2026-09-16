@@ -26,6 +26,11 @@ import { marketArtwork } from "@shared/helpers/marketImage";
 import { MarketThumb } from "@shared/components/MarketThumb";
 import { ROWS_LAYER, useFittedRows } from "@shared/hooks/useFittedRows";
 import {
+  formatQuote,
+  ODDS_PROBE_BTN,
+  quotePayout,
+} from "@shared/payout";
+import {
   FEED_CARD_H,
   MORE_LINE_H,
   OUTCOME_GAP,
@@ -1397,15 +1402,18 @@ const MarketCard = memo(function MarketCard({
                       }}
                     >
                       {(() => {
-                        const outcomePool = Number(s.totalBetAmount) || 0;
-                        const edge = Number(market.houseEdgePct) || 0;
-                        const odds =
-                          totalPool > 0 && outcomePool > 0
-                            ? (totalPool * (1 - edge / 100)) / outcomePool
-                            : 100 / Math.max(s.pct, 1);
-                        return Math.min(99, odds).toFixed(2);
+                        // The old fallback was `100 / Math.max(pct, 1)`: a
+                        // multiple invented from the smoothed prior, with no
+                        // pool behind it. An unbacked outcome now says so.
+                        return formatQuote(
+                          quotePayout({
+                            stake: ODDS_PROBE_BTN,
+                            outcomePool: Number(s.totalBetAmount) || 0,
+                            totalPool,
+                            houseEdgePct: Number(market.houseEdgePct) || 0,
+                          }),
+                        );
                       })()}
-                      x
                     </span>
                     <span
                       style={{
