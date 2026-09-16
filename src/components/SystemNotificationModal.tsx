@@ -28,6 +28,14 @@ export const SystemNotificationModal: FC = () => {
         // Replies and likes are routine in the same way, and worse: they are
         // the one kind that arrives in bulk. Six overnight replies became six
         // full-screen modals to tap through before reaching the app.
+        //
+        // Note this is an opt-OUT set: a type that is not listed here DOES pop.
+        // "announcement" is deliberately absent. An admin broadcast is the one
+        // kind of message that is meant to interrupt — it is sent precisely
+        // because everyone should see it — and in the Telegram app this modal is
+        // the only place a notification is ever shown at all. Adding
+        // "announcement" here would silently make the feature invisible to most
+        // of the user base.
         const POPUP_MUTED = new Set([
           "achievement",
           "market_won",
@@ -49,8 +57,9 @@ export const SystemNotificationModal: FC = () => {
   if (!current) return null;
 
   const isPrize = current.type === "season_prize";
-  const accent = isPrize ? "#f5a623" : "#3b82f6";
-  const emoji = isPrize ? "🏆" : "🔔";
+  const isAnnouncement = current.type === "announcement";
+  const accent = isPrize ? "#f5a623" : isAnnouncement ? "#8b5cf6" : "#3b82f6";
+  const emoji = isPrize ? "🏆" : isAnnouncement ? "📣" : "🔔";
   const remaining = queue.length - index;
 
   const dismiss = () => {
@@ -149,7 +158,9 @@ export const SystemNotificationModal: FC = () => {
             boxShadow: `0 8px 22px ${accent}44`,
           }}
         >
-          {remaining > 1 ? "Next" : "Got it 🎉"}
+          {/* No confetti on an announcement — it might be telling someone the
+              app will be down on Tuesday. */}
+          {remaining > 1 ? "Next" : isAnnouncement ? "Got it" : "Got it 🎉"}
         </button>
         {queue.length > 1 && (
           <div
