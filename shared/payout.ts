@@ -7,31 +7,27 @@
  * outcome could read `0.91x` on a feed card and `1.05×` in the bet sheet, and
  * `OutcomeRow` was fed by whichever formula the mounting page happened to use.
  *
- * ── Why a quote can be "no quote" ──────────────────────────────────────────────
+ * ── What the engine actually pays ─────────────────────────────────────────────
  *
- * A parimutuel market does not always pay out. `parimutuel.engine.ts` refunds
- * every stake when the winning side is too large to fund the 1.05× floor:
+ * Winners take their pro-rata share of the pool net of Oro's edge. Where that
+ * share would fall below 1.05× their stake, settlement gives up house edge — as
+ * far as zero — to fund the floor. Where even a zero edge cannot fund it (the
+ * winning side holding more than ~95% of the pool), payouts scale down and
+ * winners split the entire pool, which still pays each of them more than their
+ * stake. So:
  *
- *     payoutPool = totalPool × (1 − houseEdgePct/100)
- *     refund when   1.05 × winnerPool > payoutPool
+ *     raw      = totalPool × (1 − houseEdgePct/100) / outcomePool
+ *     ceiling  = totalPool / outcomePool          (what a zero edge pays)
+ *     multiple = max(raw, min(1.05, ceiling))
  *
- * Divide through and that is exactly `multiple < 1.05`. So a quoted multiple
- * below 1.05 is not a poor payout — it is a payout that cannot happen, and the
- * user gets their stake back instead. Quoting `0.91x` promised a loss the engine
- * has no branch to deliver.
+ * A market only refunds when nobody is on the other side — the engine's
+ * thin-pool guard — which is the one refund a client can detect.
  *
- * The bet forms used to apply `Math.max(parimutuel, stake × 1.05)`, commented
- * "funded by the house edge at settlement". That describes a subsidy path in the
- * engine which the refund guard makes unreachable — the floor is never paid, the
- * market refunds. Flooring the display promised 1.05× where the engine pays 1.00×,
- * so the floor is gone from here: below it, the answer is `refund`.
- *
- * ── If the engine changes ─────────────────────────────────────────────────────
- *
- * Two engine tests assert the *other* behaviour (pay 1.05×, funded by waiving the
- * house edge). If that is restored, this file is the only thing that changes:
- * return a `quote` with `multiple: PAYOUT_FLOOR` instead of `refund`. That is why
- * the rule lives here and not in thirty components.
+ * This file previously returned `refund` for everything under 1.05×, because
+ * the engine refunded the whole market rather than waiving its cut. It no
+ * longer does. Note the bet forms must NOT go back to
+ * `Math.max(parimutuel, stake × 1.05)`: that overstates the extreme band, where
+ * the floor is scaled down and not actually met.
  *
  * Imports nothing on purpose — hand-copied byte-identical into both frontends,
  * and `shared/currency/` exists only in the PWA, so anything richer fails `tsc`
@@ -39,8 +35,10 @@
  */
 
 /**
- * The engine's minimum winning multiple. Below this the market refunds rather
- * than paying out, so it is a threshold here, never a floor applied to a number.
+ * The multiple a winner is guaranteed when the pool can fund it — the engine
+ * gives up house edge to reach it. It is a ceiling on that subsidy, not a floor
+ * applied to a number: above ~95% concentration the pool cannot reach it even
+ * at a zero edge and winners get less, so never clamp a quote up to this.
  */
 export const PAYOUT_FLOOR = 1.05;
 
@@ -65,7 +63,8 @@ export const ODDS_PROBE_USDT = 1;
 export type PayoutQuote =
   /** A real, payable multiple. `payout` is `stake × multiple`. */
   | { kind: "quote"; multiple: number; payout: number }
-  /** The winning side is too big to fund the floor — every stake is refunded. */
+  /** Nobody is on the other side, so there is nothing to win: every stake is
+   *  refunded (the engine's thin-pool guard). */
   | { kind: "refund" }
   /** Nothing backs this outcome yet. Not a refund: a stake here creates a backer. */
   | { kind: "unbacked" }
@@ -93,9 +92,19 @@ export function quotePayout(a: {
   // a refund would be a fresh lie, and locally most open outcomes are unbacked.
   if (own <= 0) return { kind: "unbacked" };
 
-  const multiple = (total * (1 - edge / 100)) / own;
-  if (!isFinite(multiple) || multiple <= 0) return { kind: "no_pool" };
-  if (multiple < PAYOUT_FLOOR) return { kind: "refund" };
+  // All money on this side means nobody is on the other, so there is nothing to
+  // win and the engine's thin-pool guard refunds every stake. This is now the
+  // only refund a client can predict.
+  if (own >= total) return { kind: "refund" };
+
+  const raw = (total * (1 - edge / 100)) / own;
+  if (!isFinite(raw) || raw <= 0) return { kind: "no_pool" };
+
+  // Where the post-rake pool cannot fund the 1.05× floor, settlement gives up
+  // house edge to fund it — and where even a zero edge cannot, winners split
+  // the whole pool (`total / own`). Both are payable, so neither is a refund.
+  // `total / own` is the ceiling on that: it is what a zero edge pays.
+  const multiple = Math.max(raw, Math.min(PAYOUT_FLOOR, total / own));
 
   // No `Math.min(99, …)`. The stake probe already damps the extremes it was
   // there for — 100 into a 1-unit side quotes ~90×, not 9000× — so the cap only
@@ -117,4 +126,4 @@ export function formatQuote(q: PayoutQuote): string {
  * A market weeks from closing will usually rebalance well before it settles.
  */
 export const REFUND_NOTICE =
-  "Too much money is on this side. At the current pool this market refunds every stake instead of paying out — you would get your stake back, not a payout.";
+  "Every prediction so far is on this side, so there is nothing to win. Unless someone backs another outcome, this market refunds every stake instead of paying out — you would get your stake back, not a payout.";
