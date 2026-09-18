@@ -68,7 +68,7 @@ export type PayoutQuote =
   | { kind: "refund" }
   /** Nothing backs this outcome yet. Not a refund: a stake here creates a backer. */
   | { kind: "unbacked" }
-  /** No money anywhere in this book yet. */
+  /** No money anywhere in this book yet, so no multiple exists to quote. */
   | { kind: "no_pool" };
 
 export function quotePayout(a: {
@@ -82,10 +82,17 @@ export function quotePayout(a: {
 }): PayoutQuote {
   const stake = Number(a.stake) || 0;
   const edge = Number(a.houseEdgePct) || 0;
-  const total = (Number(a.totalPool) || 0) + stake;
+  const poolTotal = Number(a.totalPool) || 0;
+  const total = poolTotal + stake;
   const own = (Number(a.outcomePool) || 0) + stake;
 
-  if (total <= 0) return { kind: "no_pool" };
+  // Tested on the pool BEFORE the stake. Testing `total` instead could never
+  // fire, because the probe stake a card quotes with is itself money — so an
+  // untouched market reached the one-sided test below with own === total === the
+  // probe, and every outcome on a market with no predictions printed `refund`.
+  // Nobody has staked anything: there is no quote to give, not a refund to
+  // predict.
+  if (poolTotal <= 0) return { kind: "no_pool" };
   // Only reachable with a zero stake — a card quoting an outcome nobody has
   // backed. It is deliberately NOT a refund: the engine refunds a side with no
   // winning bets, but the moment this user stakes, the side has one. Calling it
@@ -94,7 +101,9 @@ export function quotePayout(a: {
 
   // All money on this side means nobody is on the other, so there is nothing to
   // win and the engine's thin-pool guard refunds every stake. This is now the
-  // only refund a client can predict.
+  // only refund a client can predict. Equivalent to comparing the pools before
+  // the stake, since it is added to both sides — which is exactly why the empty
+  // book has to be ruled out above rather than here.
   if (own >= total) return { kind: "refund" };
 
   const raw = (total * (1 - edge / 100)) / own;
