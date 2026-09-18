@@ -20,13 +20,21 @@
 /**
  * Outcomes a feed card shows before the rest collapse behind "+N more".
  *
- * Two, because 94% of all markets are binary (3,434 of 3,658) — so this is the
- * whole list for almost every card, and the long tail (one market has 36) is
- * what used to drag the layout around. This number is shared across both apps
- * deliberately: it is a product decision about how much of a market the feed
- * shows, not a per-app layout detail.
+ * Three. This was two — sized for the 94% of markets that are binary (3,434 of
+ * 3,658) — but that made a three-way market show two outcomes and spend a line
+ * saying one was hidden, which reads as the card withholding the obvious. Match
+ * winners are three-way, and they are the markets people scan.
+ *
+ * It is not free, and the cost is worth stating: a row is 68px against a 20px
+ * hint line, so there is no swapping one for the other. The card grew from 341
+ * to 409px, and a binary market now renders two rows in a block sized for
+ * three. That was a deliberate trade — the tail of multi-outcome markets is
+ * what the feed was hiding, and those are the ones worth showing.
+ *
+ * Shared across both apps on purpose: how much of a market the feed shows is a
+ * product decision, not a per-app layout detail.
  */
-export const VISIBLE_OUTCOMES = 2;
+export const VISIBLE_OUTCOMES = 3;
 
 /** Lines a card title is clamped to. Longest title ever seen is 102 chars. */
 export const TITLE_LINES = 2;
