@@ -189,29 +189,43 @@ export function OutcomeRow({
         </div>
 
         {/* Odds over percentage. The percentage used to live inside the bar;
-            moving it here is what frees the bar to be pure background. */}
-        {odds !== null && (
-          <div
-            style={{
-              flexShrink: 0,
-              background: `${color}15`,
-              color,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-full)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              lineHeight: 1.1,
-            }}
-          >
+            moving it here is what frees the bar to be pure background.
+
+            The pill is keyed on the percentage, not on the odds. A share of the
+            pool always exists, while a multiple does not — an empty book has no
+            price, and a one-sided one refunds rather than paying. Gating the
+            whole pill on `odds` took the percentage down with it and left the
+            row with nothing at all on exactly the outcomes worth looking at. */}
+        <div
+          style={{
+            flexShrink: 0,
+            background: `${color}15`,
+            color,
+            padding: "3px 8px",
+            borderRadius: "var(--radius-full)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            lineHeight: 1.1,
+          }}
+        >
+          {odds !== null && (
             <span style={{ fontSize: "0.78rem", fontWeight: 900 }}>
               {odds}
             </span>
-            <span style={{ fontSize: "0.58rem", fontWeight: 700, opacity: 0.75 }}>
-              {pct.toFixed(0)}%
-            </span>
-          </div>
-        )}
+          )}
+          {/* Carries the pill on its own when there is no multiple, so it takes
+              the prominent size rather than sitting there as a 0.58rem orphan. */}
+          <span
+            style={
+              odds === null
+                ? { fontSize: "0.78rem", fontWeight: 900 }
+                : { fontSize: "0.58rem", fontWeight: 700, opacity: 0.75 }
+            }
+          >
+            {pct.toFixed(0)}%
+          </span>
+        </div>
 
         {pickable && (
           <div

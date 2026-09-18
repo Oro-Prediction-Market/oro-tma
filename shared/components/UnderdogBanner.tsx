@@ -1,6 +1,15 @@
 /**
- * Shows an amber banner when one outcome holds >85% of the pool.
- * Informs users that the underdog guarantees a profit (1.05× floor) if it wins.
+ * An amber banner for a lopsided pool: one outcome holds more than 85% of the
+ * money, so every other outcome is priced generously.
+ *
+ * It used to name "the underdog" — and that only means something on a binary
+ * market. On a fifteen-school market with a single Nu 100 prediction it picked
+ * whichever zero-pool outcome happened to sit first in the array and announced
+ * "most picks are against Ugyen Academy", which was true of thirteen other
+ * schools in exactly the same way, and described one prediction as "most picks".
+ *
+ * Naming the favourite instead is unambiguous at any outcome count: there is
+ * only ever one outcome holding 85% of a pool.
  */
 
 interface OutcomeAmount {
@@ -8,27 +17,36 @@ interface OutcomeAmount {
   totalBetAmount?: string | number | null;
 }
 
+/** A pool this concentrated is the point of the banner. */
+const LOPSIDED_PCT = 85;
+
 /**
- * Returns the label of the underdog outcome when the pool is lopsided (>85% on
- * one side), otherwise null. Uses raw pool ratios — not Laplace-smoothed —
- * because we want to detect real imbalance.
+ * The label of the outcome holding more than 85% of the pool, or null when no
+ * outcome does.
+ *
+ * Raw pool ratios, not the Laplace-smoothed probabilities shown on the rows:
+ * this is about where the money actually is, and smoothing would drag a genuine
+ * 100% concentration below the threshold.
  */
-export function getUnderdogLabel(
+export function getLopsidedFavourite(
   outcomes: OutcomeAmount[],
   totalPool: number,
 ): string | null {
   if (totalPool <= 0 || outcomes.length < 2) return null;
-  const maxPct = Math.max(
-    ...outcomes.map((o) => (Number(o.totalBetAmount || 0) / totalPool) * 100),
-  );
-  if (maxPct <= 85) return null;
-  const underdog = outcomes.reduce((min, o) =>
-    Number(o.totalBetAmount || 0) < Number(min.totalBetAmount || 0) ? o : min,
-  );
-  return underdog.label;
+  let favourite: OutcomeAmount | null = null;
+  let best = -1;
+  for (const o of outcomes) {
+    const amount = Number(o.totalBetAmount || 0);
+    if (amount > best) {
+      best = amount;
+      favourite = o;
+    }
+  }
+  if (!favourite || (best / totalPool) * 100 <= LOPSIDED_PCT) return null;
+  return favourite.label;
 }
 
-export function UnderdogBanner({ underdogLabel }: { underdogLabel: string }) {
+export function UnderdogBanner({ favouriteLabel }: { favouriteLabel: string }) {
   return (
     <div
       style={{
@@ -46,8 +64,8 @@ export function UnderdogBanner({ underdogLabel }: { underdogLabel: string }) {
     >
       <span>⚡</span>
       <span>
-        Most picks are against <b>{underdogLabel}</b>. Fewer bets on this side
-        means a bigger payout if it wins.
+        Nearly all the pool is on <b>{favouriteLabel}</b>. Any other outcome pays
+        more if it wins.
       </span>
     </div>
   );

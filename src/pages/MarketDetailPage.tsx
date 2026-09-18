@@ -59,7 +59,7 @@ import { UclMarketDetail } from "@/components/UclMarketDetail";
 import { PriceMarketDetail } from "@/components/PriceMarketDetail";
 import {
   UnderdogBanner,
-  getUnderdogLabel,
+  getLopsidedFavourite,
 } from "@shared/components/UnderdogBanner";
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
@@ -1454,10 +1454,10 @@ export const MarketDetailPage: FC = () => {
               />
             </div>
             {(() => {
-              const ul = isOpen
-                ? getUnderdogLabel(m.outcomes, Number(m.totalPool))
+              const fav = isOpen
+                ? getLopsidedFavourite(m.outcomes, Number(m.totalPool))
                 : null;
-              return ul ? <UnderdogBanner underdogLabel={ul} /> : null;
+              return fav ? <UnderdogBanner favouriteLabel={fav} /> : null;
             })()}
             {/* 8, not 16: the gap was sized to separate three-band rows ~83px
                 tall. Against a ~52px row that much air re-lengthens the card
