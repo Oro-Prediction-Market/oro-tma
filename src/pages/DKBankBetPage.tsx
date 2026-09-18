@@ -6,6 +6,8 @@ import { Page } from "@/components/Page";
 import { getMarket, placeBet, type Market } from "@shared/api/client";
 import { formatNu } from "@shared/api/dkbank";
 import { useAuth } from "@shared/hooks/useAuth";
+import { useDkMigrationFreeze } from "@shared/hooks/useDkMigrationFreeze";
+import { formatDkMigrationFreeze } from "@shared/helpers/dkMigrationWindow";
 import { DKBankConfirmModal } from "@/components/DKBankConfirmModal";
 import config from "@shared/config";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
@@ -40,6 +42,9 @@ function isContrarianPick(
 export const DKBankBetPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  // Nothing in the app links here any more, but the route is still registered,
+  // so an old deep link or bookmark can still land on it mid-migration.
+  const dkFreeze = useDkMigrationFreeze();
 
   const [market, setMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +151,8 @@ export const DKBankBetPage: FC = () => {
     }
   }
 
-  const isReady = !!selectedOutcomeId && betAmount >= minBet;
+  const isReady =
+    !!selectedOutcomeId && betAmount >= minBet && !dkFreeze.active;
 
   return (
     <Page back>
@@ -720,9 +726,36 @@ export const DKBankBetPage: FC = () => {
               borderTop: "1px solid var(--border)",
             }}
           >
+            {dkFreeze.active && dkFreeze.freeze && (
+              <div
+                role="status"
+                style={{
+                  marginBottom: 10,
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                  background: "rgba(245,158,11,0.12)",
+                  border: "1px solid rgba(245,158,11,0.3)",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <strong style={{ color: "var(--text-main)" }}>
+                  DK Bank payments are paused
+                </strong>
+                <br />
+                DK Bank is migrating its systems and account numbers are
+                changing, so payments can&apos;t go through between{" "}
+                {formatDkMigrationFreeze(dkFreeze.freeze)}. Your balance and
+                open predictions are unaffected.
+              </div>
+            )}
             <button
               disabled={!isReady}
-              onClick={() => setIsPaymentModalOpen(true)}
+              onClick={() => {
+                if (dkFreeze.active) return;
+                setIsPaymentModalOpen(true);
+              }}
               style={{
                 width: "100%",
                 padding: "15px",
@@ -760,6 +793,10 @@ export const DKBankBetPage: FC = () => {
                   </span>
                   on {selectedOutcome?.label}
                 </>
+              ) : dkFreeze.active ? (
+                // Ahead of the amount checks: with a valid stake entered, the
+                // "enter at least" prompt would be plainly untrue.
+                "DK Bank payments paused"
               ) : selectedOutcomeId ? (
                 `Enter at least Nu. ${minBet}`
               ) : (
