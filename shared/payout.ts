@@ -133,6 +133,10 @@ export function formatQuote(q: PayoutQuote): string {
  *
  * Present tense on purpose: it describes the pool right now, not a prediction.
  * A market weeks from closing will usually rebalance well before it settles.
+ *
+ * Short on purpose too. It sits directly under the heading "Stake back, not a
+ * payout", which already says what happens — so this only has to say why, and
+ * the longer version spent its last clause repeating the heading back.
  */
 export const REFUND_NOTICE =
-  "Every prediction so far is on this side, so there is nothing to win. Unless someone backs another outcome, this market refunds every stake instead of paying out — you would get your stake back, not a payout.";
+  "Every prediction so far is on this side, so there is nothing to win. Unless someone backs another outcome, every stake is returned.";

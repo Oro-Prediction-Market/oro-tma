@@ -523,7 +523,12 @@ export const MarketDetailPage: FC = () => {
         points: h.points,
         // Same formatter as every other surface, so the legend and the
         // outcome pill below it cannot read differently for one outcome.
-        odds: odds.kind === "no_pool" ? undefined : formatOdds(odds),
+        // A refund is blank here for the same reason it is blank on the pill:
+        // the bet panel on this page already explains it in full.
+        odds:
+          odds.kind === "no_pool" || odds.kind === "refund"
+            ? undefined
+            : formatOdds(odds),
       };
     });
   }, [chartData, liveMarket, market]);
@@ -1501,9 +1506,19 @@ export const MarketDetailPage: FC = () => {
                     // Null on an empty pool, which hides the pill. There is no
                     // price to quote before anyone has staked, and the dash
                     // this used to print read as missing data.
+                    //
+                    // Also null on a refund. A pill is for a price and a refund
+                    // is not one, and the word alone — sitting where a multiple
+                    // goes — states a consequence it has no room to explain.
+                    // This page has room: the bet panel says "Stake back, not a
+                    // payout" in full, on the same screen, at the point money is
+                    // actually committed. Saying it twice made the pill read as
+                    // an odds value nobody could parse.
                     odds={(() => {
                       const q = calcOdds(m, outcome.id);
-                      return q.kind === "no_pool" ? null : formatOdds(q);
+                      return q.kind === "no_pool" || q.kind === "refund"
+                        ? null
+                        : formatOdds(q);
                     })()}
                     totalStaked={Number(outcome.totalBetAmount)}
                     currencyLabel="Nu"
