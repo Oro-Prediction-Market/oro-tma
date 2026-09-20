@@ -19,7 +19,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const DK_MIGRATION_FREEZE_DEFAULT_START = "2026-09-19T23:00:00+06:00";
-export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-20T08:00:00+06:00";
+
+/**
+ * Extended from 20 Sep 08:00, twice, because the cutover did not go cleanly.
+ *
+ * The rail reopened on schedule at 08:00 on 20 September into a DK that was
+ * still broken, and four users were debited with nothing sent. It was reopened
+ * again that evening and the very next payout was rejected by DK — while DK
+ * actually sent the money, so the user was paid twice and Oro covered the
+ * difference.
+ *
+ * Keep this in step with `DK_MIGRATION_FREEZE_DEFAULT_END` in the backend's
+ * `src/payment/dk-migration-window.ts`. The backend is the control — it holds
+ * when a device clock is wrong, and its value can be moved at runtime by an
+ * env var. This one is inlined at build time, so it only changes on a rebuild
+ * and exists to disable the buttons and explain why, rather than letting
+ * someone tap through to a 503.
+ */
+export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-21T20:00:00+06:00";
 
 export interface DkMigrationFreezeWindow {
   start: Date;
