@@ -161,6 +161,97 @@ function DkMigrationNotice({ freeze }: { freeze: DkMigrationFreezeWindow }) {
   );
 }
 
+/**
+ * Shown when someone taps Top Up or Cash Out while the rail is closed.
+ *
+ * The banner above and the `title` attribute were the only explanation, and
+ * neither reaches a phone: `title` needs a mouse to hover, and a `disabled`
+ * button does not fire `onClick` at all. So on mobile — which is nearly all of
+ * Oro — tapping the button did nothing whatsoever, with no way to find out why.
+ * The buttons are now tappable and answer for themselves.
+ */
+function DkFreezeDialog({
+  freeze,
+  onClose,
+}: {
+  freeze: DkMigrationFreezeWindow;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-md)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          borderRadius: 18,
+          padding: "20px 18px",
+          background: "var(--bg-secondary)",
+          border: "1px solid rgba(245,158,11,0.3)",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 46,
+            height: 46,
+            margin: "0 auto 12px",
+            borderRadius: "50%",
+            background: "rgba(245,158,11,0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Clock size={22} style={{ color: "#f59e0b" }} />
+        </div>
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            color: "var(--text-main)",
+            marginBottom: 8,
+          }}
+        >
+          Top up &amp; cash out paused
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--text-secondary)",
+            lineHeight: 1.55,
+            marginBottom: 18,
+          }}
+        >
+          DK Bank is migrating its systems, so money can&apos;t move in or out
+          between {formatDkMigrationFreeze(freeze)}.
+          <br />
+          <br />
+          <b>Your balance is safe</b> and your open predictions are unaffected —
+          you can keep predicting as normal.
+        </div>
+        <Button fullWidth onClick={onClose}>
+          Got it
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ── AnimatedCounter ────────────────────────────────────────────────────────────
 const AnimatedCounter = ({ value }: { value: number }) => {
   const [displayValue, setDisplayValue] = useState(value);
@@ -326,6 +417,8 @@ export const TmaWalletPage: FC = () => {
 
   // Payment modal state
   const [paymentModal, setPaymentModal] = useState<PaymentModalType>(null);
+  /** Explains the DK freeze when a paused button is tapped. */
+  const [freezeNoticeOpen, setFreezeNoticeOpen] = useState(false);
   const [payStep, setPayStep] = useState<PaymentStep>("amount");
   const [payAmountStr, setPayAmountStr] = useState("200");
   const [payOtp, setPayOtp] = useState("");
@@ -462,8 +555,14 @@ export const TmaWalletPage: FC = () => {
   // Payment modal handlers
   const openPaymentModal = (type: PaymentModalType) => {
     // Every top up and cash out funnels through here, so this is the one place
-    // worth re-checking — the disabled buttons are only the visible half.
-    if (dkFreeze.active) return;
+    // worth re-checking — the buttons are only the visible half.
+    //
+    // It used to `return` silently, which on a phone meant the tap did nothing
+    // at all. Say why instead.
+    if (dkFreeze.active) {
+      setFreezeNoticeOpen(true);
+      return;
+    }
     setPaymentModal(type);
     setPayStep("amount");
     setPayAmountStr("200");
@@ -799,6 +898,13 @@ export const TmaWalletPage: FC = () => {
           <DkMigrationNotice freeze={dkFreeze.freeze} />
         )}
 
+        {freezeNoticeOpen && dkFreeze.freeze && (
+          <DkFreezeDialog
+            freeze={dkFreeze.freeze}
+            onClose={() => setFreezeNoticeOpen(false)}
+          />
+        )}
+
         {/* ── Quick Actions ─────────────────────────────────── */}
         <div
           style={{
@@ -808,10 +914,13 @@ export const TmaWalletPage: FC = () => {
             padding: "0 var(--space-md)",
           }}
         >
+          {/* Deliberately NOT `disabled` while the rail is closed: a disabled
+              button swallows the tap, so on a phone nothing happened and there
+              was nothing to read. They stay tappable and explain themselves —
+              `openPaymentModal` is still the gate, so no payment can start. */}
           <Button
             fullWidth
             icon={<Plus size={16} />}
-            disabled={dkFreeze.active}
             title={dkFreeze.active ? DK_FREEZE_HINT : undefined}
             onClick={() => openPaymentModal("deposit")}
           >
@@ -821,7 +930,6 @@ export const TmaWalletPage: FC = () => {
             fullWidth
             variant="secondary"
             icon={<ArrowUpCircle size={16} />}
-            disabled={dkFreeze.active}
             title={dkFreeze.active ? DK_FREEZE_HINT : undefined}
             onClick={() => openPaymentModal("withdraw")}
           >
