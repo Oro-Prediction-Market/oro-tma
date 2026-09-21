@@ -36,7 +36,7 @@ export const DK_MIGRATION_FREEZE_DEFAULT_START = "2026-09-19T23:00:00+06:00";
  * and exists to disable the buttons and explain why, rather than letting
  * someone tap through to a 503.
  */
-export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-21T20:00:00+06:00";
+export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-23T20:00:00+06:00";
 
 export interface DkMigrationFreezeWindow {
   start: Date;
