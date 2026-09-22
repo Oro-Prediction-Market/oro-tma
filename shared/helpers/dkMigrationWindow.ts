@@ -21,8 +21,11 @@
 export const DK_MIGRATION_FREEZE_DEFAULT_START = "2026-09-19T23:00:00+06:00";
 
 /**
- * Extended from 20 Sep 08:00, twice, because the cutover did not go cleanly.
+ * The freeze is over as of 22 September, 23:00. Nothing here is removed — the
+ * window, the notice dialog and the button wiring all stay, and moving this one
+ * date back into the future re-arms them.
  *
+ * It was extended twice before that, because the cutover did not go cleanly.
  * The rail reopened on schedule at 08:00 on 20 September into a DK that was
  * still broken, and four users were debited with nothing sent. It was reopened
  * again that evening and the very next payout was rejected by DK — while DK
@@ -35,8 +38,12 @@ export const DK_MIGRATION_FREEZE_DEFAULT_START = "2026-09-19T23:00:00+06:00";
  * env var. This one is inlined at build time, so it only changes on a rebuild
  * and exists to disable the buttons and explain why, rather than letting
  * someone tap through to a 503.
+ *
+ * That difference matters when shutting the rail again in a hurry: the backend
+ * env var takes effect on a restart, this needs a rebuild and redeploy. The
+ * backend is what actually stops the money; this only stops the tap.
  */
-export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-23T20:00:00+06:00";
+export const DK_MIGRATION_FREEZE_DEFAULT_END = "2026-09-22T23:00:00+06:00";
 
 export interface DkMigrationFreezeWindow {
   start: Date;
