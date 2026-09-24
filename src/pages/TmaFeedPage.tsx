@@ -55,6 +55,7 @@ import { UfcBanner } from "@shared/components/UfcBanner";
 import { UclBanner } from "@shared/components/UclBanner";
 import { UnlBanner } from "@shared/components/UnlBanner";
 import { isUclMarket } from "./UclHubPage";
+import { isUnlMarket } from "./NationsLeagueHubPage";
 
 // ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
 function trendingTimeLeft(m: Market): string {
@@ -1820,8 +1821,8 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  // WC, BPL, UFC, EPL, UCL and esports markets live in their own hubs — the
-  // banners are their entry points
+  // WC, BPL, UFC, EPL, UCL, Nations League and esports markets live in their
+  // own hubs — the banners are their entry points
   const nonWCMarkets = markets.filter(
     (m) =>
       !isWCMarket(m) &&
@@ -1829,6 +1830,7 @@ export const TmaFeedPage: FC = () => {
       !isUfcMarket(m) &&
       !isEplMarket(m) &&
       !isUclMarket(m) &&
+      !isUnlMarket(m) &&
       !isEsportsMarket(m),
   );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
