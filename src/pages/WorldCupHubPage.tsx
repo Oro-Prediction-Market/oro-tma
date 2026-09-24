@@ -12,7 +12,7 @@ import {
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { formatQuote, quotePayout, type PayoutQuote } from "@shared/payout";
+import { formatQuoteOnCard, quotePayout, type PayoutQuote } from "@shared/payout";
 
 // ── Country flag map ──────────────────────────────────────────────────────────
 
@@ -329,7 +329,7 @@ export const ODDS_REFERENCE_STAKE = 100;
  * the real amount on the bet page.
  */
 export function formatOdds(q: PayoutQuote): string {
-  return formatQuote(q);
+  return formatQuoteOnCard(q);
 }
 
 /**

@@ -13,7 +13,7 @@ import {
   findMarketForSlot,
   type BracketSlot,
 } from "@shared/data/wcKnockout";
-import { formatQuote, quotePayout } from "../payout";
+import { formatQuoteOnCard, quotePayout } from "../payout";
 
 const ACCENT = "#A78BFA";
 
@@ -70,7 +70,7 @@ function outcomeOddsLabel(
   });
   return quote.kind === "no_pool" || quote.kind === "unbacked"
     ? null
-    : formatQuote(quote);
+    : formatQuoteOnCard(quote);
 }
 
 function fmtDate(iso: string | null | undefined): string {

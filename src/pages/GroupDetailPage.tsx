@@ -17,7 +17,7 @@ import { ProbabilityChart, type ChartSeries } from "@shared/components/Probabili
 import { groupArtwork } from "@shared/helpers/marketImage";
 import { getCategoryVisual } from "@shared/helpers/visuals";
 import { TmaBetModal } from "@/components/TmaBetModal";
-import { formatQuote } from "@shared/payout";
+import { formatQuoteOnCard } from "@shared/payout";
 import {
   candidateName,
   chanceOf,
@@ -343,7 +343,7 @@ export function GroupDetailPage() {
         <span style={{ fontSize: "0.72rem", fontWeight: 900 }}>{o?.label ?? label}</span>
         {o && (
           <span style={{ fontSize: "0.55rem", fontWeight: 700, opacity: 0.8 }}>
-            {formatQuote(outcomeQuote(m, o))}
+            {formatQuoteOnCard(outcomeQuote(m, o))}
           </span>
         )}
       </button>

@@ -26,7 +26,7 @@ import { marketArtwork } from "@shared/helpers/marketImage";
 import { MarketThumb } from "@shared/components/MarketThumb";
 import { ROWS_LAYER, useFittedRows } from "@shared/hooks/useFittedRows";
 import {
-  formatQuote,
+  formatQuoteOnCard,
   ODDS_PROBE_BTN,
   quotePayout,
 } from "@shared/payout";
@@ -1406,7 +1406,7 @@ const MarketCard = memo(function MarketCard({
                         // The old fallback was `100 / Math.max(pct, 1)`: a
                         // multiple invented from the smoothed prior, with no
                         // pool behind it. An unbacked outcome now says so.
-                        return formatQuote(
+                        return formatQuoteOnCard(
                           quotePayout({
                             stake: ODDS_PROBE_BTN,
                             outcomePool: Number(s.totalBetAmount) || 0,

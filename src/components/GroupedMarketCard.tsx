@@ -1,7 +1,7 @@
 import { useState, useEffect, memo, type FC } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  formatQuote,
+  formatQuoteOnCard,
   ODDS_PROBE_BTN,
   quotePayout,
   type PayoutQuote,
@@ -223,7 +223,7 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
           </span>
           {o && (
             <span style={{ fontSize: "0.55rem", fontWeight: 700, opacity: 0.8 }}>
-              {quote ? formatQuote(quote) : "—"}
+              {quote ? formatQuoteOnCard(quote) : "—"}
             </span>
           )}
         </button>

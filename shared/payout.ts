@@ -121,11 +121,40 @@ export function quotePayout(a: {
   return { kind: "quote", multiple, payout: stake * multiple };
 }
 
-/** `~1.35x`, `refund`, or `—`. The one way a multiple reaches a screen. */
+/**
+ * `~1.35x`, `refund`, or `—`. How a multiple reaches a surface that also takes
+ * a stake — a bet form, a payment modal, the TON bet page.
+ *
+ * Keeps `refund`. On a screen with an amount box, the viewer is about to
+ * commit money, and a side holding the whole pool pays nothing back but the
+ * stake. Most of those screens say so at length as well; the TON page has only
+ * this cell.
+ */
 export function formatQuote(q: PayoutQuote): string {
   if (q.kind === "quote") return `~${q.multiple.toFixed(2)}x`;
   if (q.kind === "refund") return "refund";
   return "—";
+}
+
+/**
+ * The same multiple, formatted for a BROWSE surface — a card, a feed row, a
+ * bracket — where the quote came from a probe stake nobody typed.
+ *
+ * A one-sided outcome reads `—` rather than `refund`. The refund is real, but
+ * on a card it answers a question nobody asked: the stake behind it is
+ * hypothetical, so the word lands beside two live multiples and reads as a
+ * broken tile rather than a fact about the viewer's money. One bet on a fresh
+ * market puts every later viewer in front of it, which right after a launch is
+ * most markets.
+ *
+ * Nothing is concealed. Staking on that side still replaces the estimate with
+ * the heading "Stake back, not a payout" and {@link REFUND_NOTICE}, which is
+ * where money is actually committed. A new surface that takes a stake must use
+ * {@link formatQuote} or test `kind === "refund"` itself — deliberately, this
+ * function will not say it.
+ */
+export function formatQuoteOnCard(q: PayoutQuote): string {
+  return q.kind === "refund" ? "—" : formatQuote(q);
 }
 
 /**
