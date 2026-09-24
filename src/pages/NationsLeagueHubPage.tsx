@@ -1499,7 +1499,7 @@ export function NationsLeagueHubPage() {
         >
           {/*
             The thin banner, at its own aspect ratio so none of it is cropped —
-            it is 8.5:1, and forcing it into a tall masthead would cut the
+            it is 8.9:1, and forcing it into a tall masthead would cut the
             wordmark in half. `minHeight` takes over on narrow screens, where
             the natural height would fall under 80px and the lettering would be
             unreadable; there it crops the side colour blocks instead, which the
