@@ -53,6 +53,7 @@ import { isEsportsMarket } from "./EsportsHubPage";
 import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { UfcBanner } from "@shared/components/UfcBanner";
 import { UclBanner } from "@shared/components/UclBanner";
+import { UnlBanner } from "@shared/components/UnlBanner";
 import { isUclMarket } from "./UclHubPage";
 
 // ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
@@ -2868,6 +2869,13 @@ export const TmaFeedPage: FC = () => {
         {showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <EplBanner onClick={() => navigate("/epl")} />
+          </div>
+        )}
+
+        {/* ── UEFA Nations League Banner Card ── */}
+        {showSportsBanners && (
+          <div style={{ marginBottom: 16 }}>
+            <UnlBanner onClick={() => navigate("/nations-league")} />
           </div>
         )}
 

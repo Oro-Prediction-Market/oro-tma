@@ -1371,6 +1371,58 @@ export function getUclBracket(): Promise<UclBracket> {
   return request<UclBracket>("/ucl/bracket");
 }
 
+
+// ── UEFA Nations League ───────────────────────────────────────────────────────
+//
+// Same row and board shapes as the EPL, so the hub's table and leaderboard
+// markup is a copy rather than a rewrite. One structural difference: standings
+// come back as fourteen small group tables rather than a single league table,
+// because the competition has no single table to show.
+//
+// There is no provider behind these — the plan does not cover UNL — so every
+// number is admin-entered and served straight from our database. They are
+// always current rather than cached hourly like /epl and /ucl.
+export type UnlStandingRow = EplStandingRow;
+export type UnlStatEntry = EplStatEntry;
+export type UnlStats = EplStats;
+
+export interface UnlGroupTable {
+  /** "A" … "N". */
+  groupKey: string;
+  table: UnlStandingRow[];
+}
+
+export interface UnlStandings {
+  updatedAt: string;
+  /** The edition, e.g. "2026-27". Null before any teams are entered. */
+  season: string | null;
+  groups: UnlGroupTable[];
+}
+
+export interface UnlSeason {
+  started: boolean;
+  seasonStart: string | null;
+  maxPlayed: number;
+  season: string | null;
+  groupCount: number;
+  teamCount: number;
+}
+
+export function getUnlStandings(season?: string): Promise<UnlStandings> {
+  return request<UnlStandings>(
+    season
+      ? `/unl/standings?season=${encodeURIComponent(season)}`
+      : "/unl/standings",
+  );
+}
+
+export function getUnlStats(): Promise<UnlStats> {
+  return request<UnlStats>("/unl/stats");
+}
+
+export function getUnlSeason(): Promise<UnlSeason> {
+  return request<UnlSeason>("/unl/season");
+}
 // ── Market suggestions ("Ask the Crowd") ─────────────────────────────────────
 
 export interface MarketSuggestion {

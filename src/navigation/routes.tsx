@@ -13,6 +13,7 @@ import { EplHubPage } from "@/pages/EplHubPage";
 // Esports hub hidden — uncomment to re-enable (also un-gate the feed banner in TmaFeedPage.tsx)
 // import { EsportsHubPage } from "@/pages/EsportsHubPage";
 import { UclHubPage } from "@/pages/UclHubPage";
+import { NationsLeagueHubPage } from "@/pages/NationsLeagueHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
@@ -93,6 +94,11 @@ export const routes: Route[] = [
   { path: "/ufc", Component: UfcHubPage, title: "UFC Hub" },
   { path: "/epl", Component: EplHubPage, title: "EPL Hub" },
   { path: "/ucl", Component: UclHubPage, title: "Champions League Hub" },
+  {
+    path: "/nations-league",
+    Component: NationsLeagueHubPage,
+    title: "Nations League Hub",
+  },
   // Esports hub hidden — uncomment to re-enable
   // { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
   { path: "/markets", Component: MarketsPage },
