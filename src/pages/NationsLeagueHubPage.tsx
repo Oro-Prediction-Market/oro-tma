@@ -1493,35 +1493,31 @@ export function NationsLeagueHubPage() {
         <div
           style={{
             position: "relative",
-            overflow: "hidden",
-            minHeight: "clamp(190px, 24vw, 250px)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-            background: `radial-gradient(120% 100% at 50% 0%, ${PANEL} 0%, ${BG} 68%)`,
+            background: BG,
             borderBottom: `1px solid ${TEAL}40`,
           }}
         >
-          {/* Same arc field as the feed banner, so the two read as one place. */}
-          <svg
-            aria-hidden
-            viewBox="0 0 400 250"
-            preserveAspectRatio="xMidYMid slice"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.55 }}
-          >
-            {[0, 1, 2, 3, 4].map((i) => (
-              <circle
-                key={i}
-                cx={200}
-                cy={112}
-                r={40 + i * 34}
-                fill="none"
-                stroke={TEAL}
-                strokeOpacity={0.15 - i * 0.022}
-                strokeWidth={1}
-              />
-            ))}
-          </svg>
+          {/*
+            The thin banner, at its own aspect ratio so none of it is cropped —
+            it is 8.5:1, and forcing it into a tall masthead would cut the
+            wordmark in half. `minHeight` takes over on narrow screens, where
+            the natural height would fall under 80px and the lettering would be
+            unreadable; there it crops the side colour blocks instead, which the
+            centred artwork survives.
+          */}
+          <img
+            src="/unl-hub-banner.webp"
+            alt="UEFA Nations League"
+            decoding="async"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "auto",
+              minHeight: 86,
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+          />
 
           <button
             onClick={() => navigate(-1)}
@@ -1549,53 +1545,17 @@ export function NationsLeagueHubPage() {
             ←
           </button>
 
-          <div
-            style={{
-              position: "relative",
-              zIndex: 1,
-              textAlign: "center",
-              padding: "0 16px 66px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "clamp(24px, 6.5vw, 36px)",
-                fontWeight: 900,
-                lineHeight: 1.05,
-                letterSpacing: "-0.02em",
-                color: "#fff",
-              }}
-            >
-              Nations League
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                fontSize: 10.5,
-                fontWeight: 700,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "rgba(203,233,226,0.7)",
-              }}
-            >
-              {season?.season ? season.season.replace("-", "/") : "2026/27"} · Group Stage
-            </div>
-          </div>
+        </div>
 
-          {/* Stat strip — anchored over the masthead's bottom edge, matching the
-              other hubs. Counts come from the API rather than being hardcoded,
-              because this competition's field is entered by hand and can change. */}
+        {/* Stat strip — below the banner rather than over it, because the strip
+            artwork has no dead space to sit on. Counts come from the API rather
+            than being hardcoded: this competition's field is entered by hand and
+            can change. */}
+        <div style={{ maxWidth: 860, margin: "0 auto", padding: "14px 16px 0" }}>
           <div
             style={{
               display: "flex",
               gap: 12,
-              position: "absolute",
-              zIndex: 2,
-              left: 20,
-              right: 20,
-              bottom: 14,
-              maxWidth: 860,
-              margin: "0 auto",
             }}
           >
             {[

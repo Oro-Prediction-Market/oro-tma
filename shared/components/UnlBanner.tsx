@@ -3,27 +3,19 @@ import React from "react";
 /**
  * Feed entry point for the Nations League hub.
  *
- * Built entirely from CSS, unlike the UCL and EPL banners, which sit on a
- * licensed poster image. There is no Nations League artwork in the app, and a
- * banner that renders a missing file is worse than one that never needed it.
+ * The poster carries the branding — wordmark, trophy and the competition's own
+ * colour blocks — so everything drawn on top of it is deliberately minimal:
+ * an edition pill, a nation marquee and the CTA. Same structure as the UCL and
+ * EPL banners.
  *
- * The four colour bands are the competition's own structure rather than
- * decoration: League A down to League D, which is what the groups are actually
- * organised into. The same four colours label the group headings on the hub.
+ * `/unl-banner.webp` is the wide artwork, cropped to its own edges already.
+ * The hub masthead uses the thin strip instead; the two are not
+ * interchangeable, since the strip is 8.5:1 and would be unreadable here.
  */
 
-const NAVY = "#050f1f";
-const PANEL = "#0a1a33";
+const NAVY = "#0b1637";
 const TEAL = "#19c4a6";
 const TEAL_DIM = "#0d6b5c";
-
-/** League A → D. Also used by the hub's group headings. */
-const TIERS = [
-  { key: "A", label: "League A", color: "#e8c766" },
-  { key: "B", label: "League B", color: "#c0c9d8" },
-  { key: "C", label: "League C", color: "#cd8b52" },
-  { key: "D", label: "League D", color: "#7d8aa0" },
-];
 
 const NATIONS = [
   "France",
@@ -64,7 +56,11 @@ export function UnlBanner({
         borderRadius: 16,
         overflow: "hidden",
         position: "relative",
-        background: `radial-gradient(120% 90% at 50% 0%, ${PANEL} 0%, ${NAVY} 62%)`,
+        // The poster carries the branding; chrome sits on top of it.
+        backgroundImage: "url('/unl-banner.webp')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: NAVY,
         boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
         display: "flex",
         flexDirection: "column",
@@ -89,40 +85,23 @@ export function UnlBanner({
         @media (max-width: 599px) {
           .unlb { min-height: 260px; }
         }
-        /* The map arcs are pure decoration; anyone who would rather not have
-           things moving on screen gets a still banner. */
         @media (prefers-reduced-motion: reduce) {
           .unlb * { animation: none !important; }
         }
       `}</style>
 
-      {/* Faint arc field — suggests a continental map without claiming to be one. */}
-      <svg
+      {/* Readability veil — the poster is darkest in the middle, so this only
+          deepens the top and bottom where the chrome sits. */}
+      <div
         aria-hidden
-        viewBox="0 0 400 320"
-        preserveAspectRatio="xMidYMid slice"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.5 }}
-      >
-        {[0, 1, 2, 3, 4].map((i) => (
-          <circle
-            key={i}
-            cx={200}
-            cy={150}
-            r={46 + i * 38}
-            fill="none"
-            stroke={TEAL}
-            strokeOpacity={0.14 - i * 0.02}
-            strokeWidth={1}
-          />
-        ))}
-        <path
-          d="M40 250 Q 200 120 360 250"
-          fill="none"
-          stroke={TEAL}
-          strokeOpacity={0.18}
-          strokeWidth={1.2}
-        />
-      </svg>
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(8,17,44,0.55) 0%, rgba(8,17,44,0) 28%, rgba(8,17,44,0) 56%, rgba(8,17,44,0.85) 100%)",
+          pointerEvents: "none",
+        }}
+      />
 
       {/* ── Top: edition pill ── */}
       <div style={{ position: "relative", zIndex: 1, padding: "12px 12px 0" }}>
@@ -131,7 +110,7 @@ export function UnlBanner({
             display: "inline-flex",
             alignItems: "center",
             gap: 7,
-            background: "rgba(5,15,31,0.6)",
+            background: "rgba(8,17,44,0.6)",
             border: `1px solid ${TEAL}66`,
             borderRadius: 20,
             padding: "5px 12px",
@@ -163,73 +142,13 @@ export function UnlBanner({
         </div>
       </div>
 
-      {/* ── Middle: the wordmark ── */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          padding: "0 16px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "clamp(26px, 7vw, 40px)",
-            fontWeight: 900,
-            lineHeight: 1.02,
-            letterSpacing: "-0.02em",
-            color: "#fff",
-            textShadow: "0 4px 18px rgba(0,0,0,0.6)",
-          }}
-        >
-          Nations
-          <br />
-          League
-        </div>
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 10.5,
-            fontWeight: 700,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "rgba(203,233,226,0.72)",
-          }}
-        >
-          54 nations · 14 groups
-        </div>
-
-        {/* League tiers — the competition's actual structure, not a flourish. */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 6,
-            marginTop: 12,
-          }}
-        >
-          {TIERS.map((t) => (
-            <span
-              key={t.key}
-              style={{
-                width: 34,
-                height: 3,
-                borderRadius: 2,
-                background: t.color,
-                opacity: 0.85,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* ── Footer: nation marquee + CTA ── */}
       {showCta ? (
         <div
           style={{
             position: "relative",
             zIndex: 1,
-            background: "rgba(5,15,31,0.5)",
+            background: "rgba(8,17,44,0.45)",
             borderTop: `1px solid ${TEAL}3d`,
             display: "flex",
             alignItems: "center",
@@ -248,7 +167,7 @@ export function UnlBanner({
                 top: 0,
                 bottom: 0,
                 width: 22,
-                background: "linear-gradient(to right, rgba(5,15,31,0.65), transparent)",
+                background: "linear-gradient(to right, rgba(8,17,44,0.65), transparent)",
                 zIndex: 1,
                 pointerEvents: "none",
               }}
@@ -272,7 +191,7 @@ export function UnlBanner({
                     fontWeight: 800,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: "rgba(203,233,226,0.78)",
+                    color: "rgba(203,233,226,0.82)",
                     whiteSpace: "nowrap",
                     textShadow: "0 1px 3px rgba(0,0,0,0.8)",
                   }}
