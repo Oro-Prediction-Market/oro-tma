@@ -86,16 +86,22 @@ const STAT_SUBCAT: Record<StatCat, string> = {
 
 const MATCH_SUB = "unl-match";
 
-type UnlTab = "matches" | "groups" | "stats" | "season";
+type UnlTab = "matches" | "groups" | "stats";
 
+/**
+ * Three tabs, not four.
+ *
+ * The other hubs open on a Season tab because their competition has a headline
+ * outright — "who lifts the trophy?" — that is a reason to visit on its own.
+ * This one does not: the Nations League final is four teams the following
+ * June, so a Season tab here is an empty state sitting next to two counters
+ * the masthead already shows. Outright markets, if an admin ever creates one,
+ * render at the top of Matches instead, so nothing becomes unreachable.
+ */
 const TABS: { id: UnlTab; label: string; icon: React.ReactNode }[] = [
-  // Matches leads, not Season: the Nations League has no headline outright
-  // market of its own, so Season is usually empty and the fixtures are what
-  // the hub is actually for.
   { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "groups", label: "Groups", icon: <LayoutGrid size={14} /> },
   { id: "stats", label: "Stats", icon: <BarChart3 size={14} /> },
-  { id: "season", label: "Season", icon: <Trophy size={14} /> },
 ];
 
 /**
@@ -579,10 +585,13 @@ function ResultCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) 
 
 function MatchesTab({
   matches,
+  outrights,
   onOpen,
   onBet,
 }: {
   matches: Market[];
+  /** Admin-created season markets. Normally none — see TABS. */
+  outrights: Market[];
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
@@ -591,9 +600,24 @@ function MatchesTab({
   const kickoffMs = (m: Market) => new Date(m.bettingClosesAt ?? m.closesAt ?? 0).getTime();
   const previous = matches.filter(isMatchFinal).sort((a, b) => kickoffMs(b) - kickoffMs(a));
 
+  // Outrights lead when they exist, and take up no room at all when they do
+  // not — which is the usual case, and the reason there is no Season tab.
+  const outrightSection =
+    outrights.length > 0 ? (
+      <div style={{ marginBottom: 22 }}>
+        <Heading>Season Outrights</Heading>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {outrights.map((m) => (
+            <OutrightMarket key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
+          ))}
+        </div>
+      </div>
+    ) : null;
+
   if (upcoming.length === 0 && previous.length === 0) {
     return (
       <div>
+        {outrightSection}
         <Heading>Matches</Heading>
         <EmptyState>
           No Nations League match markets yet.
@@ -607,6 +631,7 @@ function MatchesTab({
 
   return (
     <div>
+      {outrightSection}
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {(
           [
@@ -1153,7 +1178,7 @@ function StatsTab({
   );
 }
 
-// ── Season ────────────────────────────────────────────────────────────────────
+// ── Outrights ────────────────────────────────────────────────────────────────
 
 /** An outright market with its contenders inline, favourite first. */
 function OutrightMarket({
@@ -1354,88 +1379,6 @@ function OutrightMarket({
           >
             {expanded ? "Show less" : `Show all ${outcomes.length} contenders`}
           </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SeasonTab({
-  outrightMarkets,
-  season,
-  onOpen,
-  onBet,
-}: {
-  outrightMarkets: Market[];
-  season: UnlSeason | null;
-  onOpen: (id: string) => void;
-  onBet: (marketId: string, outcomeId: string) => void;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div>
-        <Heading>Campaign</Heading>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-            marginBottom: 4,
-          }}
-        >
-          {[
-            { v: season ? String(season.teamCount) : "—", l: "Nations" },
-            { v: season ? String(season.groupCount) : "—", l: "Groups" },
-            {
-              v: season?.started ? `MD ${season.maxPlayed}` : "Not started",
-              l: "Progress",
-            },
-          ].map((s) => (
-            <div
-              key={s.l}
-              style={{
-                textAlign: "center",
-                background: NAVY,
-                border: `1px solid ${TEAL}2b`,
-                borderRadius: 12,
-                padding: "12px 6px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 900,
-                  color: "#fff",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {s.v}
-              </div>
-              <div style={{ fontSize: 10, color: SILVER, fontWeight: 600, marginTop: 3 }}>
-                {s.l}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Heading>Season Outrights</Heading>
-        {outrightMarkets.length === 0 ? (
-          <EmptyState>
-            No outright markets open yet.
-            <br />
-            Season-long markets (e.g. “Who wins the Nations League?”) appear here
-            once created.
-          </EmptyState>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {outrightMarkets.map((m) => (
-              <OutrightMarket key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
-            ))}
-          </div>
         )}
       </div>
     </div>
@@ -1746,18 +1689,15 @@ export function NationsLeagueHubPage() {
           </div>
 
           {tab === "matches" && (
-            <MatchesTab matches={matchMarkets} onOpen={openMarket} onBet={openBet} />
-          )}
-          {tab === "groups" && <GroupsTab standings={standings} />}
-          {tab === "stats" && <StatsTab boards={boards} onBet={openBet} />}
-          {tab === "season" && (
-            <SeasonTab
-              outrightMarkets={outrightMarkets}
-              season={season}
+            <MatchesTab
+              matches={matchMarkets}
+              outrights={outrightMarkets}
               onOpen={openMarket}
               onBet={openBet}
             />
           )}
+          {tab === "groups" && <GroupsTab standings={standings} />}
+          {tab === "stats" && <StatsTab boards={boards} onBet={openBet} />}
         </div>
 
         {/* ── Bet sheet — opened by tapping an outcome ── */}
