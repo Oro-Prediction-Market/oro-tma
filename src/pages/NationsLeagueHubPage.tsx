@@ -583,15 +583,72 @@ function ResultCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void }) 
   );
 }
 
+/**
+ * Placeholder cards shown while the markets are still in flight.
+ *
+ * An empty list and a list that has not arrived yet look identical to a
+ * component, and this hub reached for the same empty state for both — so a
+ * full matchday read as "no upcoming matches" for as long as the request took.
+ * A skeleton says "something is coming" without claiming how much.
+ */
+function MatchSkeletons({ count = 4 }: { count?: number }) {
+  return (
+    <div>
+      <style>{`
+        @keyframes unlSkel { 0%,100% { opacity: 0.35 } 50% { opacity: 0.6 } }
+        @media (prefers-reduced-motion: reduce) { .unl-skel { animation: none !important } }
+      `}</style>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
+          gap: 12,
+        }}
+      >
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            className="unl-skel"
+            aria-hidden
+            style={{
+              height: 168,
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.05)",
+              border: `1px solid ${TEAL}22`,
+              animation: "unlSkel 1.4s ease-in-out infinite",
+            }}
+          />
+        ))}
+      </div>
+      <span
+        // Screen readers get the status; sighted users get the shapes.
+        role="status"
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+        }}
+      >
+        Loading matches
+      </span>
+    </div>
+  );
+}
+
 function MatchesTab({
   matches,
   outrights,
+  loading,
   onOpen,
   onBet,
 }: {
   matches: Market[];
   /** Admin-created season markets. Normally none — see TABS. */
   outrights: Market[];
+  /** True until the first markets response lands — see {@link MatchSkeletons}. */
+  loading: boolean;
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
@@ -613,6 +670,18 @@ function MatchesTab({
         </div>
       </div>
     ) : null;
+
+  // Nothing has arrived yet. Deliberately checked BEFORE the empty state: the
+  // two are indistinguishable from here, and guessing "empty" tells a viewer
+  // the competition is not running when it is simply still loading.
+  if (loading && upcoming.length === 0 && previous.length === 0) {
+    return (
+      <div>
+        <Heading>Matches</Heading>
+        <MatchSkeletons />
+      </div>
+    );
+  }
 
   if (upcoming.length === 0 && previous.length === 0) {
     return (
@@ -1391,6 +1460,7 @@ export function NationsLeagueHubPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<UnlTab>("matches");
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [loading, setLoading] = useState(true);
   const [standings, setStandings] = useState<UnlStandings | null>(null);
   const [liveStats, setLiveStats] = useState<UnlStats | null>(null);
   const [season, setSeason] = useState<UnlSeason | null>(null);
@@ -1401,7 +1471,11 @@ export function NationsLeagueHubPage() {
   const loadMarkets = useCallback(() => {
     getMarkets()
       .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
-      .catch(() => {});
+      .catch(() => {})
+      // Cleared on failure too: a request that errored is not still loading,
+      // and leaving the skeletons up forever is a worse lie than the empty
+      // state they were added to prevent.
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -1652,6 +1726,7 @@ export function NationsLeagueHubPage() {
             <MatchesTab
               matches={matchMarkets}
               outrights={outrightMarkets}
+              loading={loading}
               onOpen={openMarket}
               onBet={openBet}
             />
