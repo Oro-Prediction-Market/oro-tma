@@ -497,7 +497,7 @@ export function UfcHubPage() {
   const [timeFilter, setTimeFilter] = useState<"all" | "today" | "tomorrow">("all");
 
   const loadMarkets = () =>
-    getMarkets()
+    getMarkets(undefined, { scope: "live" })
       .then((d) =>
         setMarkets(
           d.filter(

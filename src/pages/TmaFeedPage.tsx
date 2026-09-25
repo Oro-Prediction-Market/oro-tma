@@ -1661,7 +1661,7 @@ export const TmaFeedPage: FC = () => {
     d.filter((m) => ACTIVE_STATUSES.includes(m.status as any));
 
   useEffect(() => {
-    getMarkets()
+    getMarkets(undefined, { scope: "live" })
       .then((d) => setMarkets(filterActive(d)))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -1679,7 +1679,7 @@ export const TmaFeedPage: FC = () => {
   // Auto-refresh market data every 10s + SSE push for fast TER transitions
   useEffect(() => {
     const reload = () => {
-      getMarkets()
+      getMarkets(undefined, { scope: "live" })
         .then((d) => setMarkets(filterActive(d)))
         .catch(() => {});
     };
@@ -1717,7 +1717,7 @@ export const TmaFeedPage: FC = () => {
       .catch(() => {});
 
     // Refresh markets to get updated pool/odds
-    getMarkets()
+    getMarkets(undefined, { scope: "live" })
       .then((d) => {
         setMarkets(
           d.filter(

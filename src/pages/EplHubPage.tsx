@@ -675,10 +675,21 @@ export function EplHubPage() {
   const [liveSeason, setLiveSeason] = useState<EplSeason | null>(null);
 
   useEffect(() => {
-    getMarkets()
-      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
+    // Two passes on purpose. The live markets are a small slice of the payload
+    // — measured at 320KB of 10.8MB — and they are everything the Matches tab
+    // renders, so the hub paints from them almost at once instead of waiting
+    // on thousands of settled markets it will not show. The full list follows
+    // for the Previous tab, chained rather than fired in parallel so the
+    // smaller response cannot land second and overwrite it.
+    const applyMarkets = (d: Market[]) =>
+      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    getMarkets(undefined, { scope: "live" })
+      .then(applyMarkets)
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false))
+      .then(() => getMarkets())
+      .then(applyMarkets)
+      .catch(console.error);
     // Live league data — falls back to the static/mock arrays if the API is down
     getEplStandings().then(setLiveStandings).catch(() => {});
     getEplStats().then(setLiveStats).catch(() => {});

@@ -1332,8 +1332,17 @@ export function UclHubPage() {
   const [activeBet, setActiveBet] = useState<{ marketId: string; outcomeId: string } | null>(null);
 
   const loadMarkets = useCallback(() => {
-    getMarkets()
-      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
+    // Live markets first so the Matches tab paints without waiting on the
+    // settled ones, which are ~97% of the payload and only feed Previous. The
+    // full list is chained, not parallel, so it cannot be overtaken by the
+    // smaller response and overwritten.
+    const applyMarkets = (d: Market[]) =>
+      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    return getMarkets(undefined, { scope: "live" })
+      .then(applyMarkets)
+      .catch(() => {})
+      .then(() => getMarkets())
+      .then(applyMarkets)
       .catch(() => {});
   }, []);
 

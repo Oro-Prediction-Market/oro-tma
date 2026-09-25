@@ -709,8 +709,27 @@ export function feedHeartbeat(sessionId: string): Promise<{ count: number }> {
   });
 }
 
-export function getMarkets(q?: string): Promise<Market[]> {
-  const qs = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : "";
+/**
+ * The market list.
+ *
+ * `scope: "live"` asks the server to leave out resolved and settled markets.
+ * That is nearly the whole table — a finished market is never deleted, so the
+ * default response has grown to thousands of rows of which a couple of dozen
+ * are running (measured: 10.8MB, 4,474 markets, 23 live). Any screen that only
+ * renders running markets should pass it; over mobile data the difference is
+ * the screen's entire load time.
+ *
+ * Omit it where finished markets are actually shown — a hub's "Previous" tab,
+ * history, search.
+ */
+export function getMarkets(
+  q?: string,
+  opts?: { scope?: "all" | "live" },
+): Promise<Market[]> {
+  const params = new URLSearchParams();
+  if (q && q.trim()) params.set("q", q.trim());
+  if (opts?.scope === "live") params.set("scope", "live");
+  const qs = params.toString() ? `?${params.toString()}` : "";
   return request<Market[]>(`/markets${qs}`);
 }
 

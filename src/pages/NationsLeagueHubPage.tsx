@@ -1469,13 +1469,24 @@ export function NationsLeagueHubPage() {
   );
 
   const loadMarkets = useCallback(() => {
-    getMarkets()
-      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
+    // Live markets first: they are everything the Matches tab renders and a
+    // small slice of the payload (measured at 320KB of 10.8MB), so the
+    // skeletons give way almost at once rather than after the server has sent
+    // thousands of settled markets this hub never shows. The full list follows
+    // for the Previous tab, chained rather than parallel so the smaller
+    // response cannot arrive second and overwrite it.
+    const applyMarkets = (d: Market[]) =>
+      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    return getMarkets(undefined, { scope: "live" })
+      .then(applyMarkets)
       .catch(() => {})
       // Cleared on failure too: a request that errored is not still loading,
       // and leaving the skeletons up forever is a worse lie than the empty
       // state they were added to prevent.
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false))
+      .then(() => getMarkets())
+      .then(applyMarkets)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
