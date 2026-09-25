@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
@@ -641,6 +641,8 @@ function MatchesTab({
   matches,
   outrights,
   loading,
+  previousLoaded,
+  onShowPrevious,
   onOpen,
   onBet,
 }: {
@@ -649,6 +651,10 @@ function MatchesTab({
   outrights: Market[];
   /** True until the first markets response lands — see {@link MatchSkeletons}. */
   loading: boolean;
+  /** Whether the finished matches have been fetched yet. */
+  previousLoaded: boolean;
+  /** Asks the hub to fetch them. Called when Previous is opened. */
+  onShowPrevious: () => void;
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
@@ -683,7 +689,10 @@ function MatchesTab({
     );
   }
 
-  if (upcoming.length === 0 && previous.length === 0) {
+  // Only once the history is in. Between international windows there are no
+  // upcoming matches and `previous` is empty purely because nobody has asked
+  // for it — returning here would hide the toggle and strand the results.
+  if (previousLoaded && upcoming.length === 0 && previous.length === 0) {
     return (
       <div>
         {outrightSection}
@@ -705,12 +714,21 @@ function MatchesTab({
         {(
           [
             ["upcoming", `Upcoming (${upcoming.length})`],
-            ["previous", `Previous (${previous.length})`],
+            // No count until they have been fetched. "Previous (0)" on a
+            // competition with a played matchday is the same wrong answer the
+            // skeletons were added to stop giving.
+            ["previous", previousLoaded ? `Previous (${previous.length})` : "Previous"],
           ] as ["upcoming" | "previous", string][]
         ).map(([id, label]) => (
           <button
             key={id}
-            onClick={() => setMatchView(id)}
+            onClick={() => {
+              setMatchView(id);
+              // Finished matches are the whole market history — 10.6MB against
+              // 109KB for the live ones — so they are fetched here rather than
+              // on every hub open, when most visits never ask for them.
+              if (id === "previous") onShowPrevious();
+            }}
             style={{
               padding: "6px 14px",
               borderRadius: 20,
@@ -767,6 +785,10 @@ function MatchesTab({
             );
           })()
         )
+      ) : !previousLoaded ? (
+        // The history is fetched on the tap that got us here, so the first
+        // render of this view is always mid-request.
+        <MatchSkeletons count={3} />
       ) : previous.length === 0 ? (
         <EmptyState>
           No finished matches yet.
@@ -1461,6 +1483,9 @@ export function NationsLeagueHubPage() {
   const [tab, setTab] = useState<UnlTab>("matches");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
+  /** Finished matches — null until someone opens Previous. */
+  const [finished, setFinished] = useState<Market[] | null>(null);
+  const finishedReq = useRef(false);
   const [standings, setStandings] = useState<UnlStandings | null>(null);
   const [liveStats, setLiveStats] = useState<UnlStats | null>(null);
   const [season, setSeason] = useState<UnlSeason | null>(null);
@@ -1469,25 +1494,35 @@ export function NationsLeagueHubPage() {
   );
 
   const loadMarkets = useCallback(() => {
-    // Live markets first: they are everything the Matches tab renders and a
-    // small slice of the payload (measured at 320KB of 10.8MB), so the
-    // skeletons give way almost at once rather than after the server has sent
-    // thousands of settled markets this hub never shows. The full list follows
-    // for the Previous tab, chained rather than parallel so the smaller
-    // response cannot arrive second and overwrite it.
-    const applyMarkets = (d: Market[]) =>
-      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    // Live markets only. Everything this hub shows by default is a match that
+    // has not finished, and the live list is ~109KB against 10.6MB for the
+    // whole table — a finished market is never deleted, so the rest is years
+    // of history that only the Previous tab ever renders.
     return getMarkets(undefined, { scope: "live" })
-      .then(applyMarkets)
+      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
       .catch(() => {})
       // Cleared on failure too: a request that errored is not still loading,
       // and leaving the skeletons up forever is a worse lie than the empty
       // state they were added to prevent.
-      .finally(() => setLoading(false))
-      .then(() => getMarkets())
-      .then(applyMarkets)
-      .catch(() => {});
+      .finally(() => setLoading(false));
   }, []);
+
+  /** Finished matches, fetched once, the first time Previous is opened. */
+  const loadFinished = useCallback(() => {
+    if (finishedReq.current) return;
+    // Latched before the request so a double-tap cannot start it twice.
+    finishedReq.current = true;
+    getMarkets()
+      .then((d) =>
+        setFinished(
+          d.filter((m) => m.status === "resolved" || m.status === "settled"),
+        ),
+      )
+      .catch(() => {
+        finishedReq.current = false;
+      });
+  }, []);
+
 
   useEffect(() => {
     loadMarkets();
@@ -1499,8 +1534,14 @@ export function NationsLeagueHubPage() {
   const sub = (m: Market) => (m.subcategory ?? "").toLowerCase();
   const STAT_SUBS = Object.values(STAT_SUBCAT);
 
+  // Live markets, plus the finished ones once they have been asked for.
+  const allMarkets = useMemo(
+    () => (finished ? [...markets, ...finished] : markets),
+    [markets, finished],
+  );
+
   // Match markets, soonest kickoff first.
-  const matchMarkets = markets
+  const matchMarkets = allMarkets
     .filter((m) => sub(m) === MATCH_SUB)
     .sort((a, b) => {
       const ka = new Date(a.bettingClosesAt ?? a.closesAt ?? 0).getTime();
@@ -1509,7 +1550,7 @@ export function NationsLeagueHubPage() {
     });
 
   const statMarket = (cat: StatCat): Market | undefined =>
-    markets.find((m) => sub(m) === STAT_SUBCAT[cat]);
+    allMarkets.find((m) => sub(m) === STAT_SUBCAT[cat]);
 
   /**
    * Board rows: the published leaderboard where one exists, the market's own
@@ -1556,7 +1597,7 @@ export function NationsLeagueHubPage() {
   });
 
   // Anything else in this competition: an admin-created outright, still open.
-  const outrightMarkets = markets.filter(
+  const outrightMarkets = allMarkets.filter(
     (m) =>
       isUnlMarket(m) &&
       sub(m) !== MATCH_SUB &&
@@ -1568,7 +1609,7 @@ export function NationsLeagueHubPage() {
   const openBet = (marketId: string, outcomeId: string) =>
     setActiveBet({ marketId, outcomeId });
   const activeBetMarket = activeBet
-    ? (markets.find((m) => m.id === activeBet.marketId) ?? null)
+    ? (allMarkets.find((m) => m.id === activeBet.marketId) ?? null)
     : null;
 
   return (
@@ -1738,6 +1779,8 @@ export function NationsLeagueHubPage() {
               matches={matchMarkets}
               outrights={outrightMarkets}
               loading={loading}
+              previousLoaded={finished !== null}
+              onShowPrevious={loadFinished}
               onOpen={openMarket}
               onBet={openBet}
             />

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useLayoutEffect, useEffect } from "react";
+import React, { useState, useRef, useCallback, useMemo, useLayoutEffect, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trophy,
@@ -591,10 +591,16 @@ function UclResultCard({ m, onOpen }: { m: Market; onOpen: (id: string) => void 
 
 function MatchesTab({
   matches,
+  previousLoaded,
+  onShowPrevious,
   onOpen,
   onBet,
 }: {
   matches: Market[];
+  /** Whether the finished matches have been fetched yet. */
+  previousLoaded: boolean;
+  /** Asks the hub to fetch them. Called when Previous is opened. */
+  onShowPrevious: () => void;
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
@@ -605,7 +611,10 @@ function MatchesTab({
   const kickoffMs = (m: Market) => new Date(m.bettingClosesAt ?? m.closesAt ?? 0).getTime();
   const previous = matches.filter(isMatchFinal).sort((a, b) => kickoffMs(b) - kickoffMs(a));
 
-  if (upcoming.length === 0 && previous.length === 0) {
+  // Only once the history is in. Between rounds there are no upcoming matches
+  // and `previous` is empty purely because nobody has asked for it yet —
+  // returning here would hide the toggle and make the results unreachable.
+  if (previousLoaded && upcoming.length === 0 && previous.length === 0) {
     return (
       <div>
         <Heading>Matches</Heading>
@@ -626,12 +635,19 @@ function MatchesTab({
         {(
           [
             ["upcoming", `Upcoming (${upcoming.length})`],
-            ["previous", `Previous (${previous.length})`],
+            // No count until fetched — "Previous (0)" mid-competition is just
+            // wrong.
+            ["previous", previousLoaded ? `Previous (${previous.length})` : "Previous"],
           ] as ["upcoming" | "previous", string][]
         ).map(([id, label]) => (
           <button
             key={id}
-            onClick={() => setMatchView(id)}
+            onClick={() => {
+              setMatchView(id);
+              // The whole market history — 10.6MB against 109KB for the live
+              // markets — so it is fetched here, not on every hub open.
+              if (id === "previous") onShowPrevious();
+            }}
             style={{
               padding: "6px 14px",
               borderRadius: 20,
@@ -674,6 +690,10 @@ function MatchesTab({
             );
           })()
         )
+      ) : !previousLoaded ? (
+        // The fetch starts on the tap that opened this view, so the first
+        // render here is always mid-request.
+        <EmptyState>Loading results…</EmptyState>
       ) : previous.length === 0 ? (
         <EmptyState>
           No finished matches yet.
@@ -1325,6 +1345,13 @@ export function UclHubPage() {
   // unread to its left.
   const [tab, setTab] = useState<UclTab>("season");
   const [markets, setMarkets] = useState<Market[]>([]);
+  /** Finished matches — null until someone opens Previous. */
+  const [finished, setFinished] = useState<Market[] | null>(null);
+  const finishedReq = useRef(false);
+  const allMarkets = useMemo(
+    () => (finished ? [...markets, ...finished] : markets),
+    [markets, finished],
+  );
   const [liveStandings, setLiveStandings] = useState<UclStandings | null>(null);
   const [liveStats, setLiveStats] = useState<UclStats | null>(null);
   const [bracket, setBracket] = useState<UclBracket | null>(null);
@@ -1332,18 +1359,28 @@ export function UclHubPage() {
   const [activeBet, setActiveBet] = useState<{ marketId: string; outcomeId: string } | null>(null);
 
   const loadMarkets = useCallback(() => {
-    // Live markets first so the Matches tab paints without waiting on the
-    // settled ones, which are ~97% of the payload and only feed Previous. The
-    // full list is chained, not parallel, so it cannot be overtaken by the
-    // smaller response and overwritten.
-    const applyMarkets = (d: Market[]) =>
-      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    // Live markets only — ~109KB against 10.6MB for the whole table. The
+    // settled ones are years of history that only the Previous tab renders,
+    // so they are fetched on demand below rather than on every hub open.
     return getMarkets(undefined, { scope: "live" })
-      .then(applyMarkets)
-      .catch(() => {})
-      .then(() => getMarkets())
-      .then(applyMarkets)
+      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
       .catch(() => {});
+  }, []);
+
+  /** Finished matches, fetched once, the first time Previous is opened. */
+  const loadFinished = useCallback(() => {
+    if (finishedReq.current) return;
+    // Latched before the request so a double-tap cannot start it twice.
+    finishedReq.current = true;
+    getMarkets()
+      .then((d) =>
+        setFinished(
+          d.filter((m) => m.status === "resolved" || m.status === "settled"),
+        ),
+      )
+      .catch(() => {
+        finishedReq.current = false;
+      });
   }, []);
 
   useEffect(() => {
@@ -1369,7 +1406,7 @@ export function UclHubPage() {
 
   // A bettable stat market for this board (auto-created by the keeper).
   const statMarket = (cat: StatCat): Market | undefined =>
-    markets.find((m) => (m.subcategory ?? "").toLowerCase() === STAT_SUBCAT[cat]);
+    allMarkets.find((m) => (m.subcategory ?? "").toLowerCase() === STAT_SUBCAT[cat]);
 
   // Live leaderboard rows for a stat board (goals/assists only).
   const rowsFor = (cat: StatCat): StatRow[] =>
@@ -1394,7 +1431,7 @@ export function UclHubPage() {
   const STAT_SUBS = Object.values(STAT_SUBCAT);
 
   // UCL match markets (auto-created by the keeper), soonest kickoff first.
-  const matchMarkets = markets
+  const matchMarkets = allMarkets
     .filter((m) => sub(m) === "ucl-match")
     .sort((a, b) => {
       const ka = new Date(a.bettingClosesAt ?? a.closesAt ?? 0).getTime();
@@ -1404,7 +1441,7 @@ export function UclHubPage() {
 
   // Admin-created outright/season markets: UCL markets that aren't a match, a
   // stat board, or a bracket tie. Only show ones still open for betting.
-  const outrightMarkets = markets.filter(
+  const outrightMarkets = allMarkets.filter(
     (m) =>
       isUclMarket(m) &&
       sub(m) !== "ucl-match" &&
@@ -1417,7 +1454,7 @@ export function UclHubPage() {
   const openBet = (marketId: string, outcomeId: string) =>
     setActiveBet({ marketId, outcomeId });
   const activeBetMarket = activeBet
-    ? markets.find((m) => m.id === activeBet.marketId) ?? null
+    ? allMarkets.find((m) => m.id === activeBet.marketId) ?? null
     : null;
 
   return (
@@ -1549,7 +1586,13 @@ export function UclHubPage() {
             <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} onBet={openBet} />
           )}
           {tab === "matches" && (
-            <MatchesTab matches={matchMarkets} onOpen={openMarket} onBet={openBet} />
+            <MatchesTab
+              matches={matchMarkets}
+              previousLoaded={finished !== null}
+              onShowPrevious={loadFinished}
+              onOpen={openMarket}
+              onBet={openBet}
+            />
           )}
           {tab === "bracket" && <BracketTab bracket={bracket} />}
           {tab === "standings" && <StandingsTab rows={standRows} />}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getMarkets,
@@ -669,34 +669,55 @@ export function EplHubPage() {
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [tab, setTab] = useState<HubTab>("season");
   const [matchView, setMatchView] = useState<"upcoming" | "previous">("upcoming");
+  /** Finished matches — null until someone opens Previous. */
+  const [finished, setFinished] = useState<Market[] | null>(null);
+  const finishedReq = useRef(false);
+  /**
+   * Fetch the finished matches, once, when they are first asked for.
+   *
+   * They are the entire market history — 10.6MB against 109KB for the live
+   * ones — and most visits to this hub never open the Previous tab.
+   */
+  const loadFinished = useCallback(() => {
+    if (finishedReq.current) return;
+    // Latched before the request so a double-tap cannot start it twice.
+    finishedReq.current = true;
+    getMarkets()
+      .then((d) =>
+        setFinished(
+          d.filter((m) => m.status === "resolved" || m.status === "settled"),
+        ),
+      )
+      .catch(() => {
+        finishedReq.current = false;
+      });
+  }, []);
+
   const [statCat, setStatCat] = useState<StatCategory>("goals");
   const [liveStandings, setLiveStandings] = useState<EplStandings | null>(null);
   const [liveStats, setLiveStats] = useState<EplStats | null>(null);
   const [liveSeason, setLiveSeason] = useState<EplSeason | null>(null);
 
   useEffect(() => {
-    // Two passes on purpose. The live markets are a small slice of the payload
-    // — measured at 320KB of 10.8MB — and they are everything the Matches tab
-    // renders, so the hub paints from them almost at once instead of waiting
-    // on thousands of settled markets it will not show. The full list follows
-    // for the Previous tab, chained rather than fired in parallel so the
-    // smaller response cannot land second and overwrite it.
-    const applyMarkets = (d: Market[]) =>
-      setMarkets(d.filter((m) => m.status !== "cancelled"));
+    // Live markets only. Everything this hub shows by default is a match that
+    // has not finished, and the live list is ~109KB against 10.6MB for the
+    // whole table — a finished market is never deleted, so the rest is years
+    // of history that only the Previous tab renders. Fetched on demand below.
     getMarkets(undefined, { scope: "live" })
-      .then(applyMarkets)
+      .then((d) => setMarkets(d.filter((m) => m.status !== "cancelled")))
       .catch(console.error)
-      .finally(() => setLoading(false))
-      .then(() => getMarkets())
-      .then(applyMarkets)
-      .catch(console.error);
+      .finally(() => setLoading(false));
     // Live league data — falls back to the static/mock arrays if the API is down
     getEplStandings().then(setLiveStandings).catch(() => {});
     getEplStats().then(setLiveStats).catch(() => {});
     getEplSeason().then(setLiveSeason).catch(() => {});
   }, []);
 
-  const eplMarkets = markets.filter(isEplMarket);
+  const allMarkets = useMemo(
+    () => (finished ? [...markets, ...finished] : markets),
+    [markets, finished],
+  );
+  const eplMarkets = allMarkets.filter(isEplMarket);
   const matchMarkets = eplMarkets
     .filter((m) => /\bvs\b/i.test(m.title))
     .sort((a, b) => kickoffOf(a) - kickoffOf(b));
@@ -914,12 +935,20 @@ export function EplHubPage() {
                 {(
                   [
                     ["upcoming", `Upcoming (${upcomingMatches.length})`],
-                    ["previous", `Previous (${previousMatches.length})`],
+                    // No count until they are fetched — "Previous (0)"
+                    // mid-season would simply be wrong.
+                    [
+                      "previous",
+                      finished ? `Previous (${previousMatches.length})` : "Previous",
+                    ],
                   ] as ["upcoming" | "previous", string][]
                 ).map(([id, label]) => (
                   <button
                     key={id}
-                    onClick={() => setMatchView(id)}
+                    onClick={() => {
+                      setMatchView(id);
+                      if (id === "previous") loadFinished();
+                    }}
                     style={{
                       padding: "6px 14px",
                       borderRadius: 20,
@@ -946,6 +975,10 @@ export function EplHubPage() {
                     ))}
                   </div>
                 )
+              ) : !finished ? (
+                // The fetch starts on the tap that opened this view, so the
+                // first render here is always mid-request.
+                emptyState("⏳", "Loading results…", "Fetching finished matches")
               ) : previousMatches.length === 0 ? (
                 emptyState("🏁", "No finished matches yet", "Results will show here after the first matchday")
               ) : (
