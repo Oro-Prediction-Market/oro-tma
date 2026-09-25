@@ -729,8 +729,35 @@ export function getMarkets(
   const params = new URLSearchParams();
   if (q && q.trim()) params.set("q", q.trim());
   if (opts?.scope === "live") params.set("scope", "live");
+  // Ask for outcome images by reference rather than inlined as base64. On the
+  // live list that was 206KB of a 320KB response, and being inside the JSON it
+  // could not be cached — the Mini App feed reloads every ten seconds, so the
+  // same crests came down six times a minute.
+  params.set("images", "ref");
   const qs = params.toString() ? `?${params.toString()}` : "";
-  return request<Market[]>(`/markets${qs}`);
+  return request<Market[]>(`/markets${qs}`).then(resolveOutcomeImages);
+}
+
+/**
+ * Point image references at the API.
+ *
+ * The server sends these origin-relative (`/markets/outcome-image/...`)
+ * because it cannot reliably know its own public origin, and guessing wrong
+ * would put an http URL on an https page for the browser to block. We do know:
+ * it is the same base every other call uses. Left alone, the path would
+ * resolve against the app's own origin and 404.
+ *
+ * Anything already absolute — the flag CDN, club crests, an older server that
+ * still inlines a data URI — is untouched.
+ */
+function resolveOutcomeImages(markets: Market[]): Market[] {
+  const PREFIX = "/markets/outcome-image/";
+  for (const m of markets) {
+    for (const o of m.outcomes ?? []) {
+      if (o.imageUrl?.startsWith(PREFIX)) o.imageUrl = `${API_URL}${o.imageUrl}`;
+    }
+  }
+  return markets;
 }
 
 export function getMarket(id: string): Promise<Market> {
