@@ -867,6 +867,10 @@ const MarketCard = memo(function MarketCard({
   const isUpcoming = market.status === "upcoming";
   const isClosed = market.status === "closed";
   const isResolving = market.status === "resolving";
+  // Exactly the case where the outcomes block renders rows rather than one of
+  // the three status banners — the branch order below is resolving, closed,
+  // upcoming, then rows.
+  const isOpen = !isResolving && !isClosed && !isUpcoming;
   const countdown = useCountdown(
     isUpcoming ? (market.opensAt ?? null) : market.closesAt,
   );
@@ -1105,7 +1109,21 @@ const MarketCard = memo(function MarketCard({
           overflow: "hidden",
         }}
       >
-      <div style={{ ...ROWS_LAYER, gap: 8, justifyContent: "center" }}>
+      {/* Centred for the single status banners, which would otherwise sit at
+          the top of a block sized for three outcome rows. NOT for the rows
+          themselves: the block is sized for three and 94% of markets are
+          binary, so centring split the spare row into equal gaps above and
+          below the options — a hole on either side of the only thing anyone
+          is looking at. Top-aligned, the slack collects once, under the last
+          row, where the card's own padding already is. Card height is
+          unchanged either way; this is only where the leftover goes. */}
+      <div
+        style={{
+          ...ROWS_LAYER,
+          gap: 8,
+          justifyContent: isOpen ? "flex-start" : "center",
+        }}
+      >
         {isResolving ? (
           <Link to={`/market/${market.id}`} style={{ textDecoration: "none" }}>
             <div
