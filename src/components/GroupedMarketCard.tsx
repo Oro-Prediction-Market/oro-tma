@@ -426,6 +426,11 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                   <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
                     <span
                       style={{
+                        // Block, so the ellipsis works and the chance line
+                        // below gets a line of its own. Inline, the name ran
+                        // on with the % glued to it and pushed into the
+                        // Yes/No buttons.
+                        display: "block",
                         fontSize: "0.78rem",
                         fontWeight: 700,
                         lineHeight: 1.25,
@@ -443,9 +448,11 @@ export const GroupedMarketCard: FC<GroupedMarketCardProps> = memo(
                     </span>
                     <span
                       style={{
+                        display: "block",
                         fontSize: "0.62rem",
                         fontWeight: 800,
                         color: "var(--text-subtle)",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       <span style={{ color: vis.accentColor, fontWeight: 900 }}>
