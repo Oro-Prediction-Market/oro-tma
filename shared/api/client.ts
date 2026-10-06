@@ -932,7 +932,8 @@ export interface Transaction {
     | "duel_wager"
     | "duel_payout"
     | "free_credit"
-    | "season_prize";
+    | "season_prize"
+    | "adjustment";
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
