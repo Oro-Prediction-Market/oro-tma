@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Users, Clock } from "lucide-react";
 import {
@@ -137,18 +137,32 @@ export function GroupDetailPage() {
 
   // One history request per charted candidate — each is a separate market, so
   // there is no single call that returns the group's curves.
+  //
+  // Each id is requested once. The effect used to depend on `histories`, which
+  // it also writes: every response re-ran it, and its cleanup threw away the
+  // requests still in flight, which were then sent again — up to 15 requests
+  // for 5 charts, filling in one at a time.
+  const requestedHistories = useRef(new Set<string>());
+  const mounted = useRef(true);
   useEffect(() => {
-    let live = true;
-    for (const { market: m } of charted) {
-      if (histories[m.id]) continue;
-      getMarketHistory(m.id)
-        .then((h) => live && setHistories((prev) => ({ ...prev, [m.id]: h })))
-        .catch(() => {});
-    }
+    mounted.current = true;
     return () => {
-      live = false;
+      mounted.current = false;
     };
-  }, [charted, histories]);
+  }, []);
+  useEffect(() => {
+    for (const { market: m } of charted) {
+      if (requestedHistories.current.has(m.id)) continue;
+      requestedHistories.current.add(m.id);
+      getMarketHistory(m.id)
+        .then(
+          (h) =>
+            mounted.current && setHistories((prev) => ({ ...prev, [m.id]: h })),
+        )
+        // Let a later render try again rather than leave the line missing.
+        .catch(() => requestedHistories.current.delete(m.id));
+    }
+  }, [charted]);
 
   /**
    * One line per candidate: their Yes curve, labelled with their name.
