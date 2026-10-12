@@ -2523,19 +2523,25 @@ export const TmaChallengesPage: FC = () => {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      getMarkets(),
+      // Only open markets are offered, so finished ones (nearly the whole
+      // table, megabytes of it) are not worth downloading.
+      getMarkets(undefined, { scope: "live" }),
       getMyBets(),
-      getMyBets("pending"),
       getChallenges().catch(() => [] as Challenge[]),
       getMyCards().catch(
         () => ({ doubleDown: 0, shield: 0, ghost: 0 }) as CardInventory,
       ),
     ])
-      .then(([allMarkets, allBets, pendingBets, mine, cards]) => {
+      .then(([allMarkets, allBets, mine, cards]) => {
         setMarkets(allMarkets.filter((m) => m.status === "open"));
         setTotalBetCount((allBets as Bet[]).length);
+        // The same rows `?status=pending` returns, without a second request.
         setMyBetMarketIds(
-          new Set((pendingBets as Bet[]).map((b) => b.marketId)),
+          new Set(
+            (allBets as Bet[])
+              .filter((b) => b.status === "pending")
+              .map((b) => b.marketId),
+          ),
         );
         setMyChallenges(mine as Challenge[]);
         setCardInventory(cards as CardInventory);
