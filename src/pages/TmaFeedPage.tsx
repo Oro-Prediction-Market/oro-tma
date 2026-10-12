@@ -1,4 +1,4 @@
-import { FC, Suspense, lazy, useState, useEffect, useRef, useCallback, memo } from "react";
+import { FC, Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { Page } from "@/components/Page";
 import {
@@ -250,12 +250,27 @@ function TrendingCarousel({
   };
 
   // Measure the real rendered card width so scroll math works at any width.
+  // Cached, and re-measured only when the strip resizes: reading offsetWidth
+  // right after the animation writes scrollLeft forced a layout every frame.
+  const stepRef = useRef(0);
   const getStep = () => {
+    if (stepRef.current > 0) return stepRef.current;
     const first = scrollRef.current?.firstElementChild as HTMLElement | null;
-    return first
+    const step = first
       ? first.offsetWidth + TRENDING_GAP
       : TRENDING_CARD_W + TRENDING_GAP;
+    if (first) stepRef.current = step;
+    return step;
   };
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      stepRef.current = 0;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const scrollToCard = (i: number) => {
     scrollRef.current?.scrollTo({ left: i * getStep(), behavior: "smooth" });
@@ -299,8 +314,30 @@ function TrendingCarousel({
       }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // Only animate while the strip is on screen; scrolled past, it stops.
+    const start = () => {
+      if (raf) return;
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const el = scrollRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      start();
+      return stop;
+    }
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) start();
+      else stop();
+    });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      stop();
+    };
   }, [looping, perView, markets.length]);
 
   const onScroll = () => {
@@ -1634,6 +1671,30 @@ export const TmaFeedPage: FC = () => {
   // Full pending bet objects — used for the picks strip + "YOUR PICK" badge
   const [myPendingBets, setMyPendingBets] = useState<Bet[]>([]);
   const bettedMarketIds = new Set(myPendingBets.map((b) => b.marketId));
+  // The cards are memoised, but a fresh onBet arrow per card per render meant
+  // every one of them re-rendered anyway. One handler per market, kept.
+  const betHandlers = useRef(new Map<string, (outcomeId: string) => void>());
+  const betHandlerFor = (marketId: string) => {
+    let h = betHandlers.current.get(marketId);
+    if (!h) {
+      h = (outcomeId: string) => setActiveBet({ marketId, outcomeId });
+      betHandlers.current.set(marketId, h);
+    }
+    return h;
+  };
+  const onGroupBet = useCallback(
+    (marketId: string, outcomeId: string) => setActiveBet({ marketId, outcomeId }),
+    [],
+  );
+  // "Your pick" per market: the first pending bet on it, as .find() gave.
+  const pickByMarket = useMemo(() => {
+    const out = new Map<string, string>();
+    for (const b of myPendingBets) if (!out.has(b.marketId)) out.set(b.marketId, b.outcomeId);
+    return out;
+  }, [myPendingBets]);
+  // Each group's sibling list, reused while its members are the same objects,
+  // so the memoised group card is not handed a new array every render.
+  const groupCache = useRef(new Map<string, Market[]>());
   const [fundBannerDismissed, setFundBannerDismissed] = useState(false);
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
 
@@ -1965,6 +2026,19 @@ export const TmaFeedPage: FC = () => {
 
   // All cards in display order: resolving → open → upcoming
   const allCards = [...filteredOpen, ...filteredResolving, ...filteredUpcoming];
+  const siblingsByGroup = new Map<string, Market[]>();
+  for (const m of allCards) {
+    if (!m.groupId) continue;
+    const list = siblingsByGroup.get(m.groupId);
+    if (list) list.push(m);
+    else siblingsByGroup.set(m.groupId, [m]);
+  }
+  for (const [gid, list] of siblingsByGroup) {
+    const prev = groupCache.current.get(gid);
+    if (prev && prev.length === list.length && prev.every((m, i) => m === list[i])) {
+      siblingsByGroup.set(gid, prev);
+    } else groupCache.current.set(gid, list);
+  }
   const visibleCards = allCards.slice(0, visibleCount);
   const hasMore = visibleCount < allCards.length;
 
@@ -3083,17 +3157,13 @@ export const TmaFeedPage: FC = () => {
         {/* ── Lazy-rendered card list ── */}
         {visibleCards.map((market) => {
           if (market.groupId) {
-            const siblings = allCards.filter(
-              (m) => m.groupId === market.groupId,
-            );
+            const siblings = siblingsByGroup.get(market.groupId)!;
             if (siblings[0]?.id !== market.id) return null;
             return (
               <div key={`group-${market.groupId}`} style={{ marginBottom: 14 }}>
                 <GroupedMarketCard
                   markets={siblings}
-                  onBet={(marketId, outcomeId) =>
-                    setActiveBet({ marketId, outcomeId })
-                  }
+                  onBet={onGroupBet}
                   referralId={String(user?.telegramId ?? user?.id ?? "")}
                 />
               </div>
@@ -3171,38 +3241,23 @@ export const TmaFeedPage: FC = () => {
                 <TerMarketCard
                   market={market}
                   hasBet={bettedMarketIds.has(market.id)}
-                  userPickedOutcomeId={
-                    myPendingBets.find((b) => b.marketId === market.id)
-                      ?.outcomeId
-                  }
-                  onBet={(outcomeId) =>
-                    setActiveBet({ marketId: market.id, outcomeId })
-                  }
+                  userPickedOutcomeId={pickByMarket.get(market.id)}
+                  onBet={betHandlerFor(market.id)}
                 />
               ) : market.externalSource === "btc" ? (
                 <BtcMarketCard
                   market={market}
                   hasBet={bettedMarketIds.has(market.id)}
-                  userPickedOutcomeId={
-                    myPendingBets.find((b) => b.marketId === market.id)
-                      ?.outcomeId
-                  }
-                  onBet={(outcomeId) =>
-                    setActiveBet({ marketId: market.id, outcomeId })
-                  }
+                  userPickedOutcomeId={pickByMarket.get(market.id)}
+                  onBet={betHandlerFor(market.id)}
                 />
               ) : (
                 <MarketCard
                   market={market}
                   hasBet={bettedMarketIds.has(market.id)}
-                  userPickedOutcomeId={
-                    myPendingBets.find((b) => b.marketId === market.id)
-                      ?.outcomeId
-                  }
+                  userPickedOutcomeId={pickByMarket.get(market.id)}
                   telegramId={user?.telegramId}
-                  onBet={(outcomeId) =>
-                    setActiveBet({ marketId: market.id, outcomeId })
-                  }
+                  onBet={betHandlerFor(market.id)}
                 />
               )}
             </div>
