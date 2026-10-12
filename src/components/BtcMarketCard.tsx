@@ -26,106 +26,147 @@ function useCountdown(targetAt: string | null): string {
 const CHART_TICK_MS = 500; // one chart point per 500ms — live tick-style movement
 const CHART_MAX_POINTS = 120; // ~60s of points on screen
 
-function useLiveBtcPrice(active: boolean) {
-  const [live, setLive] = useState<BtcPrice | null>(null);
-  const [history, setHistory] = useState<number[]>([]);
-  useEffect(() => {
-    if (!active) return;
-    let ws: WebSocket | null = null;
-    let pollId: ReturnType<typeof setInterval> | null = null;
-    let tickId: ReturnType<typeof setInterval> | null = null;
-    let stopped = false;
-    let lastPrice: number | null = null;
+/**
+ * One live BTC feed for every card on screen.
+ *
+ * Each card used to open its own Coinbase socket, poll fallback and history
+ * seed, and re-render on every ticker message (several a second). Now the
+ * first card to need the price starts a single feed, every card gets the same
+ * snapshot on the chart's existing 500ms tick, and the last one to leave
+ * shuts it down. Price source, smoothing and fallback are unchanged.
+ */
+type BtcSnapshot = { live: BtcPrice | null; history: number[] };
+const btcFeed = {
+  subs: new Set<(s: BtcSnapshot) => void>(),
+  snap: { live: null, history: [] } as BtcSnapshot,
+  stop: null as null | (() => void),
+};
 
-    // Seed the chart from the backend's rolling history so it renders on
-    // first paint instead of waiting for stream points to accumulate
-    getBtcPriceHistory()
-      .then((pts) => {
-        if (pts.length === 0) return;
-        lastPrice = pts[pts.length - 1].price;
-        setLive((l) => l ?? pts[pts.length - 1]);
-        setHistory((h) =>
+function publishBtc(next: BtcSnapshot) {
+  btcFeed.snap = next;
+  btcFeed.subs.forEach((fn) => fn(next));
+}
+
+function startBtcFeed(): () => void {
+  let ws: WebSocket | null = null;
+  let pollId: ReturnType<typeof setInterval> | null = null;
+  let stopped = false;
+  let lastPrice: number | null = null;
+  let latest: BtcPrice | null = null;
+
+  // Seed the chart from the backend's rolling history so it renders on
+  // first paint instead of waiting for stream points to accumulate
+  getBtcPriceHistory()
+    .then((pts) => {
+      if (stopped || pts.length === 0) return;
+      lastPrice = pts[pts.length - 1].price;
+      latest = latest ?? pts[pts.length - 1];
+      const h = btcFeed.snap.history;
+      publishBtc({
+        live: btcFeed.snap.live ?? pts[pts.length - 1],
+        history:
           pts.length > h.length
             ? pts.slice(-CHART_MAX_POINTS).map((p) => p.price)
             : h,
-        );
-      })
-      .catch(() => {});
+      });
+    })
+    .catch(() => {});
 
-    // REST fallback if the websocket can't connect (or drops)
-    const startPolling = () => {
-      if (pollId || stopped) return;
-      const fetch_ = () =>
-        getBtcPrice()
-          .then((p) => {
-            lastPrice = p.price;
-            setLive(p);
-          })
-          .catch(() => {});
-      fetch_();
-      pollId = setInterval(fetch_, 2_000);
+  // REST fallback if the websocket can't connect (or drops)
+  const startPolling = () => {
+    if (pollId || stopped) return;
+    const fetch_ = () =>
+      getBtcPrice()
+        .then((p) => {
+          lastPrice = p.price;
+          latest = p;
+        })
+        .catch(() => {});
+    fetch_();
+    pollId = setInterval(fetch_, 2_000);
+  };
+
+  // Live trade stream from Coinbase — the same primary source the backend
+  // settles against, so what users watch is what decides the round
+  try {
+    ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
+    ws.onopen = () =>
+      ws?.send(
+        JSON.stringify({
+          type: "subscribe",
+          product_ids: ["BTC-USD"],
+          channels: ["ticker"],
+        }),
+      );
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type !== "ticker") return;
+      // Mid-price (bid/ask midpoint) — trade prices flip-flop between bid
+      // and ask, which renders as a square wave on the chart
+      const bid = parseFloat(msg.best_bid);
+      const ask = parseFloat(msg.best_ask);
+      const price =
+        Number.isFinite(bid) && Number.isFinite(ask)
+          ? (bid + ask) / 2
+          : parseFloat(msg.price);
+      if (!Number.isFinite(price)) return;
+      lastPrice = price;
+      latest = {
+        price,
+        source: "coinbase",
+        fetchedAt: new Date().toISOString(),
+      } as BtcPrice;
     };
+    ws.onerror = () => ws?.close();
+    ws.onclose = () => startPolling();
+  } catch {
+    startPolling();
+  }
 
-    // Live trade stream from Coinbase — the same primary source the backend
-    // settles against, so what users watch is what decides the round
+  // Push chart points on a fixed cadence so the sparkline scrolls steadily.
+  // Light exponential smoothing rounds tick steps into a flowing curve.
+  // The price shown on the cards moves on this same beat.
+  let chartEma: number | null = null;
+  const tickId = setInterval(() => {
+    if (lastPrice == null) return;
+    chartEma =
+      chartEma == null ? lastPrice : chartEma + 0.25 * (lastPrice - chartEma);
+    publishBtc({
+      live: latest,
+      history: [...btcFeed.snap.history.slice(-(CHART_MAX_POINTS - 1)), chartEma],
+    });
+  }, CHART_TICK_MS);
+
+  return () => {
+    stopped = true;
     try {
-      ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
-      ws.onopen = () =>
-        ws?.send(
-          JSON.stringify({
-            type: "subscribe",
-            product_ids: ["BTC-USD"],
-            channels: ["ticker"],
-          }),
-        );
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.type !== "ticker") return;
-        // Mid-price (bid/ask midpoint) — trade prices flip-flop between bid
-        // and ask, which renders as a square wave on the chart
-        const bid = parseFloat(msg.best_bid);
-        const ask = parseFloat(msg.best_ask);
-        const price =
-          Number.isFinite(bid) && Number.isFinite(ask)
-            ? (bid + ask) / 2
-            : parseFloat(msg.price);
-        if (!Number.isFinite(price)) return;
-        lastPrice = price;
-        setLive({
-          price,
-          source: "coinbase",
-          fetchedAt: new Date().toISOString(),
-        } as BtcPrice);
-      };
-      ws.onerror = () => ws?.close();
-      ws.onclose = () => startPolling();
+      ws?.close();
     } catch {
-      startPolling();
+      /* already closed */
     }
+    if (pollId) clearInterval(pollId);
+    clearInterval(tickId);
+    // A later card starts from the backend's history again, as it did before.
+    btcFeed.snap = { live: null, history: [] };
+  };
+}
 
-    // Push chart points on a fixed cadence so the sparkline scrolls steadily.
-    // Light exponential smoothing rounds tick steps into a flowing curve.
-    let chartEma: number | null = null;
-    tickId = setInterval(() => {
-      if (lastPrice == null) return;
-      chartEma =
-        chartEma == null ? lastPrice : chartEma + 0.25 * (lastPrice - chartEma);
-      const p = chartEma;
-      setHistory((h) => [...h.slice(-(CHART_MAX_POINTS - 1)), p]);
-    }, CHART_TICK_MS);
-
+function useLiveBtcPrice(active: boolean) {
+  const [snap, setSnap] = useState<BtcSnapshot>({ live: null, history: [] });
+  useEffect(() => {
+    if (!active) return;
+    btcFeed.subs.add(setSnap);
+    if (!btcFeed.stop) btcFeed.stop = startBtcFeed();
+    else setSnap(btcFeed.snap);
     return () => {
-      stopped = true;
-      try {
-        ws?.close();
-      } catch {
-        /* already closed */
+      btcFeed.subs.delete(setSnap);
+      if (btcFeed.subs.size === 0 && btcFeed.stop) {
+        btcFeed.stop();
+        btcFeed.stop = null;
       }
-      if (pollId) clearInterval(pollId);
-      if (tickId) clearInterval(tickId);
     };
   }, [active]);
-  return { live, history };
+  return snap;
 }
 
 function fmtUsd(n: number): string {
@@ -327,8 +368,28 @@ const BtcSparkline: FC<{ history: number[]; refPrice: number }> = memo(
         rafIdRef.current = requestAnimationFrame(render);
       };
 
-      rafIdRef.current = requestAnimationFrame(render);
-      return () => { cancelAnimationFrame(rafIdRef.current); lastNowRef.current = 0; };
+      // Draw only while the chart is on screen: scrolled past, the loop
+      // stops, and it picks up where the data is when it comes back.
+      const start = () => {
+        if (rafIdRef.current) return;
+        lastNowRef.current = 0;
+        rafIdRef.current = requestAnimationFrame(render);
+      };
+      const stop = () => {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = 0;
+      };
+      const canvas = canvasRef.current;
+      if (!canvas || typeof IntersectionObserver === "undefined") {
+        start();
+        return () => { stop(); lastNowRef.current = 0; };
+      }
+      const io = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) start();
+        else stop();
+      });
+      io.observe(canvas);
+      return () => { io.disconnect(); stop(); lastNowRef.current = 0; };
     }, []);
 
     return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />;

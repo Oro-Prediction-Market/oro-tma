@@ -272,8 +272,28 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
         rafIdRef.current = requestAnimationFrame(render);
       };
 
-      rafIdRef.current = requestAnimationFrame(render);
-      return () => { cancelAnimationFrame(rafIdRef.current); lastNowRef.current = 0; };
+      // Draw only while the chart is on screen: scrolled past, the loop
+      // stops, and it picks up where the data is when it comes back.
+      const start = () => {
+        if (rafIdRef.current) return;
+        lastNowRef.current = 0;
+        rafIdRef.current = requestAnimationFrame(render);
+      };
+      const stop = () => {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = 0;
+      };
+      const canvas = canvasRef.current;
+      if (!canvas || typeof IntersectionObserver === "undefined") {
+        start();
+        return () => { stop(); lastNowRef.current = 0; };
+      }
+      const io = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) start();
+        else stop();
+      });
+      io.observe(canvas);
+      return () => { io.disconnect(); stop(); lastNowRef.current = 0; };
     }, []);
 
     return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />;
