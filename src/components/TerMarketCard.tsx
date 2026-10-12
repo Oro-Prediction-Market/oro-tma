@@ -131,8 +131,9 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
         const canvas = canvasRef.current;
         if (canvas) {
           const dpr = Math.round(window.devicePixelRatio || 1);
-          const W   = canvas.offsetWidth;
-          const H   = canvas.offsetHeight;
+          if (!ro) measure();
+          const W   = size.w;
+          const H   = size.h;
           if (W > 0 && H > 0) {
             if (canvas.width !== W * dpr || canvas.height !== H * dpr) {
               canvas.width  = W * dpr;
@@ -272,6 +273,21 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
         rafIdRef.current = requestAnimationFrame(render);
       };
 
+      // The canvas size, measured on mount and on resize. Read every frame,
+      // offsetWidth forced a style and layout pass each time, because the
+      // page's CSS animations keep styles dirty.
+      const size = { w: 0, h: 0 };
+      const sized = canvasRef.current;
+      const measure = () => {
+        if (!sized) return;
+        size.w = sized.offsetWidth;
+        size.h = sized.offsetHeight;
+      };
+      measure();
+      const ro =
+        sized && typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+      if (sized) ro?.observe(sized);
+
       // Draw only while the chart is on screen: scrolled past, the loop
       // stops, and it picks up where the data is when it comes back.
       const start = () => {
@@ -286,14 +302,14 @@ const TerSparkline: FC<{ history: number[]; refPrice: number }> = memo(
       const canvas = canvasRef.current;
       if (!canvas || typeof IntersectionObserver === "undefined") {
         start();
-        return () => { stop(); lastNowRef.current = 0; };
+        return () => { ro?.disconnect(); stop(); lastNowRef.current = 0; };
       }
       const io = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) start();
         else stop();
       });
       io.observe(canvas);
-      return () => { io.disconnect(); stop(); lastNowRef.current = 0; };
+      return () => { ro?.disconnect(); io.disconnect(); stop(); lastNowRef.current = 0; };
     }, []);
 
     return <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />;
