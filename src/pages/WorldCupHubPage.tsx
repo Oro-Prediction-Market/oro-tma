@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, BarChart3, Clock, CalendarDays, Network } from "lucide-react";
 import { WorldCupBracket } from "@shared/components/WorldCupBracket";
 import { looksEsports } from "@shared/helpers/esportsKeywords";
 import {
   getMarkets,
+  mergeLivePoll,
   getMyBets,
   type Market,
   type Outcome,
@@ -713,13 +714,35 @@ export function WorldCupHubPage() {
       .catch(console.error);
   }, []);
 
+  // What the poll merges into. Kept in a ref so the merge can decide to fall
+  // back to a full load without doing it from inside a state updater.
+  const marketsRef = useRef(markets);
+  useEffect(() => {
+    marketsRef.current = markets;
+  }, [markets]);
+
+  /**
+   * Running markets only (~100KB, not the whole table — finished ones are
+   * most of this hub now and never change). A market that just finished is
+   * missing from that list, and then the full one is loaded once instead.
+   */
+  const pollLive = useCallback(() => {
+    return getMarkets(undefined, { scope: "live" })
+      .then((live) => {
+        const merged = mergeLivePoll(marketsRef.current, live);
+        if (merged) setMarkets(merged);
+        else return loadMarkets();
+      })
+      .catch(console.error);
+  }, [loadMarkets]);
+
   useEffect(() => {
     loadMarkets().finally(() => setLoading(false));
     // Refresh periodically so the knockout poll bars track others' bets while
     // the hub is open. Backend caches markets ~30s, so poll on that beat.
-    const id = setInterval(loadMarkets, 30_000);
+    const id = setInterval(pollLive, 30_000);
     return () => clearInterval(id);
-  }, [loadMarkets]);
+  }, [loadMarkets, pollLive]);
 
   // Seed picks from the user's real bets so the revealed percentages persist
   // across refreshes (in-session state alone would reset on reload).
@@ -1225,7 +1248,7 @@ export function WorldCupHubPage() {
           onSuccess={() => {
             setPickedOutcomeIds((prev) => new Set(prev).add(activeBet.outcomeId));
             setActiveBet(null);
-            loadMarkets(); // pull fresh pools so the bars reflect the new bet
+            pollLive(); // pull fresh pools so the bars reflect the new bet
           }}
           onFailure={(e: string) => console.error(e)}
           onGoToWallet={() => navigate("/wallet")}

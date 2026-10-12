@@ -742,6 +742,30 @@ export function getMarkets(
 }
 
 /**
+ * Fold a `scope: "live"` poll into a list first loaded with every market.
+ *
+ * For screens that show finished markets but only need the running ones kept
+ * fresh: the poll costs ~100KB instead of the whole table. Rows are updated
+ * where they stand and new markets go first, which is where the unfiltered
+ * list (newest first) puts them.
+ *
+ * Returns null when a market that was live is missing from the poll — it
+ * finished or was cancelled, and only the full list says which. The caller
+ * then reloads that once, so the screen ends up exactly as a full poll would
+ * have left it.
+ */
+export function mergeLivePoll(previous: Market[], live: Market[]): Market[] | null {
+  const LIVE = new Set(["upcoming", "open", "closed", "resolving"]);
+  const fresh = new Map(live.map((m) => [m.id, m]));
+  if (previous.some((m) => LIVE.has(m.status) && !fresh.has(m.id))) return null;
+  const known = new Set(previous.map((m) => m.id));
+  return [
+    ...live.filter((m) => !known.has(m.id)),
+    ...previous.map((m) => fresh.get(m.id) ?? m),
+  ];
+}
+
+/**
  * Point image references at the API.
  *
  * The server sends these origin-relative (`/markets/outcome-image/...`)

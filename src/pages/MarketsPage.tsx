@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { getMarkets, getMe, Market, AuthUser } from "@shared/api/client";
+import { getMarkets, getMe, mergeLivePoll, Market, AuthUser } from "@shared/api/client";
 import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
@@ -27,10 +27,16 @@ export const MarketsPage: FC = () => {
   }, []);
 
   useEffect(() => {
+    // The list on screen, which the live poll merges into.
+    let current: Market[] = [];
+    const loadAll = () =>
+      getMarkets().then((data) => {
+        current = data;
+        setMarkets(data);
+      });
     async function load() {
       try {
-        const data = await getMarkets();
-        setMarkets(data);
+        await loadAll();
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -39,10 +45,18 @@ export const MarketsPage: FC = () => {
     }
     load();
     // Auto-refresh so fast-cycling TER/BTC rounds appear/disappear without
-    // a manual reload (matches the 10s cadence of the feed pages)
+    // a manual reload (matches the 10s cadence of the feed pages). Only the
+    // running markets are re-fetched — the finished ones listed below them
+    // are the whole rest of the table and never change. When one stops
+    // running, mergeLivePoll says so and the full list is loaded once.
     const reload = () => {
-      getMarkets()
-        .then(setMarkets)
+      getMarkets(undefined, { scope: "live" })
+        .then((live) => {
+          const merged = mergeLivePoll(current, live);
+          if (!merged) return loadAll();
+          current = merged;
+          setMarkets(merged);
+        })
         .catch(() => {});
     };
     const id = setInterval(reload, 10_000);
