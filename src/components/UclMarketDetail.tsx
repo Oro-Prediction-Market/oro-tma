@@ -10,8 +10,8 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
-import { isDrawOutcome } from "@/pages/BplHubPage";
+import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
+import { isDrawOutcome } from "@/lib/hubs/bpl";
 import {
   ProbabilityChart,
   type ChartOutcome,

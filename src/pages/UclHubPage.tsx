@@ -27,7 +27,10 @@ import { getMarkets, getUclStandings, getUclStats, getUclBracket } from "@shared
 // The same helpers the EPL hub uses. This page previously showed only a win %,
 // so a UCL fixture was the one football surface in the app with no payout
 // multiple on it — the PWA's copy of this page has always shown one.
-import { calcOdds, formatOdds } from "./WorldCupHubPage";
+import { calcOdds, formatOdds } from "@/lib/hubs/worldCup";
+import { isUclMarket } from "@/lib/hubs/ucl";
+// Moved to @/lib/hubs/ucl; re-exported so existing imports keep working.
+export { isUclMarket } from "@/lib/hubs/ucl";
 
 // Live-data row shapes fed into the tabs (from the API, with dummy fallback).
 type StandRow = {
@@ -108,18 +111,6 @@ const TABS: { id: UclTab; label: string; icon: React.ReactNode }[] = [
   { id: "standings", label: "Table", icon: <ListOrdered size={14} /> },
   { id: "stats", label: "Stats", icon: <BarChart3 size={14} /> },
 ];
-
-// Detection: a market belongs to the Champions League hub if it's tagged ucl /
-// champions-league, or its title names the competition. Excludes gaming/politics.
-export function isUclMarket(m: Market): boolean {
-  if (m.category === "gaming" || m.category === "political") return false;
-  const sub = (m.subcategory ?? "").toLowerCase();
-  const cat = (m.category ?? "").toLowerCase();
-  const title = m.title.toLowerCase();
-  if (sub.includes("ucl") || sub.includes("champions")) return true;
-  if (cat.includes("champions league")) return true;
-  return /champions league/.test(title) || /\bucl\b/.test(title);
-}
 
 // ── Crest with initial fallback ───────────────────────────────────────────────
 function Crest({ src, label, size }: { src: string; label: string; size: number }) {

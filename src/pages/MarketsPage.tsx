@@ -6,7 +6,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
 import { TerMarketCard } from "@/components/TerMarketCard";
-import { calcProb } from "./WorldCupHubPage";
+import { calcProb } from "@/lib/hubs/worldCup";
 import { pollWhileVisible } from "@shared/helpers/poll";
 
 export const MarketsPage: FC = () => {

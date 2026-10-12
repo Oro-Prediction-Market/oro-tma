@@ -5,9 +5,12 @@ import { Clock, CalendarDays } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
-import { isWCMarket, calcProb, calcOdds, formatOdds} from "./WorldCupHubPage";
-import { isDrawOutcome } from "./BplHubPage";
+import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
+import { isDrawOutcome } from "@/lib/hubs/bpl";
 import { useMarketSocket } from "@/hooks/useMarketSocket";
+import { isUfcMarket, getUfcAvatar, shortFighterName, FighterAvatar } from "@/lib/hubs/ufc";
+// Moved to @/lib/hubs/ufc; re-exported so existing imports keep working.
+export { isUfcMarket, getUfcAvatar, shortFighterName, FighterAvatar } from "@/lib/hubs/ufc";
 
 // ── Helpers (mirrored from PWA — keep in sync) ────────────────────────────────
 
@@ -32,37 +35,6 @@ export const UFC_FIGHTERS = [
   { name: "Zhang Weili", short: "Zhang" },
   { name: "Dricus du Plessis", short: "du Plessis" },
 ];
-
-export function isUfcMarket(m: Market): boolean {
-  if (m.category === "political") return false;
-  if (m.category === "gaming") return false; // Gaming markets live in /esports
-  if (isWCMarket(m)) return false;
-  const sub = (m.subcategory ?? "").toLowerCase();
-  // covers ufc-fight / ufc-event / mma tags set in the admin form
-  if (sub.includes("ufc") || sub.includes("mma")) return true;
-  if ((m.settlementSource ?? "").toLowerCase().includes("ufc")) return true;
-  const title = m.title.toLowerCase();
-  return /\bufc\b/.test(title) || title.includes("octagon");
-}
-
-// Avatar priority: per-outcome imageUrl (set in the admin form), then the
-// market-level images (imageUrl = first outcome, imageUrlAlt = second).
-export function getUfcAvatar(market: Market, fighterIdx: number): string | null {
-  const fighterOutcomes = (market.outcomes ?? []).filter(
-    (o) => !isDrawOutcome(o.label ?? ""),
-  );
-  const outcome = fighterOutcomes[fighterIdx];
-  if (outcome?.imageUrl) return outcome.imageUrl;
-  if (fighterIdx === 0) return market.imageUrl;
-  if (fighterIdx === 1) return market.imageUrlAlt;
-  return null;
-}
-
-// "Jon Jones" → "Jones"; single-word names pass through unchanged
-export function shortFighterName(label: string): string {
-  const parts = label.trim().split(/\s+/);
-  return parts.length > 1 ? parts[parts.length - 1] : label.trim();
-}
 
 function parseFightNames(title: string): { fighter1: string; fighter2: string } {
   const m = title.match(/^(?:ufc\s*\d*\s*[:\-–—]?\s*)?(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:?]|\s*\(|\s+(?:who|which|will)\b|$)/i);
@@ -89,50 +61,6 @@ function useClosesAt(closesAt: string | null | undefined): string {
     return () => clearInterval(id);
   }, [closesAt]);
   return label;
-}
-
-export function FighterAvatar({
-  src,
-  label,
-  size,
-}: {
-  src: string | null;
-  label: string;
-  size: number;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (src && !failed) {
-    return (
-      <img
-        src={src}
-        alt={label}
-        loading="lazy"
-        decoding="async"
-        onError={() => setFailed(true)}
-        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, background: "rgba(255,255,255,0.06)" }}
-      />
-    );
-  }
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        flexShrink: 0,
-        background: "linear-gradient(135deg, #d20a0a 0%, #450a0a 100%)",
-        border: "1.5px solid rgba(255,255,255,0.15)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.4,
-        fontWeight: 900,
-        color: "#fff",
-      }}
-    >
-      {label.trim().charAt(0).toUpperCase()}
-    </div>
-  );
 }
 
 function UfcFightCard({

@@ -18,7 +18,7 @@ import {
 } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
 import { getMarket, placeBetWithWallet, Market } from "@shared/api/client";
-import { calcProb } from "./WorldCupHubPage";
+import { calcProb } from "@/lib/hubs/worldCup";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { formatQuote, ODDS_PROBE_BTN, quotePayout } from "@shared/payout";
 

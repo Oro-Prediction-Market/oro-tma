@@ -8,17 +8,13 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
-import { isDrawOutcome } from "@/pages/BplHubPage";
+import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
+import { isDrawOutcome } from "@/lib/hubs/bpl";
 import {
   ProbabilityChart,
   type ChartOutcome,
 } from "@shared/components/ProbabilityChart";
-import {
-  getUfcAvatar,
-  shortFighterName,
-  FighterAvatar,
-} from "@/pages/UfcHubPage";
+import { getUfcAvatar, shortFighterName, FighterAvatar } from "@/lib/hubs/ufc";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
 import { SaveMarketButton } from "@shared/components/SaveMarketButton";
 import { marketOutcomeChances } from "@/components/MarketShareCard";

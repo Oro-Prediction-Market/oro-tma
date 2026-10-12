@@ -2,7 +2,7 @@ import { FC, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Page } from "@/components/Page";
 import { SavedMarketsPanel } from "@shared/components/SavedMarkets";
-import { calcProb } from "@/pages/WorldCupHubPage";
+import { calcProb } from "@/lib/hubs/worldCup";
 import { getPublicProfile, type Market } from "@shared/api/client";
 
 /**

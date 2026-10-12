@@ -19,18 +19,9 @@ import {
   DisputeContestFields,
   type DisputeContestControls,
 } from "@/components/DisputeContestFields";
-import { calcProb, calcOdds, formatOdds} from "@/pages/WorldCupHubPage";
-import { isDrawOutcome } from "@/pages/BplHubPage";
-import {
-  TeamAvatar,
-  isMatchMarket,
-  esportsCategoryOf,
-  categoryMeta,
-  getSideImage,
-  outcomeImage,
-  parseVsNames,
-  shortTeamName,
-} from "@/pages/EsportsHubPage";
+import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
+import { isDrawOutcome } from "@/lib/hubs/bpl";
+import { TeamAvatar, isMatchMarket, esportsCategoryOf, categoryMeta, getSideImage, outcomeImage, parseVsNames, shortTeamName } from "@/lib/hubs/esports";
 
 // ── Local micro-primitives (mirror the hub's, kept private to this view) ────────
 
