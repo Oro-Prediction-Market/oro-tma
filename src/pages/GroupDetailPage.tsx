@@ -42,9 +42,11 @@ import {
  * `TmaBetModal` the market detail page opens takes the chosen candidate and
  * outcome directly. Nothing new was written next to the payment path.
  *
- * Assembled from `GET /markets`, which already returns every market in every
- * status but `cancelled` and which the feed already groups by `groupId` this
- * same way, so the page needs no backend change.
+ * Loaded with `GET /markets?groupId=`: just this event's candidates, in every
+ * status but `cancelled`, so one settled ahead of the rest is still listed. It
+ * used to take the whole unfiltered list (megabytes) to keep a handful of
+ * rows. The rows are still filtered here, because a server without the
+ * parameter ignores it and sends that whole list.
  *
  * Single-currency, unlike the PWA's copy: this app has no `shared/currency`
  * and every figure here is ngultrum, like the rest of the Telegram app. That
@@ -94,20 +96,20 @@ export function GroupDetailPage() {
 
   const load = useCallback(() => {
     bustCache("/markets");
-    return getMarkets()
+    return getMarkets(undefined, { groupId })
       .then(setAll)
       .catch(() => setFailed(true));
-  }, []);
+  }, [groupId]);
 
   useEffect(() => {
     let live = true;
-    getMarkets()
+    getMarkets(undefined, { groupId })
       .then((m) => live && setAll(m))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, []);
+  }, [groupId]);
 
   const markets = useMemo(
     () => (all ?? []).filter((m) => m.groupId === groupId),

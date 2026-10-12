@@ -724,11 +724,14 @@ export function feedHeartbeat(sessionId: string): Promise<{ count: number }> {
  */
 export function getMarkets(
   q?: string,
-  opts?: { scope?: "all" | "live" },
+  opts?: { scope?: "all" | "live"; groupId?: string },
 ): Promise<Market[]> {
   const params = new URLSearchParams();
   if (q && q.trim()) params.set("q", q.trim());
   if (opts?.scope === "live") params.set("scope", "live");
+  // One grouped event only, finished candidates included. A server without
+  // the filter ignores it and sends everything, so callers still filter.
+  if (opts?.groupId) params.set("groupId", opts.groupId);
   // Ask for outcome images by reference rather than inlined as base64. On the
   // live list that was 206KB of a 320KB response, and being inside the JSON it
   // could not be cached — the Mini App feed reloads every ten seconds, so the
