@@ -1170,8 +1170,10 @@ export function EsportsHubPage() {
   // actually has ≥2 columns (~560px+); on a phone it stays a single column.
   const [wideGrid, setWideGrid] = useState(false);
 
+  // Exactly the statuses kept below, so finished markets (nearly the whole
+  // table) are not downloaded only to be discarded — on every push, too.
   const loadMarkets = () =>
-    getMarkets()
+    getMarkets(undefined, { scope: "live" })
       .then((d) =>
         setMarkets(
           d.filter(
