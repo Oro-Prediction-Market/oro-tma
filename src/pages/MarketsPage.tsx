@@ -7,6 +7,7 @@ import { Link } from "@/components/Link/Link";
 import { StreakBanner } from "@shared/components/StreakBanner";
 import { TerMarketCard } from "@/components/TerMarketCard";
 import { calcProb } from "./WorldCupHubPage";
+import { pollWhileVisible } from "@shared/helpers/poll";
 
 export const MarketsPage: FC = () => {
   const { user } = useAuth();
@@ -59,10 +60,10 @@ export const MarketsPage: FC = () => {
         })
         .catch(() => {});
     };
-    const id = setInterval(reload, 10_000);
+    const stopPoll = pollWhileVisible(reload, 10_000);
     window.addEventListener("oro:market-changed", reload);
     return () => {
-      clearInterval(id);
+      stopPoll();
       window.removeEventListener("oro:market-changed", reload);
     };
   }, []);

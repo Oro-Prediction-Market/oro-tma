@@ -56,6 +56,7 @@ import { UclBanner } from "@shared/components/UclBanner";
 import { UnlBanner } from "@shared/components/UnlBanner";
 import { isUclMarket } from "./UclHubPage";
 import { isUnlMarket } from "./NationsLeagueHubPage";
+import { coalesce, pollWhileVisible } from "@shared/helpers/poll";
 
 // ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
 function trendingTimeLeft(m: Market): string {
@@ -1694,18 +1695,21 @@ export const TmaFeedPage: FC = () => {
     }
   }, [user]);
 
-  // Auto-refresh market data every 10s + SSE push for fast TER transitions
+  // Auto-refresh market data every 10s + SSE push for fast TER transitions.
+  // Not while the app is hidden; a burst of pushes is one reload.
   useEffect(() => {
     const reload = () => {
       getMarkets(undefined, { scope: "live" })
         .then((d) => setMarkets(filterActive(d)))
         .catch(() => {});
     };
-    const id = setInterval(reload, 10_000);
-    window.addEventListener("oro:market-changed", reload);
+    const onPush = coalesce(reload, 500);
+    const stopPoll = pollWhileVisible(reload, 10_000);
+    window.addEventListener("oro:market-changed", onPush);
     return () => {
-      clearInterval(id);
-      window.removeEventListener("oro:market-changed", reload);
+      stopPoll();
+      onPush.cancel();
+      window.removeEventListener("oro:market-changed", onPush);
     };
   }, []);
 

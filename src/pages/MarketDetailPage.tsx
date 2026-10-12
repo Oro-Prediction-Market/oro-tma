@@ -61,6 +61,7 @@ import {
   UnderdogBanner,
   getLopsidedFavourite,
 } from "@shared/components/UnderdogBanner";
+import { pollWhileVisible } from "@shared/helpers/poll";
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
 
@@ -80,8 +81,7 @@ function TerPricePanel({ market }: { market: Market }) {
         .then(setLive)
         .catch(() => {});
     fetch_();
-    const id = setInterval(fetch_, 30_000);
-    return () => clearInterval(id);
+    return pollWhileVisible(fetch_, 30_000);
   }, [isSettled, isClosed]);
 
   const displayPrice = isSettled
@@ -358,17 +358,8 @@ export const MarketDetailPage: FC = () => {
         .catch(() => {});
     };
 
-    const onVisibility = () => {
-      if (!document.hidden) refetch();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    const interval = setInterval(refetch, 15_000);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      clearInterval(interval);
-    };
+    // Refetches on return to the tab too, and not while it is hidden.
+    return pollWhileVisible(refetch, 15_000);
   }, [id]);
 
   useEffect(() => {

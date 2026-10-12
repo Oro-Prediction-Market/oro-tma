@@ -14,6 +14,7 @@ import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { formatQuoteOnCard, quotePayout, type PayoutQuote } from "@shared/payout";
+import { pollWhileVisible } from "@shared/helpers/poll";
 
 // ── Country flag map ──────────────────────────────────────────────────────────
 
@@ -740,8 +741,7 @@ export function WorldCupHubPage() {
     loadMarkets().finally(() => setLoading(false));
     // Refresh periodically so the knockout poll bars track others' bets while
     // the hub is open. Backend caches markets ~30s, so poll on that beat.
-    const id = setInterval(pollLive, 30_000);
-    return () => clearInterval(id);
+    return pollWhileVisible(pollLive, 30_000);
   }, [loadMarkets, pollLive]);
 
   // Seed picks from the user's real bets so the revealed percentages persist
