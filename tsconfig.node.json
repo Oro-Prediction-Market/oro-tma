@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "composite": true,
+    // Emit into node_modules, not next to vite.config.ts: a generated
+    // vite.config.js in the project root takes precedence over the .ts, so
+    // `vite` would quietly run a stale config after every edit.
+    "outDir": "./node_modules/.tmp/tsconfig-node",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
