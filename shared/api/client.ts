@@ -161,13 +161,26 @@ const _cache = new Map<
 >();
 const CACHE_TTL_MS = 5_000;
 
+/**
+ * First-time GETs still on the wire, by cache key. Screens mount several
+ * components that each ask for the same thing (`/users/me` three to five
+ * times on one PWA screen); before this, every one of them went to the
+ * network because the cache only fills once the first response is back.
+ */
+const _pending = new Map<string, Promise<unknown>>();
+
 export function bustCache(pathPrefix?: string) {
   if (!pathPrefix) {
     _cache.clear();
+    _pending.clear();
     return;
   }
   for (const key of _cache.keys()) {
     if (key.startsWith(pathPrefix)) _cache.delete(key);
+  }
+  // A request that started before the change must not be joined after it.
+  for (const key of _pending.keys()) {
+    if (key.startsWith(pathPrefix)) _pending.delete(key);
   }
 }
 
@@ -220,7 +233,13 @@ export async function request<T>(
       }
       return hit.data as T;
     }
-    return fetchAndCache<T>(path, options, cacheKey);
+    const pending = _pending.get(cacheKey);
+    if (pending) return pending as Promise<T>;
+    const first = fetchAndCache<T>(path, options, cacheKey).finally(() => {
+      if (_pending.get(cacheKey) === first) _pending.delete(cacheKey);
+    });
+    _pending.set(cacheKey, first);
+    return first;
   }
 
   // Non-GET: never cache, bust any cached version of this path
