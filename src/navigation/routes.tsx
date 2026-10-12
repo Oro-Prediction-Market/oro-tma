@@ -3,22 +3,42 @@ import { lazy, type ComponentType, type JSX } from "react";
 import { TmaFeedPage } from "@/pages/TmaFeedPage";
 import { MarketDetailPage } from "@/pages/MarketDetailPage";
 import { GroupDetailPage } from "@/pages/GroupDetailPage";
-import { PlatformAccuracyPage } from "@/pages/PlatformAccuracyPage";
-import { SavedMarketsPage } from "@/pages/SavedMarketsPage";
-import { WorldCupHubPage } from "@/pages/WorldCupHubPage";
-// BPL hub retired/hidden — uncomment to re-enable (also flip BPL_HIDDEN in BplHubPage.tsx)
+// BPL hub retired/hidden — uncomment to re-enable (also flip BPL_HIDDEN in src/lib/hubs/bpl.tsx)
 // import { BplHubPage } from "@/pages/BplHubPage";
-import { UfcHubPage } from "@/pages/UfcHubPage";
-import { EplHubPage } from "@/pages/EplHubPage";
 // Esports hub hidden — uncomment to re-enable (also un-gate the feed banner in TmaFeedPage.tsx)
 // import { EsportsHubPage } from "@/pages/EsportsHubPage";
-import { UclHubPage } from "@/pages/UclHubPage";
-import { NationsLeagueHubPage } from "@/pages/NationsLeagueHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
 import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
 
 // Lazily loaded — heavy pages not needed on startup
+// The hubs are their own chunks: the feed only needs their market predicates,
+// which live in src/lib/hubs, not the pages.
+const WorldCupHubPage = lazy(() =>
+  import("@/pages/WorldCupHubPage").then((m) => ({ default: m.WorldCupHubPage })),
+);
+const UfcHubPage = lazy(() =>
+  import("@/pages/UfcHubPage").then((m) => ({ default: m.UfcHubPage })),
+);
+const EplHubPage = lazy(() =>
+  import("@/pages/EplHubPage").then((m) => ({ default: m.EplHubPage })),
+);
+const UclHubPage = lazy(() =>
+  import("@/pages/UclHubPage").then((m) => ({ default: m.UclHubPage })),
+);
+const NationsLeagueHubPage = lazy(() =>
+  import("@/pages/NationsLeagueHubPage").then((m) => ({
+    default: m.NationsLeagueHubPage,
+  })),
+);
+const PlatformAccuracyPage = lazy(() =>
+  import("@/pages/PlatformAccuracyPage").then((m) => ({
+    default: m.PlatformAccuracyPage,
+  })),
+);
+const SavedMarketsPage = lazy(() =>
+  import("@/pages/SavedMarketsPage").then((m) => ({ default: m.SavedMarketsPage })),
+);
 const MarketsPage = lazy(() =>
   import("@/pages/MarketsPage").then((m) => ({ default: m.MarketsPage })),
 );

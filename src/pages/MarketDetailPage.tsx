@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useMemo } from "react";
+import { FC, Suspense, lazy, useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Spinner, Placeholder } from "@telegram-apps/telegram-ui";
 import { Page } from "@/components/Page";
@@ -40,28 +40,41 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { useTmaHaptic } from "@/hooks/useTmaHaptic";
 import { TrendingUp, TrendingDown, Share2, ArrowLeft } from "lucide-react";
 import { SaveMarketButton } from "@shared/components/SaveMarketButton";
-import {
-  getWCFlag,
-  isWCMarket,
-  calcProb,
-  calcOdds,
-  formatOdds,
-  rankedOutcomes,
-} from "./WorldCupHubPage";
-import { isEsportsMarket } from "./EsportsHubPage";
-import { EsportsMarketDetail } from "@/components/EsportsMarketDetail";
-import { isUfcMarket } from "./UfcHubPage";
-import { UfcMarketDetail } from "@/components/UfcMarketDetail";
-import { isEplMarket } from "./EplHubPage";
-import { EplMarketDetail } from "@/components/EplMarketDetail";
-import { isUclMarket } from "./UclHubPage";
-import { UclMarketDetail } from "@/components/UclMarketDetail";
-import { PriceMarketDetail } from "@/components/PriceMarketDetail";
+import { getWCFlag, isWCMarket, calcProb, calcOdds, formatOdds, rankedOutcomes } from "@/lib/hubs/worldCup";
+import { isEsportsMarket } from "@/lib/hubs/esports";
+import { isUfcMarket } from "@/lib/hubs/ufc";
+import { isEplMarket } from "@/lib/hubs/epl";
+import { isUclMarket } from "@/lib/hubs/ucl";
 import {
   UnderdogBanner,
   getLopsidedFavourite,
 } from "@shared/components/UnderdogBanner";
 import { pollWhileVisible } from "@shared/helpers/poll";
+
+// Each competition's detail view is its own chunk: a market only ever needs
+// one of them, and the plain view below needs none.
+const EsportsMarketDetail = lazy(() =>
+  import("@/components/EsportsMarketDetail").then((m) => ({ default: m.EsportsMarketDetail })),
+);
+const UfcMarketDetail = lazy(() =>
+  import("@/components/UfcMarketDetail").then((m) => ({ default: m.UfcMarketDetail })),
+);
+const EplMarketDetail = lazy(() =>
+  import("@/components/EplMarketDetail").then((m) => ({ default: m.EplMarketDetail })),
+);
+const UclMarketDetail = lazy(() =>
+  import("@/components/UclMarketDetail").then((m) => ({ default: m.UclMarketDetail })),
+);
+const PriceMarketDetail = lazy(() =>
+  import("@/components/PriceMarketDetail").then((m) => ({ default: m.PriceMarketDetail })),
+);
+
+/** What the page shows while it loads, reused while a detail view's chunk does. */
+const detailFallback = (
+  <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+    <Spinner size="l" />
+  </div>
+);
 
 // ── TER Price Panel ──────────────────────────────────────────────────────────
 
@@ -615,32 +628,34 @@ export const MarketDetailPage: FC = () => {
   if (m.externalSource === "ter" || m.externalSource === "btc") {
     return (
       <Page back={true}>
-        <PriceMarketDetail
-          market={m}
-          referralId={referralId}
-          userPickedOutcomeId={userBets[0]?.outcomeId}
-          hasWon={hasWon}
-          wonTotalPayout={wonTotalPayout}
-          userHasBets={userBets.length > 0}
-          onBetPlaced={() => {
-            if (!id) return;
-            bustCache(`/markets/${id}`);
-            getMarket(id)
-              .then(setMarket)
-              .catch(() => {});
-          }}
-          isResolving={isResolving}
-          proposedOutcome={proposedOutcome}
-          disputeTimeLeft={disputeTimeLeft}
-          disputeReason={disputeReason}
-          setDisputeReason={setDisputeReason}
-          handleSubmitDispute={handleSubmitDispute}
-          disputeSubmitting={disputeSubmitting}
-          disputeError={disputeError}
-          disputeSuccess={disputeSuccess}
-          disputeContest={disputeContest}
-          myDispute={myDispute}
-        />
+        <Suspense fallback={detailFallback}>
+          <PriceMarketDetail
+            market={m}
+            referralId={referralId}
+            userPickedOutcomeId={userBets[0]?.outcomeId}
+            hasWon={hasWon}
+            wonTotalPayout={wonTotalPayout}
+            userHasBets={userBets.length > 0}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
         {commentsSection}
       </Page>
     );
@@ -650,29 +665,31 @@ export const MarketDetailPage: FC = () => {
   if (isUfcMarket(m)) {
     return (
       <Page back={true}>
-        <UfcMarketDetail
-          chartData={chartData}
-          market={m}
-          referralId={referralId}
-          onBetPlaced={() => {
-            if (!id) return;
-            bustCache(`/markets/${id}`);
-            getMarket(id)
-              .then(setMarket)
-              .catch(() => {});
-          }}
-          isResolving={isResolving}
-          proposedOutcome={proposedOutcome}
-          disputeTimeLeft={disputeTimeLeft}
-          disputeReason={disputeReason}
-          setDisputeReason={setDisputeReason}
-          handleSubmitDispute={handleSubmitDispute}
-          disputeSubmitting={disputeSubmitting}
-          disputeError={disputeError}
-          disputeSuccess={disputeSuccess}
-          disputeContest={disputeContest}
-          myDispute={myDispute}
-        />
+        <Suspense fallback={detailFallback}>
+          <UfcMarketDetail
+            chartData={chartData}
+            market={m}
+            referralId={referralId}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
         {commentsSection}
       </Page>
     );
@@ -682,28 +699,30 @@ export const MarketDetailPage: FC = () => {
   if (isEsportsMarket(m)) {
     return (
       <Page back={true}>
-        <EsportsMarketDetail
-          market={m}
-          referralId={referralId}
-          onBetPlaced={() => {
-            if (!id) return;
-            bustCache(`/markets/${id}`);
-            getMarket(id)
-              .then(setMarket)
-              .catch(() => {});
-          }}
-          isResolving={isResolving}
-          proposedOutcome={proposedOutcome}
-          disputeTimeLeft={disputeTimeLeft}
-          disputeReason={disputeReason}
-          setDisputeReason={setDisputeReason}
-          handleSubmitDispute={handleSubmitDispute}
-          disputeSubmitting={disputeSubmitting}
-          disputeError={disputeError}
-          disputeSuccess={disputeSuccess}
-          disputeContest={disputeContest}
-          myDispute={myDispute}
-        />
+        <Suspense fallback={detailFallback}>
+          <EsportsMarketDetail
+            market={m}
+            referralId={referralId}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
         {commentsSection}
       </Page>
     );
@@ -713,29 +732,31 @@ export const MarketDetailPage: FC = () => {
   if (isUclMarket(m)) {
     return (
       <Page back={true}>
-        <UclMarketDetail
-          chartData={chartData}
-          market={m}
-          referralId={referralId}
-          onBetPlaced={() => {
-            if (!id) return;
-            bustCache(`/markets/${id}`);
-            getMarket(id)
-              .then(setMarket)
-              .catch(() => {});
-          }}
-          isResolving={isResolving}
-          proposedOutcome={proposedOutcome}
-          disputeTimeLeft={disputeTimeLeft}
-          disputeReason={disputeReason}
-          setDisputeReason={setDisputeReason}
-          handleSubmitDispute={handleSubmitDispute}
-          disputeSubmitting={disputeSubmitting}
-          disputeError={disputeError}
-          disputeSuccess={disputeSuccess}
-          disputeContest={disputeContest}
-          myDispute={myDispute}
-        />
+        <Suspense fallback={detailFallback}>
+          <UclMarketDetail
+            chartData={chartData}
+            market={m}
+            referralId={referralId}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
         {commentsSection}
       </Page>
     );
@@ -745,29 +766,31 @@ export const MarketDetailPage: FC = () => {
   if (isEplMarket(m)) {
     return (
       <Page back={true}>
-        <EplMarketDetail
-          chartData={chartData}
-          market={m}
-          referralId={referralId}
-          onBetPlaced={() => {
-            if (!id) return;
-            bustCache(`/markets/${id}`);
-            getMarket(id)
-              .then(setMarket)
-              .catch(() => {});
-          }}
-          isResolving={isResolving}
-          proposedOutcome={proposedOutcome}
-          disputeTimeLeft={disputeTimeLeft}
-          disputeReason={disputeReason}
-          setDisputeReason={setDisputeReason}
-          handleSubmitDispute={handleSubmitDispute}
-          disputeSubmitting={disputeSubmitting}
-          disputeError={disputeError}
-          disputeSuccess={disputeSuccess}
-          disputeContest={disputeContest}
-          myDispute={myDispute}
-        />
+        <Suspense fallback={detailFallback}>
+          <EplMarketDetail
+            chartData={chartData}
+            market={m}
+            referralId={referralId}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
         {commentsSection}
       </Page>
     );

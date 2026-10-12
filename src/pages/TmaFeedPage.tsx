@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef, useCallback, memo } from "react";
+import { FC, Suspense, lazy, useState, useEffect, useRef, useCallback, memo } from "react";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { Page } from "@/components/Page";
 import {
@@ -16,7 +16,6 @@ import { TerMarketCard } from "@/components/TerMarketCard";
 import { BtcMarketCard } from "@/components/BtcMarketCard";
 import { GroupedMarketCard } from "@/components/GroupedMarketCard";
 import { MarketShareSheet } from "@/components/MarketShareSheet";
-import { OracleOrbit } from "@/components/OracleOrbit";
 import { Link } from "@/components/Link/Link";
 import { Flame, TrendingUp, UsersRound, Vote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -39,24 +38,23 @@ import {
   SOURCE_LINE_H,
   TITLE_BLOCK_H,
 } from "../components/feedCardHeight";
-import { isWCMarket, getWCFlag, calcProb } from "./WorldCupHubPage";
-import {
-  isBplMarket,
-  getBplCrest,
-  shortClubName,
-  BPL_CLUBS,
-  Crest,
-} from "./BplHubPage";
-import { isUfcMarket } from "./UfcHubPage";
-import { isEplMarket } from "./EplHubPage";
-import { isEsportsMarket } from "./EsportsHubPage";
+import { isWCMarket, getWCFlag, calcProb } from "@/lib/hubs/worldCup";
+import { isBplMarket, getBplCrest, shortClubName, BPL_CLUBS, Crest } from "@/lib/hubs/bpl";
+import { isUfcMarket } from "@/lib/hubs/ufc";
+import { isEplMarket } from "@/lib/hubs/epl";
+import { isEsportsMarket } from "@/lib/hubs/esports";
 import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { UfcBanner } from "@shared/components/UfcBanner";
 import { UclBanner } from "@shared/components/UclBanner";
 import { UnlBanner } from "@shared/components/UnlBanner";
-import { isUclMarket } from "./UclHubPage";
-import { isUnlMarket } from "./NationsLeagueHubPage";
+import { isUclMarket } from "@/lib/hubs/ucl";
+import { isUnlMarket } from "@/lib/hubs/nationsLeague";
 import { coalesce, pollWhileVisible } from "@shared/helpers/poll";
+
+// "Ask the Crowd" is opened by few people; its chunk loads on first open.
+const OracleOrbit = lazy(() =>
+  import("@/components/OracleOrbit").then((m) => ({ default: m.OracleOrbit })),
+);
 
 // ── Trending carousel: one full-width hero card at a time, auto-rotating ──────
 function trendingTimeLeft(m: Market): string {
@@ -1612,6 +1610,15 @@ export const TmaFeedPage: FC = () => {
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [orbitOpen, setOrbitOpen] = useState(false);
+  // Mounted from its first opening on, never before: it renders nothing while
+  // closed, and staying mounted keeps its orbs where they were placed.
+  const [orbitMounted, setOrbitMounted] = useState(false);
+  if (orbitOpen && !orbitMounted) setOrbitMounted(true);
+  const orbit = orbitMounted && (
+    <Suspense fallback={null}>
+      <OracleOrbit isOpen={orbitOpen} onClose={() => setOrbitOpen(false)} />
+    </Suspense>
+  );
   const [selectedCategory, setSelectedCategory] = useState("All");
   // Hub banners follow their own category — those markets live in the hubs, so
   // filtering to Gaming should leave the esports banner as the entry point
@@ -1838,7 +1845,7 @@ export const TmaFeedPage: FC = () => {
             <Vote size={16} strokeWidth={2.4} />
             Ask the Crowd
           </button>
-          <OracleOrbit isOpen={orbitOpen} onClose={() => setOrbitOpen(false)} />
+          {orbit}
         </div>
       </Page>
     );
@@ -2438,7 +2445,7 @@ export const TmaFeedPage: FC = () => {
           </span>
         </button>
 
-        <OracleOrbit isOpen={orbitOpen} onClose={() => setOrbitOpen(false)} />
+        {orbit}
 
         {/* ── Category Tabs ── */}
         <div

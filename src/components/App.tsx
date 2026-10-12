@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Navigate, Route, Routes, HashRouter } from "react-router-dom";
 import { useLaunchParams } from "@tma.js/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
@@ -9,7 +9,6 @@ import { useTheme } from "@shared/hooks/useTheme";
 import { useSSE } from "@shared/hooks/useSSE";
 import { useAuth } from "@shared/hooks/useAuth";
 import { OnboardingModal, useOnboarding } from "./OnboardingModal";
-import { OnboardingPage } from "@/pages/OnboardingPage";
 import { RouteTracker } from "@shared/components/RouteTracker";
 import {
   DeepLinkRedirect,
@@ -19,8 +18,18 @@ import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanne
 import { SystemNotificationModal } from "@/components/SystemNotificationModal";
 import { ConsentGate } from "@shared/components/ConsentGate";
 import { useConsentRequired } from "@shared/hooks/useConsentRequired";
-import { TermsPage } from "@/pages/TermsPage";
 import { trackEvent } from "@shared/api/client";
+import { LoadingScreen } from "@shared/components/LoadingScreen";
+
+// Only new users see the signup wizard (and it brings the 150KB phone-number
+// library); Terms opens from the consent gate. Neither belongs in the bundle
+// every launch downloads.
+const OnboardingPage = lazy(() =>
+  import("@/pages/OnboardingPage").then((m) => ({ default: m.OnboardingPage })),
+);
+const TermsPage = lazy(() =>
+  import("@/pages/TermsPage").then((m) => ({ default: m.TermsPage })),
+);
 
 export function App() {
   const lp = useLaunchParams();
@@ -59,7 +68,9 @@ export function App() {
         appearance={isDark ? "dark" : "light"}
         platform={["macos", "ios"].includes(lp.tgWebAppPlatform) ? "ios" : "base"}
       >
-        <OnboardingPage auth={auth} />
+        <Suspense fallback={<LoadingScreen />}>
+          <OnboardingPage auth={auth} />
+        </Suspense>
       </AppRoot>
     );
   }
@@ -103,7 +114,9 @@ export function App() {
                 background: "var(--bg-main, #0f0f23)",
               }}
             >
-              <TermsPage onBack={() => setShowTerms(false)} />
+              <Suspense fallback={null}>
+                <TermsPage onBack={() => setShowTerms(false)} />
+              </Suspense>
             </div>
           )}
           <Suspense
