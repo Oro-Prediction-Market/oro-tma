@@ -917,7 +917,8 @@ function CommentRow({
       if (!menuRef.current?.contains(e.target as Node)) onCloseMenu();
     };
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("touchstart", onDown);
+    // Passive: it never cancels the touch, so scrolling need not wait on it.
+    document.addEventListener("touchstart", onDown, { passive: true });
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("touchstart", onDown);
