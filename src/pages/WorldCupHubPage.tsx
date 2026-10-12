@@ -675,6 +675,15 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: "knockout", label: "Knockout", icon: <Network size={15} /> },
 ];
 
+/** Placeholder for an empty section. Module level, so it is not a new
+ *  component type on every render (which remounted it each time). */
+const EmptyState = ({ msg }: { msg: string }) => (
+  <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)" }}>
+    <div style={{ fontSize: 40, marginBottom: 8 }}>⚽</div>
+    <div style={{ fontWeight: 700, fontSize: 15 }}>{msg}</div>
+  </div>
+);
+
 export function WorldCupHubPage() {
   const navigate = useNavigate();
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -835,12 +844,6 @@ export function WorldCupHubPage() {
 
   if (loading) return <LoadingScreen message="Loading World Cup…" />;
 
-  const EmptyState = ({ msg }: { msg: string }) => (
-    <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)" }}>
-      <div style={{ fontSize: 40, marginBottom: 8 }}>⚽</div>
-      <div style={{ fontWeight: 700, fontSize: 15 }}>{msg}</div>
-    </div>
-  );
 
   return (
     <Page>
