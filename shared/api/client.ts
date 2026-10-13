@@ -743,7 +743,7 @@ export function feedHeartbeat(sessionId: string): Promise<{ count: number }> {
  */
 export function getMarkets(
   q?: string,
-  opts?: { scope?: "all" | "live"; groupId?: string },
+  opts?: { scope?: "all" | "live"; groupId?: string; fresh?: boolean },
 ): Promise<Market[]> {
   const params = new URLSearchParams();
   if (q && q.trim()) params.set("q", q.trim());
@@ -757,6 +757,10 @@ export function getMarkets(
   // same crests came down six times a minute.
   params.set("images", "ref");
   const qs = params.toString() ? `?${params.toString()}` : "";
+  // `fresh` skips the cached copy. A page that polls only the live list keeps
+  // its full-list entry from when it opened, and serving that when a market
+  // finishes would roll the whole screen back to then.
+  if (opts?.fresh) bustCache(`/markets${qs}::`);
   return request<Market[]>(`/markets${qs}`).then(resolveOutcomeImages);
 }
 

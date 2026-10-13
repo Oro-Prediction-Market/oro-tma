@@ -30,8 +30,8 @@ export const MarketsPage: FC = () => {
   useEffect(() => {
     // The list on screen, which the live poll merges into.
     let current: Market[] = [];
-    const loadAll = () =>
-      getMarkets().then((data) => {
+    const loadAll = (fresh = false) =>
+      getMarkets(undefined, { fresh }).then((data) => {
         current = data;
         setMarkets(data);
       });
@@ -54,7 +54,7 @@ export const MarketsPage: FC = () => {
       getMarkets(undefined, { scope: "live" })
         .then((live) => {
           const merged = mergeLivePoll(current, live);
-          if (!merged) return loadAll();
+          if (!merged) return loadAll(true);
           current = merged;
           setMarkets(merged);
         })
