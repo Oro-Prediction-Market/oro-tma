@@ -10,25 +10,47 @@
  * tapped. It is a navigation, so nothing half-typed is on screen to lose.
  */
 
-/** Long enough that a chunk which is really broken does not reload in a loop. */
+/** Long enough to stop a reload loop while pods on both builds are serving. */
 const RELOAD_GUARD_MS = 10_000;
 const RELOAD_KEY = "oro:chunk-reload-at";
 
-export function reloadOnStaleChunk() {
-  window.addEventListener("vite:preloadError", (event) => {
-    let last = 0;
+/**
+ * True when the server is now on a different build from the one this page
+ * runs. A chunk that failed for any other reason — a dropped connection, being
+ * offline — is not fixed by reloading, so that case is left alone.
+ */
+async function serverHasNewerBuild(): Promise<boolean> {
+  const entry = document.querySelector<HTMLScriptElement>(
+    'script[type="module"][src*="/assets/index-"]',
+  );
+  if (!entry) return false;
+  const running = new URL(entry.src).pathname;
+  try {
+    const res = await fetch(import.meta.env.BASE_URL, { cache: "no-store" });
+    if (!res.ok) return false;
+    return !(await res.text()).includes(running);
+  } catch {
+    return false;
+  }
+}
+
+function onPreloadError() {
+  void serverHasNewerBuild().then((newer) => {
+    if (!newer) return;
+    // During a rolling deploy the reload can land on a pod still serving the
+    // old build, so this can recur; the guard has to survive the reload, and
+    // without storage there is no safe way to reload.
     try {
-      last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
-    } catch {
-      /* storage blocked: fall through and reload once */
-    }
-    if (Date.now() - last < RELOAD_GUARD_MS) return;
-    try {
+      const last = Number(sessionStorage.getItem(RELOAD_KEY)) || 0;
+      if (Date.now() - last < RELOAD_GUARD_MS) return;
       sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
     } catch {
-      /* storage blocked */
+      return;
     }
-    event.preventDefault();
     window.location.reload();
   });
+}
+
+export function reloadOnStaleChunk() {
+  window.addEventListener("vite:preloadError", onPreloadError);
 }
