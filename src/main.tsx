@@ -3,6 +3,9 @@ import { StrictMode } from "react";
 
 import "@shared/index.css";
 import "@telegram-apps/telegram-ui/dist/styles.css";
+import { reloadOnStaleChunk } from "./reloadOnStaleChunk";
+
+reloadOnStaleChunk();
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 
