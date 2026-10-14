@@ -10,6 +10,7 @@ import { useSSE } from "@shared/hooks/useSSE";
 import { useAuth } from "@shared/hooks/useAuth";
 import { OnboardingModal, useOnboarding } from "./OnboardingModal";
 import { RouteTracker } from "@shared/components/RouteTracker";
+import { ScrollManager } from "@shared/components/ScrollManager";
 import {
   DeepLinkRedirect,
   captureStartParam,
@@ -82,6 +83,7 @@ export function App() {
     >
       <HashRouter future={{ v7_startTransition: true }}>
         <RouteTracker />
+        <ScrollManager />
         <DeepLinkRedirect />
         <div
           style={{
