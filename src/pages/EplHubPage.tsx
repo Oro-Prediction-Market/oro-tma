@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { leadTabs } from "@/lib/hubs/tabOrder";
 import {
   getMarkets,
   getEplStandings,
@@ -546,7 +547,8 @@ export function EplHubPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeBet, setActiveBet] = useState<ActiveBet | null>(null);
-  const [tab, setTab] = useState<HubTab>("season");
+  /** The tab the viewer tapped. Null until then — see `tab` below. */
+  const [pickedTab, setTab] = useState<HubTab | null>(null);
   const [matchView, setMatchView] = useState<"upcoming" | "previous">("upcoming");
   /** Finished matches — null until someone opens Previous. */
   const [finished, setFinished] = useState<Market[] | null>(null);
@@ -611,6 +613,12 @@ export function EplHubPage() {
   const upcomingMatches = matchMarkets.filter((m) =>
     ["open", "upcoming", "closed", "resolving"].includes(m.status),
   );
+
+  // Matches leads while there is a match to bet on, Season otherwise, and the
+  // hub opens on whichever leads until the viewer taps a tab. Matches is
+  // assumed while the first load is in flight, as it is the usual case.
+  const tabs = leadTabs(HUB_TABS, loading || upcomingMatches.length > 0);
+  const tab: HubTab = pickedTab ?? tabs[0].id;
   const previousMatches = matchMarkets
     .filter((m) => ["resolved", "settled"].includes(m.status))
     .sort((a, b) => kickoffOf(b) - kickoffOf(a));
@@ -771,7 +779,7 @@ export function EplHubPage() {
             background: "var(--bg-card, #1a1a1a)",
           }}
         >
-          {HUB_TABS.map(({ id, label, icon }) => (
+          {tabs.map(({ id, label, icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
