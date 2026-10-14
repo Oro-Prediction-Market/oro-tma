@@ -833,6 +833,14 @@ function OpenPicksStrip({
   );
 }
 
+/**
+ * Pinned by an admin to the top of the feed. Only markets with no hub: a hub
+ * match uses the same flag for its hub's featured slot instead.
+ */
+function isFeedPinned(m: Market): boolean {
+  return !!m.isFeatured && !(m.subcategory ?? "").trim();
+}
+
 function outcomeColor(rank: number, total: number, resolved: boolean): string {
   if (resolved) {
     if (rank === 0) return "#22c55e";
@@ -2024,8 +2032,16 @@ export const TmaFeedPage: FC = () => {
   const filteredResolving = filterByQuery(resolvingMarkets);
   const filteredUpcoming = filterByQuery(upcomingMarkets);
 
-  // All cards in display order: resolving → open → upcoming
-  const allCards = [...filteredOpen, ...filteredResolving, ...filteredUpcoming];
+  // All cards in display order: pinned first, then open → resolving →
+  // upcoming. An admin pins a no-hub market (Ballon d'Or, say) to put it at the
+  // very top whatever its pool or status — including while it is closed and
+  // about to settle. Hub matches use the same flag for their hub's featured
+  // slot and never appear here, hence the subcategory check.
+  const ordered = [...filteredOpen, ...filteredResolving, ...filteredUpcoming];
+  const allCards = [
+    ...ordered.filter(isFeedPinned),
+    ...ordered.filter((m) => !isFeedPinned(m)),
+  ];
   const siblingsByGroup = new Map<string, Market[]>();
   for (const m of allCards) {
     if (!m.groupId) continue;
@@ -2054,7 +2070,13 @@ export const TmaFeedPage: FC = () => {
   const isPriceMarket = (m: Market) =>
     m.externalSource === "ter" || m.externalSource === "btc";
   const trendingRank = (m: Market) =>
-    isPriceMarket(m) ? 0 : m.subcategory && m.subcategory.trim() ? 2 : 1;
+    isFeedPinned(m)
+      ? -1
+      : isPriceMarket(m)
+        ? 0
+        : m.subcategory && m.subcategory.trim()
+          ? 2
+          : 1;
   const trendingMarkets = markets
     .filter(
       (m) =>
