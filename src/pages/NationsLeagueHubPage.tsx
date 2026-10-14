@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { leadTabs } from "@/lib/hubs/tabOrder";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { groupByMatchday } from "../lib/matchday";
@@ -92,7 +91,11 @@ const MATCH_SUB = "unl-match";
 
 type UnlTab = "matches" | "season" | "groups" | "stats";
 
-/** Matches or Season is moved to the front at render — see `leadTabs`. */
+/**
+ * Matches leads, unlike the EPL and UCL hubs where Season does: here the
+ * fixtures are the competition for most of the year, and the season markets
+ * ("who lifts the trophy?") sit in their own tab beside them.
+ */
 const TABS: { id: UnlTab; label: string; icon: React.ReactNode }[] = [
   { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "season", label: "Season", icon: <Trophy size={14} /> },
@@ -1476,8 +1479,7 @@ function OutrightMarket({
 
 export function NationsLeagueHubPage() {
   const navigate = useNavigate();
-  /** The tab the viewer tapped. Null until then — see `tab` below. */
-  const [pickedTab, setTab] = useState<UnlTab | null>(null);
+  const [tab, setTab] = useState<UnlTab>("matches");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   /** Finished matches — null until someone opens Previous. */
@@ -1592,12 +1594,6 @@ export function NationsLeagueHubPage() {
     const { rows, fromMarket } = boardFor(c.id);
     return { ...c, rows, market: statMarket(c.id), fromMarket };
   });
-
-  // Matches leads while there is a match to bet on, Season otherwise, and the
-  // hub opens on whichever leads until the viewer taps a tab. Matches is
-  // assumed while the first load is in flight, as it is the usual case.
-  const tabs = leadTabs(TABS, loading || matchMarkets.some((m) => !isMatchFinal(m)));
-  const tab: UnlTab = pickedTab ?? tabs[0].id;
 
   // Anything else in this competition: an admin-created outright. Kept through
   // closed and resolving so it stays on the Season tab until it is settled.
@@ -1746,7 +1742,7 @@ export function NationsLeagueHubPage() {
               marginBottom: 18,
             }}
           >
-            {tabs.map((t) => {
+            {TABS.map((t) => {
               const active = tab === t.id;
               return (
                 <button
