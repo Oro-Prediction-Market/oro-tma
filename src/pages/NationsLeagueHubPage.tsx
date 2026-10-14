@@ -91,14 +91,10 @@ const MATCH_SUB = "unl-match";
 
 type UnlTab = "matches" | "season" | "groups" | "stats";
 
-/**
- * Matches leads, unlike the EPL and UCL hubs where Season does: here the
- * fixtures are the competition for most of the year, and the season markets
- * ("who lifts the trophy?") sit in their own tab beside them.
- */
+// Season leads, as on the EPL and UCL hubs, and the hub opens on it.
 const TABS: { id: UnlTab; label: string; icon: React.ReactNode }[] = [
-  { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "season", label: "Season", icon: <Trophy size={14} /> },
+  { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "groups", label: "Groups", icon: <LayoutGrid size={14} /> },
   { id: "stats", label: "Stats", icon: <BarChart3 size={14} /> },
 ];
@@ -1479,7 +1475,7 @@ function OutrightMarket({
 
 export function NationsLeagueHubPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<UnlTab>("matches");
+  const [tab, setTab] = useState<UnlTab>("season");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   /** Finished matches — null until someone opens Previous. */
