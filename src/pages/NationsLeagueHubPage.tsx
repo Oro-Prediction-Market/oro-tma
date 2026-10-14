@@ -89,20 +89,16 @@ const STAT_SUBCAT: Record<StatCat, string> = {
 
 const MATCH_SUB = "unl-match";
 
-type UnlTab = "matches" | "groups" | "stats";
+type UnlTab = "matches" | "season" | "groups" | "stats";
 
 /**
- * Three tabs, not four.
- *
- * The other hubs open on a Season tab because their competition has a headline
- * outright — "who lifts the trophy?" — that is a reason to visit on its own.
- * This one does not: the Nations League final is four teams the following
- * June, so a Season tab here is an empty state sitting next to two counters
- * the masthead already shows. Outright markets, if an admin ever creates one,
- * render at the top of Matches instead, so nothing becomes unreachable.
+ * Matches leads, unlike the EPL and UCL hubs where Season does: here the
+ * fixtures are the competition for most of the year, and the season markets
+ * ("who lifts the trophy?") sit in their own tab beside them.
  */
 const TABS: { id: UnlTab; label: string; icon: React.ReactNode }[] = [
   { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
+  { id: "season", label: "Season", icon: <Trophy size={14} /> },
   { id: "groups", label: "Groups", icon: <LayoutGrid size={14} /> },
   { id: "stats", label: "Stats", icon: <BarChart3 size={14} /> },
 ];
@@ -626,7 +622,6 @@ function MatchSkeletons({ count = 4 }: { count?: number }) {
 
 function MatchesTab({
   matches,
-  outrights,
   loading,
   previousLoaded,
   onShowPrevious,
@@ -634,8 +629,6 @@ function MatchesTab({
   onBet,
 }: {
   matches: Market[];
-  /** Admin-created season markets. Normally none — see TABS. */
-  outrights: Market[];
   /** True until the first markets response lands — see {@link MatchSkeletons}. */
   loading: boolean;
   /** Whether the finished matches have been fetched yet. */
@@ -649,20 +642,6 @@ function MatchesTab({
   const upcoming = matches.filter((m) => !isMatchFinal(m));
   const kickoffMs = (m: Market) => new Date(m.bettingClosesAt ?? m.closesAt ?? 0).getTime();
   const previous = matches.filter(isMatchFinal).sort((a, b) => kickoffMs(b) - kickoffMs(a));
-
-  // Outrights lead when they exist, and take up no room at all when they do
-  // not — which is the usual case, and the reason there is no Season tab.
-  const outrightSection =
-    outrights.length > 0 ? (
-      <div style={{ marginBottom: 22 }}>
-        <Heading>Season Outrights</Heading>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {outrights.map((m) => (
-            <OutrightMarket key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
-          ))}
-        </div>
-      </div>
-    ) : null;
 
   // Nothing has arrived yet. Deliberately checked BEFORE the empty state: the
   // two are indistinguishable from here, and guessing "empty" tells a viewer
@@ -682,7 +661,6 @@ function MatchesTab({
   if (previousLoaded && upcoming.length === 0 && previous.length === 0) {
     return (
       <div>
-        {outrightSection}
         <Heading>Matches</Heading>
         <EmptyState>
           No Nations League match markets yet.
@@ -696,7 +674,6 @@ function MatchesTab({
 
   return (
     <div>
-      {outrightSection}
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {(
           [
@@ -1258,6 +1235,41 @@ function StatsTab({
 
 // ── Outrights ────────────────────────────────────────────────────────────────
 
+/** The Season tab: every season market in this competition, or why there is none. */
+function SeasonTab({
+  outrights,
+  loading,
+  onOpen,
+  onBet,
+}: {
+  outrights: Market[];
+  /** True until the first markets response lands. */
+  loading: boolean;
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  return (
+    <div>
+      <Heading>Season Outrights</Heading>
+      {outrights.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {outrights.map((m) => (
+            <OutrightMarket key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
+          ))}
+        </div>
+      ) : loading ? (
+        <MatchSkeletons count={2} />
+      ) : (
+        <EmptyState>
+          No season markets open yet.
+          <br />
+          Markets like “Who lifts the trophy?” appear here once created.
+        </EmptyState>
+      )}
+    </div>
+  );
+}
+
 /** An outright market with its contenders inline, favourite first. */
 function OutrightMarket({
   market,
@@ -1583,13 +1595,14 @@ export function NationsLeagueHubPage() {
     return { ...c, rows, market: statMarket(c.id), fromMarket };
   });
 
-  // Anything else in this competition: an admin-created outright, still open.
+  // Anything else in this competition: an admin-created outright. Kept through
+  // closed and resolving so it stays on the Season tab until it is settled.
   const outrightMarkets = allMarkets.filter(
     (m) =>
       isUnlMarket(m) &&
       sub(m) !== MATCH_SUB &&
       !STAT_SUBS.includes(sub(m)) &&
-      (m.status === "open" || m.status === "upcoming"),
+      ["upcoming", "open", "closed", "resolving"].includes(m.status),
   );
 
   const openMarket = (id: string) => navigate(`/market/${id}`);
@@ -1764,10 +1777,17 @@ export function NationsLeagueHubPage() {
           {tab === "matches" && (
             <MatchesTab
               matches={matchMarkets}
-              outrights={outrightMarkets}
               loading={loading}
               previousLoaded={finished !== null}
               onShowPrevious={loadFinished}
+              onOpen={openMarket}
+              onBet={openBet}
+            />
+          )}
+          {tab === "season" && (
+            <SeasonTab
+              outrights={outrightMarkets}
+              loading={loading}
               onOpen={openMarket}
               onBet={openBet}
             />
