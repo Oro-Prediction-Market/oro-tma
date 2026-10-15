@@ -14,6 +14,7 @@ import { ScrollManager } from "@shared/components/ScrollManager";
 import {
   DeepLinkRedirect,
   captureStartParam,
+  openMarketLinkDirectly,
 } from "@shared/components/DeepLinkRedirect";
 import { ChallengeContextBanner } from "@shared/components/ChallengeContextBanner";
 import { SystemNotificationModal } from "@/components/SystemNotificationModal";
@@ -33,6 +34,9 @@ const TermsPage = lazy(() =>
 );
 
 export function App() {
+  // Before the router's first render, so a market link opens on the market
+  // instead of rendering the feed first. Runs once; later renders no-op.
+  openMarketLinkDirectly();
   const lp = useLaunchParams();
   const { theme } = useTheme();
   const auth = useAuth();

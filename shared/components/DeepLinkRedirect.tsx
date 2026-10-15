@@ -98,6 +98,36 @@ export function challengeIdFromStartParam(
   return id || null;
 }
 
+/**
+ * Open a market link straight on the market, before the router first renders.
+ *
+ * Called from App's render, ahead of the HashRouter, so the router's very
+ * first location is `/market/:id`. Before this, a market link rendered the
+ * whole feed first — the heaviest page in the app, which also starts loading
+ * every live market — and only then did DeepLinkRedirect navigate away, as a
+ * transition that had to wait for that render. The market page now mounts
+ * first and asks for its market immediately.
+ *
+ * Only on a fresh launch: if the URL already holds an app route (a reload on
+ * some page), it is left alone. Challenge links still go through
+ * DeepLinkRedirect, since they need a request to find their market.
+ */
+export function openMarketLinkDirectly(): void {
+  if (handled) return;
+  const marketId = marketIdFromStartParam(readStartParam());
+  if (!marketId) return;
+  // On launch the hash holds Telegram's launch data, not an app route.
+  const path = window.location.hash.replace(/^#/, "");
+  if (path.startsWith("/") && path !== "/") return;
+  handled = true;
+  clearStashedParam();
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${window.location.pathname}${window.location.search}#/market/${encodeURIComponent(marketId)}`,
+  );
+}
+
 export function DeepLinkRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
