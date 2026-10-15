@@ -8,8 +8,23 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 // Never persisted to localStorage or sessionStorage to prevent XSS token theft.
 let _token: string | null = null;
 
+const _tokenListeners = new Set<() => void>();
+
+/**
+ * Run `fn` whenever the token is set to a new value or cleared, e.g. to
+ * reconnect live updates after sign-in. Returns the unsubscribe.
+ */
+export function onTokenChange(fn: () => void): () => void {
+  _tokenListeners.add(fn);
+  return () => {
+    _tokenListeners.delete(fn);
+  };
+}
+
 export function setToken(token: string) {
+  if (_token === token) return;
   _token = token;
+  _tokenListeners.forEach((fn) => fn());
 }
 
 export function getToken(): string | null {
@@ -17,7 +32,9 @@ export function getToken(): string | null {
 }
 
 export function clearToken() {
+  if (_token === null) return;
   _token = null;
+  _tokenListeners.forEach((fn) => fn());
 }
 
 // Decode a JWT payload without a library — returns null if malformed
