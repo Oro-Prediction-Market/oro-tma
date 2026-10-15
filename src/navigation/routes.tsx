@@ -9,8 +9,6 @@ import { GroupDetailPage } from "@/pages/GroupDetailPage";
 // import { EsportsHubPage } from "@/pages/EsportsHubPage";
 import { TmaPageWrapper } from "@/components/TmaPageWrapper";
 
-import { TONConnectPage } from "@/pages/TONConnectPage/TONConnectPage";
-
 // Lazily loaded — heavy pages not needed on startup
 // The hubs are their own chunks: the feed only needs their market predicates,
 // which live in src/lib/hubs, not the pages.
@@ -42,8 +40,12 @@ const SavedMarketsPage = lazy(() =>
 const MarketsPage = lazy(() =>
   import("@/pages/MarketsPage").then((m) => ({ default: m.MarketsPage })),
 );
+// TON pages bring their own TonConnect provider (see TonRoutes).
 const TONBetPage = lazy(() =>
-  import("@/pages/TONBetPage").then((m) => ({ default: m.TONBetPage })),
+  import("@/pages/TonRoutes").then((m) => ({ default: m.TonBetRoute })),
+);
+const TONConnectPage = lazy(() =>
+  import("@/pages/TonRoutes").then((m) => ({ default: m.TonConnectRoute })),
 );
 const DKBankBetPage = lazy(() =>
   import("@/pages/DKBankBetPage").then((m) => ({ default: m.DKBankBetPage })),
