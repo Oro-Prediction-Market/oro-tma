@@ -11,6 +11,7 @@ import { useAuth } from "@shared/hooks/useAuth";
 import { OnboardingModal, useOnboarding } from "./OnboardingModal";
 import { RouteTracker } from "@shared/components/RouteTracker";
 import { ScrollManager } from "@shared/components/ScrollManager";
+import { PresenceHeartbeat } from "@shared/components/PresenceHeartbeat";
 import {
   DeepLinkRedirect,
   captureStartParam,
@@ -88,6 +89,7 @@ export function App() {
       <HashRouter future={{ v7_startTransition: true }}>
         <RouteTracker />
         <ScrollManager />
+        <PresenceHeartbeat />
         <DeepLinkRedirect />
         <div
           style={{

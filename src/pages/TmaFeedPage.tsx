@@ -1,11 +1,11 @@
 import { FC, Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
+import { useOnlineCount } from "@shared/components/PresenceHeartbeat";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { Page } from "@/components/Page";
 import {
   getMarkets,
   getMyBets,
   getRecentActivity,
-  feedHeartbeat,
   type Market,
   type ActivityEvent,
   type Bet,
@@ -1711,22 +1711,7 @@ export const TmaFeedPage: FC = () => {
   // so the memoised group card is not handed a new array every render.
   const groupCache = useRef(new Map<string, Market[]>());
   const [fundBannerDismissed, setFundBannerDismissed] = useState(false);
-  const [onlineCount, setOnlineCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let sid = sessionStorage.getItem("oro_feed_sid");
-    if (!sid) {
-      sid = crypto.randomUUID();
-      sessionStorage.setItem("oro_feed_sid", sid);
-    }
-    const ping = () =>
-      feedHeartbeat(sid!)
-        .then(({ count }) => setOnlineCount(count))
-        .catch(() => {});
-    ping();
-    const id = setInterval(ping, 30_000);
-    return () => clearInterval(id);
-  }, []);
+  const onlineCount = useOnlineCount();
 
   const loadMore = useCallback(() => {
     setVisibleCount((c) => c + PAGE_SIZE);
