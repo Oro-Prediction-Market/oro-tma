@@ -834,11 +834,18 @@ function OpenPicksStrip({
 }
 
 /**
- * Pinned by an admin to the top of the feed. Only markets with no hub: a hub
- * match uses the same flag for its hub's featured slot instead.
+ * Pinned by an admin to the top of the feed. Any market except a hub match:
+ * an EPL, UCL or Nations League match uses the same flag for its hub's
+ * featured slot instead. Must match `pinTarget` in the admin's
+ * MarketManagement.tsx.
  */
 function isFeedPinned(m: Market): boolean {
-  return !!m.isFeatured && !(m.subcategory ?? "").trim();
+  if (!m.isFeatured) return false;
+  const sub = (m.subcategory ?? "").toLowerCase();
+  const hubMatch =
+    ["epl-", "ucl-", "unl-"].some((p) => sub.startsWith(p)) &&
+    m.title.toLowerCase().includes(" vs ");
+  return !hubMatch;
 }
 
 function outcomeColor(rank: number, total: number, resolved: boolean): string {
