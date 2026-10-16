@@ -71,6 +71,31 @@ function trendingTimeLeft(m: Market): string {
   return `${Math.max(1, Math.floor(ms / 60000))}m`;
 }
 
+// The market's own picture, top right across from the category, when it has
+// one — there, not beside the title, so a narrow card keeps the title's width.
+// A broken link hides itself rather than leaving an empty box in the strip.
+function TrendingThumb({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      style={{
+        width: 30,
+        height: 30,
+        flexShrink: 0,
+        borderRadius: 8,
+        objectFit: "cover",
+        background: "rgba(255,255,255,0.06)",
+      }}
+    />
+  );
+}
+
 // A deliberately different look from the feed cards below: accent-tinted, a big
 // headline probability, and compact — so "trending" reads as a highlight strip.
 function TrendingMiniCard({
@@ -118,7 +143,15 @@ function TrendingMiniCard({
         }}
       >
         <div>
-          <div style={{ marginBottom: 8 }}>
+          <div
+            style={{
+              marginBottom: 8,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
             <span
               style={{
                 fontSize: 8.5,
@@ -139,6 +172,7 @@ function TrendingMiniCard({
             >
               {m.category || "market"}
             </span>
+            {m.imageUrl && <TrendingThumb src={m.imageUrl} />}
           </div>
           <div
             style={{
