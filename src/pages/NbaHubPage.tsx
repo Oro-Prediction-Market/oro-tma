@@ -1,3 +1,4 @@
+import { NbaBanner } from "@shared/components/NbaBanner";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Clock, ListOrdered, Star } from "lucide-react";
@@ -26,9 +27,8 @@ import { getMarkets, getNbaGames, getNbaStandings } from "@shared/api/client";
  * (/nba/games, from ESPN), not from markets: every game shows, with its live
  * score, and the ones that have a market carry the prediction buttons. Markets
  * are joined to games by the ESPN id the backend stored on them
- * (`metadata.espnGameId`). Preseason games show for the score but never get a
- * market, and games further out than the market window show without one until
- * it opens.
+ * (`metadata.espnGameId`). Games further out than the market window show
+ * without one until it opens.
  *
  * NBA convention throughout: away team on the left, "@", home on the right.
  */
@@ -491,9 +491,7 @@ function GameCard({
             : market.status === "closed" || market.status === "resolving"
               ? `Nu ${pool.toLocaleString()} pool · awaiting result`
               : `Nu ${pool.toLocaleString()} pool`
-          : game.seasonType === 1
-            ? "Preseason · no prediction"
-            : game.state === "pre"
+          : game.state === "pre"
               ? "Prediction opens closer to tip-off"
               : ""}
       </div>
@@ -933,62 +931,7 @@ export function NbaHubPage() {
   return (
     <Page>
       <div style={{ minHeight: "100vh", background: BG }}>
-        {/* ── Masthead ── */}
-        <div
-          style={{
-            position: "relative",
-            padding: "56px 18px 20px",
-            background: `radial-gradient(120% 120% at 90% 0%, ${NBA_RED}aa 0%, transparent 55%), radial-gradient(120% 120% at 0% 100%, ${NBA_BLUE} 0%, transparent 60%), ${BG}`,
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-          }}
-        >
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-            style={{
-              position: "absolute",
-              left: 12,
-              top: 12,
-              background: "rgba(0,0,0,0.4)",
-              border: "1px solid rgba(255,255,255,0.35)",
-              borderRadius: "50%",
-              width: 32,
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "#fff",
-              fontSize: 17,
-              lineHeight: 1,
-              padding: 0,
-            }}
-          >
-            ←
-          </button>
-          <div
-            style={{
-              fontSize: 44,
-              fontWeight: 900,
-              fontStyle: "italic",
-              color: "#fff",
-              lineHeight: 0.95,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            NBA
-          </div>
-          <div
-            style={{
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: "rgba(230,235,247,0.8)",
-              marginTop: 6,
-            }}
-          >
-            2026/27 Season · times in Bhutan
-          </div>
-        </div>
+        <NbaBanner variant="hub" showCta={false} onBack={() => navigate(-1)} />
 
         <div
           style={{ maxWidth: 860, margin: "0 auto", padding: "14px 16px 0" }}
