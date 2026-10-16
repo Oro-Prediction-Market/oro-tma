@@ -9,6 +9,9 @@ import { getChallengePreview } from "@shared/api/client";
  * The share links we mint carry a target the app has, until now, thrown away:
  *   - `ref_<telegramId>_m_<marketId>`  — "Challenge a Friend" on a market
  *   - `m_<marketId>`                   — a bare market link
+ *   - `g_<groupId>`                    — a group market (one Yes/No market
+ *                                        per option), as the admin's group
+ *                                        announcement links it
  *   - `challenge_<id>`                 — a duel invite
  *
  * `useAuth` reads the `ref_` half for referral credit; the market/challenge
@@ -43,12 +46,17 @@ function rawStartParam(): string | undefined {
 /**
  * Persist the deep-link target as early as possible — BEFORE the onboarding
  * gate — so it survives a brand-new user's sign-up flow. No-op unless the launch
- * param actually points at a market or challenge.
+ * param actually points at a market, group or challenge.
  */
 export function captureStartParam(): void {
   try {
     const p = rawStartParam();
-    if (p && (marketIdFromStartParam(p) || challengeIdFromStartParam(p))) {
+    if (
+      p &&
+      (marketIdFromStartParam(p) ||
+        groupIdFromStartParam(p) ||
+        challengeIdFromStartParam(p))
+    ) {
       sessionStorage.setItem(DEEPLINK_KEY, p);
     }
   } catch {
@@ -89,6 +97,22 @@ export function marketIdFromStartParam(param: string | undefined): string | null
   return null;
 }
 
+/** Pull the group id out of a `g_<groupId>` deep link, or null. */
+export function groupIdFromStartParam(param: string | undefined): string | null {
+  if (!param || !param.startsWith("g_")) return null;
+  const id = param.slice(2);
+  return id || null;
+}
+
+/** Where a market or group link opens, or null for any other link. */
+function linkTarget(param: string | undefined): string | null {
+  const marketId = marketIdFromStartParam(param);
+  if (marketId) return `/market/${encodeURIComponent(marketId)}`;
+  const groupId = groupIdFromStartParam(param);
+  if (groupId) return `/group/${encodeURIComponent(groupId)}`;
+  return null;
+}
+
 /** Pull the challenge id out of a `challenge_<id>` deep link, or null. */
 export function challengeIdFromStartParam(
   param: string | undefined,
@@ -114,8 +138,8 @@ export function challengeIdFromStartParam(
  */
 export function openMarketLinkDirectly(): void {
   if (handled) return;
-  const marketId = marketIdFromStartParam(readStartParam());
-  if (!marketId) return;
+  const target = linkTarget(readStartParam());
+  if (!target) return;
   // On launch the hash holds Telegram's launch data, not an app route.
   const path = window.location.hash.replace(/^#/, "");
   if (path.startsWith("/") && path !== "/") return;
@@ -124,7 +148,7 @@ export function openMarketLinkDirectly(): void {
   window.history.replaceState(
     window.history.state,
     "",
-    `${window.location.pathname}${window.location.search}#/market/${encodeURIComponent(marketId)}`,
+    `${window.location.pathname}${window.location.search}#${target}`,
   );
 }
 
@@ -138,13 +162,13 @@ export function DeepLinkRedirect() {
     if (location.pathname !== "/") return;
 
     const param = readStartParam();
-    const marketId = marketIdFromStartParam(param);
+    const target = linkTarget(param);
     const challengeId = challengeIdFromStartParam(param);
 
-    if (marketId) {
+    if (target) {
       handled = true;
       clearStashedParam();
-      navigate(`/market/${marketId}`, { replace: true });
+      navigate(target, { replace: true });
       return;
     }
 
