@@ -5,6 +5,11 @@ import { CalendarDays, Clock, ListOrdered, Trophy } from "lucide-react";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { calcOdds, calcProb, formatOdds } from "@/lib/hubs/worldCup";
+import {
+  candidateName,
+  chanceOf,
+  findOutcome,
+} from "@/components/GroupedMarketCard";
 import { NBA_THEME, NbaLogo, isNbaMarket, nbaGameIdOf } from "@/lib/hubs/nba";
 import type {
   Market,
@@ -633,29 +638,46 @@ function MatchesTab({
 const isSeasonMarket = (m: Market) =>
   (m.subcategory ?? "").toLowerCase() !== "nba-match" && !nbaGameIdOf(m);
 
-function SeasonMarketCard({
-  market,
+const poolOf = (m: Market) =>
+  Number(m.totalPool) ||
+  (m.outcomes ?? []).reduce((sum, o) => sum + Number(o.totalBetAmount ?? 0), 0);
+
+interface SeasonRow {
+  key: string;
+  label: string;
+  logo: string | null | undefined;
+  pct: number;
+  odds: ReturnType<typeof calcOdds>;
+  pool: number;
+  /** Null when this row cannot be bet on right now. */
+  onPredict: (() => void) | null;
+}
+
+/**
+ * One season market, whichever way it was built: a normal market whose
+ * outcomes are the teams, or a group of Yes/No markets, one per team. Rows
+ * arrive ranked; the card shows the top five with the rest behind a toggle.
+ */
+function SeasonCard({
+  title,
+  pool,
+  closesAt,
+  status,
+  rows,
   onOpen,
-  onBet,
 }: {
-  market: Market;
-  onOpen: (id: string) => void;
-  onBet: (marketId: string, outcomeId: string) => void;
+  title: string;
+  pool: number;
+  closesAt: string | null | undefined;
+  status: Market["status"];
+  rows: SeasonRow[];
+  onOpen: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
-  const canBet = market.status === "open";
+  const closes = useClosesAt(closesAt);
+  const canBet = status === "open";
   const VISIBLE = 5;
-  // Favourite first, by the money on each side; probability breaks ties.
-  const outcomes = [...(market.outcomes ?? [])].sort(
-    (a, b) =>
-      Number(b.totalBetAmount ?? 0) - Number(a.totalBetAmount ?? 0) ||
-      calcProb(market, b.id) - calcProb(market, a.id),
-  );
-  const shown = expanded ? outcomes : outcomes.slice(0, VISIBLE);
-  const pool =
-    Number(market.totalPool) ||
-    outcomes.reduce((sum, o) => sum + Number(o.totalBetAmount ?? 0), 0);
+  const shown = expanded ? rows : rows.slice(0, VISIBLE);
 
   return (
     <div
@@ -667,12 +689,11 @@ function SeasonMarketCard({
       }}
     >
       <div
-        onClick={() => onOpen(market.id)}
+        onClick={onOpen}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && e.target === e.currentTarget)
-            onOpen(market.id);
+          if (e.key === "Enter" && e.target === e.currentTarget) onOpen();
         }}
         style={{
           display: "flex",
@@ -694,7 +715,7 @@ function SeasonMarketCard({
               color: "#fff",
             }}
           >
-            {market.title}
+            {title}
           </div>
           <div
             style={{
@@ -724,7 +745,7 @@ function SeasonMarketCard({
             <>
               <Clock size={11} /> {closes}
             </>
-          ) : market.status === "resolving" ? (
+          ) : status === "resolving" ? (
             "Result proposed"
           ) : (
             "Closed"
@@ -733,115 +754,111 @@ function SeasonMarketCard({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {shown.map((o, i) => {
-          const pct = Math.round(calcProb(market, o.id) * 100);
-          const od = calcOdds(market, o.id);
-          return (
+        {shown.map((r, i) => (
+          <div
+            key={r.key}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 14px",
+              borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none",
+            }}
+          >
             <div
-              key={o.id}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 14px",
-                borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none",
+                ...DISPLAY,
+                width: 20,
+                textAlign: "center",
+                fontSize: 15,
+                color: SILVER,
+                flexShrink: 0,
               }}
             >
+              {i + 1}
+            </div>
+            <NbaLogo
+              src={r.logo}
+              abbr={r.label.split(" ").pop() ?? r.label}
+              size={32}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "#fff",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {r.label}
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  height: 3,
+                  borderRadius: 2,
+                  background: "rgba(255,255,255,0.08)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${r.pct}%`,
+                    height: "100%",
+                    background: i === 0 ? AMBER : TEAL,
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0, minWidth: 48 }}>
               <div
                 style={{
                   ...DISPLAY,
-                  width: 20,
-                  textAlign: "center",
-                  fontSize: 15,
-                  color: SILVER,
-                  flexShrink: 0,
+                  fontSize: 18,
+                  color: "#fff",
+                  lineHeight: 1,
                 }}
               >
-                {i + 1}
+                {r.pct}%
               </div>
-              <NbaLogo
-                src={o.imageUrl}
-                abbr={o.label.split(" ").pop() ?? o.label}
-                size={32}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 800,
-                    color: "#fff",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {o.label}
-                </div>
-                <div
-                  style={{
-                    marginTop: 5,
-                    height: 3,
-                    borderRadius: 2,
-                    background: "rgba(255,255,255,0.08)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${pct}%`,
-                      height: "100%",
-                      background: i === 0 ? AMBER : TEAL,
-                    }}
-                  />
-                </div>
+              <div
+                style={{
+                  marginTop: 3,
+                  fontSize: 9.5,
+                  fontWeight: 800,
+                  color: GOLD,
+                }}
+              >
+                {formatOdds(r.odds)}
               </div>
-              <div style={{ textAlign: "right", flexShrink: 0, minWidth: 48 }}>
-                <div
-                  style={{
-                    ...DISPLAY,
-                    fontSize: 18,
-                    color: "#fff",
-                    lineHeight: 1,
-                  }}
-                >
-                  {pct}%
-                </div>
-                <div
-                  style={{
-                    marginTop: 3,
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    color: GOLD,
-                  }}
-                >
-                  {formatOdds(od)}
-                </div>
-              </div>
-              {canBet && (
-                <button
-                  type="button"
-                  onClick={() => onBet(market.id, o.id)}
-                  style={{
-                    flexShrink: 0,
-                    border: "none",
-                    borderRadius: 7,
-                    padding: "8px 12px",
-                    background: AMBER,
-                    color: NBA_THEME.onAmber,
-                    fontSize: 11,
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
-                >
-                  Predict
-                </button>
-              )}
             </div>
-          );
-        })}
+            {r.onPredict && (
+              <button
+                type="button"
+                onClick={r.onPredict}
+                style={{
+                  flexShrink: 0,
+                  border: "none",
+                  borderRadius: 7,
+                  padding: "8px 12px",
+                  background: AMBER,
+                  color: NBA_THEME.onAmber,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                Predict
+              </button>
+            )}
+          </div>
+        ))}
       </div>
 
-      {outcomes.length > VISIBLE && (
+      {rows.length > VISIBLE && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -857,24 +874,111 @@ function SeasonMarketCard({
             cursor: "pointer",
           }}
         >
-          {expanded ? "Show less" : `Show all ${outcomes.length} teams`}
+          {expanded ? "Show less" : `Show all ${rows.length}`}
         </button>
       )}
     </div>
   );
 }
 
+/** A normal season market: its outcomes are the rows, favourite first. */
+function singleRows(
+  market: Market,
+  onBet: (marketId: string, outcomeId: string) => void,
+): SeasonRow[] {
+  const open = market.status === "open";
+  return [...(market.outcomes ?? [])]
+    .sort(
+      (a, b) =>
+        Number(b.totalBetAmount ?? 0) - Number(a.totalBetAmount ?? 0) ||
+        calcProb(market, b.id) - calcProb(market, a.id),
+    )
+    .map((o) => ({
+      key: o.id,
+      label: o.label,
+      logo: o.imageUrl,
+      pct: Math.round(calcProb(market, o.id) * 100),
+      odds: calcOdds(market, o.id),
+      pool: Number(o.totalBetAmount ?? 0),
+      onPredict: open ? () => onBet(market.id, o.id) : null,
+    }));
+}
+
+/**
+ * A group: one Yes/No market per option. Each row is an option's own market,
+ * showing its Yes chance; Predict backs Yes on that option. Backing No is on
+ * the group page the header opens.
+ */
+function groupRows(
+  members: Market[],
+  onBet: (marketId: string, outcomeId: string) => void,
+): SeasonRow[] {
+  return members
+    .map((m) => {
+      const yes = findOutcome(m, "yes");
+      return {
+        key: m.id,
+        label: candidateName(m),
+        logo: m.imageUrl ?? yes?.imageUrl,
+        pct: Math.round(chanceOf(m, yes)),
+        odds: yes ? calcOdds(m, yes.id) : calcOdds(m, ""),
+        pool: poolOf(m),
+        onPredict:
+          yes && m.status === "open" ? () => onBet(m.id, yes.id) : null,
+      };
+    })
+    .sort((a, b) => b.pct - a.pct || b.pool - a.pool);
+}
+
 function SeasonTab({
   markets,
   onOpen,
+  onOpenGroup,
   onBet,
 }: {
   markets: Market[];
   onOpen: (id: string) => void;
+  onOpenGroup: (groupId: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const season = markets.filter(isSeasonMarket);
-  if (season.length === 0)
+  // Group members collapse into one card, placed where the first member sat.
+  const cards: React.ReactNode[] = [];
+  const seenGroups = new Set<string>();
+  for (const m of season) {
+    if (!m.groupId) {
+      cards.push(
+        <SeasonCard
+          key={m.id}
+          title={m.title}
+          pool={poolOf(m)}
+          closesAt={m.bettingClosesAt ?? m.closesAt}
+          status={m.status}
+          rows={singleRows(m, onBet)}
+          onOpen={() => onOpen(m.id)}
+        />,
+      );
+      continue;
+    }
+    if (seenGroups.has(m.groupId)) continue;
+    seenGroups.add(m.groupId);
+    const members = season.filter((x) => x.groupId === m.groupId);
+    const groupId = m.groupId;
+    cards.push(
+      <SeasonCard
+        key={groupId}
+        title={m.groupTitle ?? m.title.split("—")[0].trim()}
+        pool={members.reduce((sum, x) => sum + poolOf(x), 0)}
+        closesAt={m.bettingClosesAt ?? m.closesAt}
+        // The group is open while any of its markets is.
+        status={members.some((x) => x.status === "open") ? "open" : m.status}
+        rows={groupRows(members, onBet)}
+        onOpen={() => onOpenGroup(groupId)}
+      />,
+    );
+  }
+
+  if (cards.length === 0)
     return (
       <div style={{ marginTop: 14 }}>
         <EmptyState>
@@ -885,13 +989,7 @@ function SeasonTab({
         </EmptyState>
       </div>
     );
-  return (
-    <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
-      {season.map((m) => (
-        <SeasonMarketCard key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
-      ))}
-    </div>
-  );
+  return <div style={{ display: "grid", gap: 14, marginTop: 14 }}>{cards}</div>;
 }
 
 // ── Standings tab ─────────────────────────────────────────────────────────────
@@ -1313,6 +1411,7 @@ export function NbaHubPage() {
             <SeasonTab
               markets={markets}
               onOpen={(id) => navigate(`/market/${id}`)}
+              onOpenGroup={(groupId) => navigate(`/group/${groupId}`)}
               onBet={(marketId, outcomeId) =>
                 setActiveBet({ marketId, outcomeId })
               }
