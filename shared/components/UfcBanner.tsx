@@ -159,7 +159,8 @@ export function UfcBanner({
               style={{
                 display: "flex",
                 width: "max-content",
-                animation: "ufcbMarquee 20s linear infinite",
+                // ~44px/s, the same pace as the other hubs' tickers.
+                animation: "ufcbMarquee 24s linear infinite",
               }}
             >
               {[...WEIGHT_CLASSES, ...WEIGHT_CLASSES].map((wc, i) => (

@@ -74,7 +74,9 @@ export function EplBanner({ onClick, showCta = true, style, className }: EplBann
         .epl-marquee-container {
           display: flex;
           width: max-content;
-          animation: eplMarqueeScroll 40s linear infinite;
+          /* ~44px/s, the pace of the other hubs' tickers: this strip is three
+             copies long and moves a third of it per loop, so it needs longer. */
+          animation: eplMarqueeScroll 68s linear infinite;
         }
         .epl-marquee-container:hover {
           animation-play-state: paused;
