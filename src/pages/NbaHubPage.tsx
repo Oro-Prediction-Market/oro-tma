@@ -84,6 +84,46 @@ const seasonLabel = (t: number) =>
         ? "Playoffs"
         : "Regular Season";
 
+const dateTimeOf = (iso: string) => `${dayLabel(dayKey(iso))} · ${timeOf(iso)}`;
+
+/**
+ * "3d 5h" / "5h 12m" / "12m" until tip-off, refreshed each minute. Same hook
+ * and shape as the EPL and UCL hubs' (kept private there too).
+ */
+function useClosesAt(closesAt: string | null | undefined): string {
+  const [label, setLabel] = useState("");
+  useEffect(() => {
+    if (!closesAt) {
+      setLabel("");
+      return;
+    }
+    const tick = () => {
+      const ms = new Date(closesAt).getTime() - Date.now();
+      if (ms <= 0) {
+        setLabel("Closed");
+        return;
+      }
+      const d = Math.floor(ms / 86_400_000);
+      const h = Math.floor((ms % 86_400_000) / 3_600_000);
+      const mn = Math.floor((ms % 3_600_000) / 60_000);
+      if (d > 0) setLabel(`${d}d ${h}h`);
+      else if (h > 0) setLabel(`${h}h ${mn}m`);
+      else setLabel(`${mn}m`);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [closesAt]);
+  return label;
+}
+
+// Two-up on wide screens, one-up on phones: the EPL and UCL match grid.
+const GRID: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
+  gap: 12,
+};
+
 // ── Small pieces ──────────────────────────────────────────────────────────────
 function Heading({ children }: { children: React.ReactNode }) {
   return (
@@ -157,10 +197,12 @@ function TeamBlock({
   team,
   showScore,
   dim,
+  big = false,
 }: {
   team: NbaGame["home"];
   showScore: boolean;
   dim: boolean;
+  big?: boolean;
 }) {
   return (
     <div
@@ -172,17 +214,23 @@ function TeamBlock({
       }}
     >
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <NbaLogo src={team.logo} abbr={team.abbr} size={44} />
+        <NbaLogo src={team.logo} abbr={team.abbr} size={big ? 56 : 44} />
       </div>
       <div
         style={{
-          fontSize: 12.5,
+          fontSize: big ? 15 : 12.5,
           fontWeight: 800,
           color: "#fff",
           marginTop: 6,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          // The featured card has room for two lines, so long names
+          // ("Golden State Warriors") wrap there instead of being cut off.
+          ...(big
+            ? { lineHeight: 1.2 }
+            : {
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }),
         }}
       >
         {team.name}
@@ -209,12 +257,16 @@ function GameCard({
   market,
   onOpen,
   onBet,
+  featured = false,
 }: {
   game: NbaGame;
   market: Market | null;
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
+  /** Admin-pinned: full width, gold accent, bigger crests, date and countdown. */
+  featured?: boolean;
 }) {
+  const countdown = useClosesAt(featured ? game.tipoff : null);
   const live = game.state === "in";
   const final = game.state === "post";
   const showScore = live || final;
@@ -261,10 +313,10 @@ function GameCard({
         display: "inline-flex",
         alignItems: "center",
         gap: 4,
-        color: SILVER,
+        color: featured ? GOLD : SILVER,
       }}
     >
-      <Clock size={11} /> {timeOf(game.tipoff)}
+      <Clock size={11} /> {featured ? countdown : timeOf(game.tipoff)}
     </span>
   );
 
@@ -284,9 +336,14 @@ function GameCard({
       style={{
         borderRadius: 16,
         overflow: "hidden",
-        border: `1px solid ${live ? `${LIVE}66` : "rgba(255,255,255,0.1)"}`,
-        background: NAVY,
+        border: `1px solid ${live ? `${LIVE}66` : featured ? "rgba(232,199,102,0.45)" : "rgba(255,255,255,0.1)"}`,
+        background: featured
+          ? `radial-gradient(ellipse at 85% 0%, ${NBA_RED}55 0%, transparent 55%), radial-gradient(ellipse at 10% 100%, ${NBA_BLUE}aa 0%, transparent 60%), ${NAVY}`
+          : NAVY,
         cursor: market ? "pointer" : "default",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div
@@ -296,15 +353,17 @@ function GameCard({
           justifyContent: "space-between",
           gap: 8,
           padding: "8px 14px",
-          background: "rgba(255,255,255,0.04)",
+          background: featured
+            ? "rgba(232,199,102,0.12)"
+            : "rgba(255,255,255,0.04)",
           fontSize: 10.5,
           fontWeight: 800,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}
       >
-        <span style={{ color: SILVER, whiteSpace: "nowrap" }}>
-          {seasonLabel(game.seasonType)}
+        <span style={{ color: featured ? GOLD : SILVER, whiteSpace: "nowrap" }}>
+          {featured ? "★ Featured Match" : seasonLabel(game.seasonType)}
         </span>
         <span style={{ whiteSpace: "nowrap" }}>{status}</span>
       </div>
@@ -315,24 +374,49 @@ function GameCard({
           alignItems: "center",
           justifyContent: "space-around",
           gap: 10,
-          padding: "14px 16px 12px",
+          padding: featured ? "18px 16px 14px" : "14px 16px 12px",
         }}
       >
-        <TeamBlock team={game.away} showScore={showScore} dim={homeWon} />
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 900,
-            color: SILVER,
-            background: "rgba(255,255,255,0.06)",
-            borderRadius: 8,
-            padding: "4px 10px",
-            flexShrink: 0,
-          }}
-        >
-          @
+        <TeamBlock
+          team={game.away}
+          showScore={showScore}
+          dim={homeWon}
+          big={featured}
+        />
+        <div style={{ textAlign: "center", flexShrink: 0 }}>
+          <div
+            style={{
+              display: "inline-block",
+              fontSize: featured ? 18 : 13,
+              fontWeight: 900,
+              color: featured ? "#fff" : SILVER,
+              background: "rgba(255,255,255,0.06)",
+              borderRadius: 8,
+              padding: "4px 10px",
+            }}
+          >
+            @
+          </div>
+          {featured && !showScore && (
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.6)",
+                marginTop: 6,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {dateTimeOf(game.tipoff)}
+            </div>
+          )}
         </div>
-        <TeamBlock team={game.home} showScore={showScore} dim={awayWon} />
+        <TeamBlock
+          team={game.home}
+          showScore={showScore}
+          dim={awayWon}
+          big={featured}
+        />
       </div>
 
       {market && outs.length > 0 && !final && (
@@ -394,6 +478,7 @@ function GameCard({
 
       <div
         style={{
+          marginTop: "auto",
           padding: "0 14px 12px",
           fontSize: 10.5,
           fontWeight: 700,
@@ -431,15 +516,14 @@ function MatchesTab({
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
   const [view, setView] = useState<"upcoming" | "results">("upcoming");
-  const live = games.filter((g) => g.state === "in");
   // Pinned by an admin (the same flag the football hubs use for their
-  // featured slot): shown first, and not repeated under their day.
-  const featured = games.filter(
-    (g) => g.state === "pre" && marketFor(g)?.isFeatured,
-  );
-  const upcoming = games.filter(
-    (g) => g.state === "pre" && !marketFor(g)?.isFeatured,
-  );
+  // featured slot): shown first as a full-width card, kept there while the
+  // game is live, and not repeated under Live or its day.
+  const isFeatured = (g: NbaGame) =>
+    g.state !== "post" && !!marketFor(g)?.isFeatured;
+  const featured = games.filter(isFeatured);
+  const live = games.filter((g) => g.state === "in" && !isFeatured(g));
+  const upcoming = games.filter((g) => g.state === "pre" && !isFeatured(g));
   const results = games.filter((g) => g.state === "post").reverse();
 
   const byDay = (list: NbaGame[]) => {
@@ -491,24 +575,30 @@ function MatchesTab({
         </div>
       ) : view === "upcoming" ? (
         <>
+          {featured.length > 0 && (
+            <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+              {featured.map((g) => (
+                <GameCard
+                  key={g.id}
+                  game={g}
+                  market={marketFor(g)}
+                  onOpen={onOpen}
+                  onBet={onBet}
+                  featured
+                />
+              ))}
+            </div>
+          )}
           {live.length > 0 && (
             <>
               <Heading>Live now</Heading>
-              <div style={{ display: "grid", gap: 12 }}>{live.map(card)}</div>
-            </>
-          )}
-          {featured.length > 0 && (
-            <>
-              <Heading>Featured</Heading>
-              <div style={{ display: "grid", gap: 12 }}>
-                {featured.map(card)}
-              </div>
+              <div style={GRID}>{live.map(card)}</div>
             </>
           )}
           {byDay(upcoming).map(([day, list]) => (
             <div key={day}>
               <Heading>{dayLabel(day)}</Heading>
-              <div style={{ display: "grid", gap: 12 }}>{list.map(card)}</div>
+              <div style={GRID}>{list.map(card)}</div>
             </div>
           ))}
           {live.length === 0 &&
@@ -523,7 +613,7 @@ function MatchesTab({
         byDay(results).map(([day, list]) => (
           <div key={day}>
             <Heading>{dayLabel(day)}</Heading>
-            <div style={{ display: "grid", gap: 12 }}>{list.map(card)}</div>
+            <div style={GRID}>{list.map(card)}</div>
           </div>
         ))
       ) : (
