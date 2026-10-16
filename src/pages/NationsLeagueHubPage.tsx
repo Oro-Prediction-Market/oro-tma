@@ -30,7 +30,6 @@ import {
   getUnlSeason,
 } from "@shared/api/client";
 import { isUnlMarket } from "@/lib/hubs/nationsLeague";
-import { SeasonStatPair } from "@/components/SeasonStatPair";
 // Moved to @/lib/hubs/nationsLeague; re-exported so existing imports keep working.
 export { isUnlMarket } from "@/lib/hubs/nationsLeague";
 
@@ -66,13 +65,6 @@ const SILVER = "#9fb3cd";
 const GOLD = "#e8c766";
 const PINK = "#e0457b";
 const WIN_GREEN = "#3ddc97";
-/** The Season tab's awards row, in Nations League colours. */
-const UNL_STAT_THEME = {
-  surface: NAVY,
-  border: "rgba(25,196,166,0.22)",
-  accent: TEAL,
-  muted: SILVER,
-};
 
 /**
  * The four leagues, and which groups sit in each.
@@ -1788,24 +1780,12 @@ export function NationsLeagueHubPage() {
             />
           )}
           {tab === "season" && (
-            <>
-              {/* The season's player awards, above the outrights. */}
-              <div style={{ marginBottom: 20 }}>
-                <SeasonStatPair
-                  topScorer={statMarket("goals")}
-                  assists={statMarket("assists")}
-                  theme={UNL_STAT_THEME}
-                  onOpen={openMarket}
-                  onBet={openBet}
-                />
-              </div>
-              <SeasonTab
+            <SeasonTab
               outrights={outrightMarkets}
               loading={loading}
               onOpen={openMarket}
               onBet={openBet}
             />
-            </>
           )}
           {tab === "groups" && <GroupsTab standings={standings} />}
           {tab === "stats" && <StatsTab boards={boards} onBet={openBet} />}

@@ -18,7 +18,6 @@ import { LoadingScreen } from "@shared/components/LoadingScreen";
 import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
 import { isDrawOutcome } from "@/lib/hubs/bpl";
 import { isEplMarket, getEplCrest, shortEplName, EplCrest } from "@/lib/hubs/epl";
-import { SeasonStatPair } from "@/components/SeasonStatPair";
 // Moved to @/lib/hubs/epl; re-exported so existing imports keep working.
 export { EPL_CLUBS, isEplMarket, getEplCrest, shortEplName, EplCrest } from "@/lib/hubs/epl";
 
@@ -27,13 +26,6 @@ export { EPL_CLUBS, isEplMarket, getEplCrest, shortEplName, EplCrest } from "@/l
 const ACCENT = "#00ff85"; // Premier League green
 const PURPLE = "#38003c"; // Premier League purple
 const PINK = "#e90052"; // Premier League pink
-/** The Season tab's awards row, in Premier League colours. */
-const EPL_STAT_THEME = {
-  surface: "var(--bg-card, #1a1a1a)",
-  border: "rgba(0,255,133,0.14)",
-  accent: "#00ff85",
-  muted: "rgba(255,255,255,0.45)",
-};
 
 function parseMatchTeams(title: string): { team1: string; team2: string } {
   const m = title.match(/^(.+?)\s+vs\.?\s+(.+?)(?:\s*[–—\-:?]|\s*\(|\s+(?:who|which|will)\b|$)/i);
@@ -611,11 +603,6 @@ export function EplHubPage() {
   const seasonMarkets = eplMarkets.filter(
     (m) => !/\bvs\b/i.test(m.title) && !isEplStatMarket(m),
   );
-  // The Top Scorer and Most Assists markets, for the Season tab's awards row.
-  const eplStatMarket = (cat: StatCategory) =>
-    eplMarkets.find(
-      (m) => (m.subcategory ?? "").toLowerCase() === STAT_META[cat].subcategory,
-    );
 
   // A match stays in the active list while it is still playing out — open,
   // betting-closed, or resolving — and only drops to "Previous" once the
@@ -1097,23 +1084,16 @@ export function EplHubPage() {
             ))}
 
           {/* ── Season markets ── */}
-          {tab === "season" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* The season's player awards, beside the club outrights. */}
-              <SeasonStatPair
-                topScorer={eplStatMarket("goals")}
-                assists={eplStatMarket("assists")}
-                theme={EPL_STAT_THEME}
-                onOpen={(id) => navigate(`/market/${id}`)}
-                onBet={openBet}
-              />
-              {seasonMarkets.length === 0
-                ? emptyState("🏆", "Season markets coming soon", "Title Winner · Top 4 · Relegation · Golden Boot")
-                : seasonMarkets.map((market) => (
-                    <EplSeasonMarket key={market.id} market={market} onBet={openBet} />
-                  ))}
-            </div>
-          )}
+          {tab === "season" &&
+            (seasonMarkets.length === 0 ? (
+              emptyState("🏆", "Season markets coming soon", "Title Winner · Top 4 · Relegation · Golden Boot")
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {seasonMarkets.map((market) => (
+                  <EplSeasonMarket key={market.id} market={market} onBet={openBet} />
+                ))}
+              </div>
+            ))}
         </div>
 
         {/* ── Bet modal ────────────────────────────────────────────────── */}
