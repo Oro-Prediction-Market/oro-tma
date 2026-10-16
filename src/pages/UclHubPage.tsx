@@ -29,6 +29,7 @@ import { getMarkets, getUclStandings, getUclStats, getUclBracket } from "@shared
 // multiple on it — the PWA's copy of this page has always shown one.
 import { calcOdds, formatOdds } from "@/lib/hubs/worldCup";
 import { isUclMarket } from "@/lib/hubs/ucl";
+import { SeasonStatPair } from "@/components/SeasonStatPair";
 // Moved to @/lib/hubs/ucl; re-exported so existing imports keep working.
 export { isUclMarket } from "@/lib/hubs/ucl";
 
@@ -96,6 +97,13 @@ const BLUE = "#2b6bff"; // bright UCL accent
 const BLUE_DIM = "#12336f";
 const SILVER = "#aab6d6";
 const GOLD = "#e8c766";
+/** The Season tab's awards row, in Champions League colours. */
+const UCL_STAT_THEME = {
+  surface: NAVY,
+  border: "rgba(43,107,255,0.22)",
+  accent: BLUE,
+  muted: SILVER,
+};
 
 // All hub data is live: standings/stats/bracket from /ucl/*, and markets
 // (matches, stat markets, outrights) from the markets API.
@@ -1574,7 +1582,19 @@ export function UclHubPage() {
           </div>
 
           {tab === "season" && (
-            <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} onBet={openBet} />
+            <>
+              {/* The season's player awards, above the outrights. */}
+              <div style={{ marginBottom: 20 }}>
+                <SeasonStatPair
+                  topScorer={statMarket("goals")}
+                  assists={statMarket("assists")}
+                  theme={UCL_STAT_THEME}
+                  onOpen={openMarket}
+                  onBet={openBet}
+                />
+              </div>
+              <SeasonTab outrightMarkets={outrightMarkets} onOpen={openMarket} onBet={openBet} />
+            </>
           )}
           {tab === "matches" && (
             <MatchesTab
