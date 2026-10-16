@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, BarChart3, Clock, CalendarDays, Network } from "lucide-react";
+import { Trophy, BarChart3, Clock, CalendarDays, Network, ArrowLeft } from "lucide-react";
 import { WorldCupBracket } from "@shared/components/WorldCupBracket";
 import { getMarkets, mergeLivePoll, getMyBets, type Market } from "@shared/api/client";
 import { TmaBetModal } from "@/components/TmaBetModal";
@@ -759,23 +759,24 @@ export function WorldCupHubPage() {
           }}
         >
           <button
+            aria-label="Go back"
             onClick={() => navigate(-1)}
             style={{
               background: "rgba(255,255,255,0.1)",
               border: "none",
               borderRadius: "50%",
-              width: 34,
-              height: 34,
+              width: 40,
+              height: 40,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
+              padding: 0,
               color: "#fff",
-              fontSize: 18,
               flexShrink: 0,
             }}
           >
-            ←
+            <ArrowLeft size={20} strokeWidth={2.25} />
           </button>
           <div style={{ flex: 1 }}>
             <div

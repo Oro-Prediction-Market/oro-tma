@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { ArrowLeft } from "lucide-react";
 import "./NbaBanner.css";
 
 const TEAMS = ["Celtics", "Lakers", "Warriors", "Thunder", "Knicks", "Nuggets", "Bucks", "Cavaliers", "76ers", "Mavericks", "Heat", "Spurs"];
@@ -33,7 +34,7 @@ export function NbaBanner({ onClick, onBack, showCta = true, variant = "feed", s
       <NbaCourt />
       <div className="nbab__shade" aria-hidden="true" />
       <div className="nbab__top">
-        {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}>←</button>}
+        {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}><ArrowLeft size={20} strokeWidth={2.25} /></button>}
         <span className="nbab__season"><span />2026/27 SEASON</span>
       </div>
       <div className="nbab__content">

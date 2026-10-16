@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMarkets, type Market } from "@shared/api/client";
-import { Clock, Gamepad2, Trophy } from "lucide-react";
+import { Clock, Gamepad2, Trophy, ArrowLeft } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
@@ -718,18 +718,17 @@ export function EsportsMasthead({
             background: EWC.glass,
             border: `1px solid ${EWC.goldLine}`,
             clipPath: notch(7),
-            width: 30,
-            height: 30,
+            width: 40,
+            height: 40,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
             color: EWC.text,
-            fontSize: 15,
             padding: 0,
           }}
         >
-          ←
+          <ArrowLeft size={20} strokeWidth={2.25} />
         </button>
 
         <div

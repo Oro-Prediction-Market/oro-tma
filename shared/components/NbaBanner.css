@@ -42,7 +42,7 @@
 .nbab--hub .nbab__title { font-size: 76px; }
 .nbab--hub .nbab__tagline { font-size: 17px; }
 .nbab--hub .nbab__court { left: 35%; width: 80%; height: 160%; top: -32%; }
-.nbab__back { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #ffffff40; border-radius: 50%; background: #080f1aa8; color: #fff; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+.nbab__back { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid #ffffff40; border-radius: 50%; background: #080f1aa8; color: #fff; cursor: pointer; font-size: 18px; flex-shrink: 0; }
 .nbab__back:focus-visible { outline: 2px solid #ffb66d; outline-offset: 3px; }
 @keyframes nbab-scroll { to { transform: translateX(-50%); } }
 @media (max-width: 599px) {

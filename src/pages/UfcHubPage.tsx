@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMarkets, type Market } from "@shared/api/client";
-import { Clock, CalendarDays } from "lucide-react";
+import { Clock, CalendarDays, ArrowLeft } from "lucide-react";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { Page } from "@/components/Page";
 import { LoadingScreen } from "@shared/components/LoadingScreen";
@@ -522,18 +522,17 @@ export function UfcHubPage() {
                   background: "rgba(0,0,0,0.28)",
                   border: "1px solid rgba(255,255,255,0.35)",
                   borderRadius: "50%",
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                   color: "#fff",
-                  fontSize: 15,
                   padding: 0,
                 }}
               >
-                ←
+                <ArrowLeft size={20} strokeWidth={2.25} />
               </button>
             </div>
             <div style={{ display: "flex", gap: 12, maxWidth: 860, margin: "12px auto 0", padding: "0 16px" }}>

@@ -12,6 +12,7 @@ import {
   Goal,
   Handshake,
   Star,
+  ArrowLeft,
 } from "lucide-react";
 import { calcProb, calcOdds, formatOdds } from "@/lib/hubs/worldCup";
 import type {
@@ -1660,19 +1661,17 @@ export function NationsLeagueHubPage() {
               background: "rgba(0,0,0,0.4)",
               border: "1px solid rgba(255,255,255,0.35)",
               borderRadius: "50%",
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
               color: "#fff",
-              fontSize: 17,
-              lineHeight: 1,
               padding: 0,
             }}
           >
-            ←
+            <ArrowLeft size={20} strokeWidth={2.25} />
           </button>
 
         </div>
