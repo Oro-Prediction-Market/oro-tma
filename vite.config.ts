@@ -1,9 +1,13 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, loadEnv, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import path from "path";
 
-export default defineConfig(async (): Promise<UserConfig> => {
+export default defineConfig(async ({ mode }): Promise<UserConfig> => {
+  // Where the dev server forwards /api. Set API_PROXY_TARGET in .env when the
+  // backend runs on another port. Not VITE_-prefixed, so it stays out of the bundle.
+  const apiTarget =
+    loadEnv(mode, process.cwd(), "").API_PROXY_TARGET || "http://localhost:3000";
   const extraPlugins: import("vite").PluginOption[] = [];
   if (process.env.HTTPS) {
     const { default: mkcert } = await import("vite-plugin-mkcert");
@@ -44,7 +48,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
       port: 5175,
       allowedHosts: [".ngrok-free.dev", ".ngrok.io", ".trycloudflare.com", "localhost"],
       proxy: {
-        "/api": { target: "http://localhost:3000", changeOrigin: true },
+        "/api": { target: apiTarget, changeOrigin: true },
       },
     },
   };
