@@ -46,6 +46,7 @@ import { isUfcMarket } from "@/lib/hubs/ufc";
 import { isEplMarket } from "@/lib/hubs/epl";
 import { isUclMarket } from "@/lib/hubs/ucl";
 import { isNbaMarket } from "@/lib/hubs/nba";
+import { isUnlMarket } from "@/lib/hubs/nationsLeague";
 import {
   UnderdogBanner,
   getLopsidedFavourite,
@@ -65,6 +66,9 @@ const EplMarketDetail = lazy(() =>
 );
 const UclMarketDetail = lazy(() =>
   import("@/components/UclMarketDetail").then((m) => ({ default: m.UclMarketDetail })),
+);
+const UnlMarketDetail = lazy(() =>
+  import("@/components/UnlMarketDetail").then((m) => ({ default: m.UnlMarketDetail })),
 );
 const NbaMarketDetail = lazy(() =>
   import("@/components/NbaMarketDetail").then((m) => ({ default: m.NbaMarketDetail })),
@@ -738,6 +742,40 @@ export const MarketDetailPage: FC = () => {
       <Page back={true}>
         <Suspense fallback={detailFallback}>
           <NbaMarketDetail
+            chartData={chartData}
+            market={m}
+            referralId={referralId}
+            onBetPlaced={() => {
+              if (!id) return;
+              bustCache(`/markets/${id}`);
+              getMarket(id)
+                .then(setMarket)
+                .catch(() => {});
+            }}
+            isResolving={isResolving}
+            proposedOutcome={proposedOutcome}
+            disputeTimeLeft={disputeTimeLeft}
+            disputeReason={disputeReason}
+            setDisputeReason={setDisputeReason}
+            handleSubmitDispute={handleSubmitDispute}
+            disputeSubmitting={disputeSubmitting}
+            disputeError={disputeError}
+            disputeSuccess={disputeSuccess}
+            disputeContest={disputeContest}
+            myDispute={myDispute}
+          />
+        </Suspense>
+        {commentsSection}
+      </Page>
+    );
+  }
+
+  // Nations League markets get the hub-styled detail view
+  if (isUnlMarket(m)) {
+    return (
+      <Page back={true}>
+        <Suspense fallback={detailFallback}>
+          <UnlMarketDetail
             chartData={chartData}
             market={m}
             referralId={referralId}
