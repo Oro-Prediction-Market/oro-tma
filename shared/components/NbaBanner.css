@@ -20,7 +20,6 @@
 .nbab__top { position: relative; display: flex; align-items: center; gap: 10px; padding: 16px 18px; }
 .nbab__season { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #ffbb704a; background: #101721b8; padding: 6px 9px; border-radius: 5px; color: #ffca8e; font-size: 9px; font-weight: 800; letter-spacing: .12em; white-space: nowrap; }
 .nbab__season > span { width: 5px; height: 5px; border-radius: 50%; background: #ffad57; box-shadow: 0 0 10px #ffad5777; }
-.nbab__edition { margin-left: auto; font-size: 8px; letter-spacing: .18em; font-weight: 800; color: #fff6e6; text-shadow: 0 1px 5px #000; }
 .nbab__content { position: relative; padding: 10px 22px 26px; margin-top: auto; }
 .nbab__eyebrow { color: #ffb66d; font-size: 9px; font-weight: 900; letter-spacing: .24em; margin-bottom: 8px; }
 .nbab__title { font-family: Impact, "Arial Black", system-ui, sans-serif; font-size: 92px; line-height: .93; font-weight: 900; letter-spacing: -.045em; font-style: italic; text-shadow: 0 4px 20px #0004; }
@@ -52,7 +51,6 @@
   .nbab__content { padding: 8px 18px 22px; }
   .nbab__title { font-size: 78px; }
   .nbab__tagline { font-size: 17px; }
-  .nbab__edition { font-size: 7px; letter-spacing: .12em; }
   .nbab--hub { min-height: 244px; }
   .nbab--hub .nbab__court { left: 24%; width: 125%; height: 120%; top: -2%; }
 }

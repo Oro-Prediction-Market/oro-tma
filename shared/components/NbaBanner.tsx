@@ -35,7 +35,6 @@ export function NbaBanner({ onClick, onBack, showCta = true, variant = "feed", s
       <div className="nbab__top">
         {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}>←</button>}
         <span className="nbab__season"><span />2026/27 SEASON</span>
-        <span className="nbab__edition">ORO COURTSIDE</span>
       </div>
       <div className="nbab__content">
         <div className="nbab__eyebrow">THE GAME IS YOURS</div>
