@@ -962,6 +962,12 @@ export function placeBet(
   return request<PlaceBetResult>(`/markets/${marketId}/bets`, {
     method: "POST",
     body: JSON.stringify(payload),
+  }).finally(() => {
+    // The stake came out of the balance. Without this the wallet, opened
+    // within the cache window, showed the balance from before the bet.
+    // Cleared after the bet lands, so a read made while it was in flight
+    // cannot re-cache the old figure. Covers /users/me/bets too.
+    bustCache("/users/me");
   });
 }
 
