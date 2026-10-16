@@ -67,8 +67,7 @@
   border-radius: 16px; border: 1px solid #ffb66d73;
   /* The arena's lit stands, kept visible: only a vignette over the photo. */
   background:
-    /* Darker than the PWA's: the Mini App draws on smaller, dimmer screens,
-       and the tip-off clock has to read over the stands. */
+    /* Dark enough for the tip-off clock to read over the stands. */
     radial-gradient(ellipse 70% 90% at 40% 55%, #080f1a99 0%, #080f1ad9 75%, #080f1af2 100%),
     linear-gradient(0deg, #080f1acc 0%, #080f1a00 45%),
     url("/nba-hub-arena.webp") center 8% / cover no-repeat, #101722;
