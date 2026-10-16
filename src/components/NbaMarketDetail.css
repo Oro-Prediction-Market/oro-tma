@@ -1,0 +1,85 @@
+/* NBA market detail, dressed as the hub it opens from: the arena photo, the
+   Featured Game card, and the hub's buttons (src/pages/NbaHubPage.css). */
+
+/* ── Masthead ──────────────────────────────────────────────────────────── */
+.nbad-hero {
+  position: relative; overflow: hidden; padding: 18px 20px 20px; border-radius: 18px;
+  border: 1px solid #ffb66d59; color: #fff;
+  background:
+    radial-gradient(ellipse 80% 110% at 25% 50%, #080f1aa6 0%, #080f1ae6 85%),
+    linear-gradient(0deg, #080f1ae6 0%, #080f1a00 55%),
+    url("/nba-hub-arena.webp") 65% 30% / cover no-repeat, #101722;
+  box-shadow: 0 0 0 1px #ff8a3d14, 0 14px 40px #0008, inset 0 0 60px #ff8a3d12;
+}
+.nbad-hero__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nbad-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 8px;
+  border: 1px solid #ffbb704a; background: #0b111bcc; color: #ffca8e;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap;
+}
+.nbad-pill > span { width: 6px; height: 6px; border-radius: 50%; background: #ffad57; box-shadow: 0 0 8px #ffad5799; }
+.nbad-hero .nbah-chip { padding: 7px 10px; }
+.nbad-hero__eyebrow { margin-top: 20px; color: #ffb66d; font-size: 11.5px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+.nbad-hero__title {
+  margin: 10px 0 0; max-width: 920px; font-family: Impact, "Arial Black", system-ui, sans-serif; font-weight: 400;
+  font-size: clamp(26px, 5vw, 44px); line-height: 1.04; letter-spacing: .015em; text-transform: uppercase;
+  text-shadow: 0 2px 16px #000b;
+}
+.nbad-hero__title em {
+  font-style: normal; color: #ffa34d;
+  background: linear-gradient(180deg, #ffd29b 0%, #ff9a45 60%, #f07a2a 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none;
+}
+.nbad-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+.nbad-hero__desc { margin: 10px 0 0; max-width: 560px; font-size: 13.5px; line-height: 1.5; color: #d7dce2; }
+
+.nbad-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+.nbad-stat {
+  display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid #ffffff1f; background: #0b111bd9; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.nbad-stat__icon { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; border: 1px solid #ffb66d40; background: #ffb66d12; color: #ffb66d; }
+.nbad-stat__icon svg { width: 18px; height: 18px; }
+.nbad-stat__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.nbad-stat__label { font-size: 11.5px; color: #c1c9d3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nbad-stat__value { font-size: 19px; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+
+/* ── Matchup card ──────────────────────────────────────────────────────── */
+.nbad-match {
+  overflow: hidden; border-radius: 16px; border: 1px solid #ffb66d40;
+  background:
+    linear-gradient(180deg, #080f1ac7 0%, #080f1af0 100%),
+    url("/nba-hub-arena.webp") center 12% / cover no-repeat, #101722;
+}
+.nbad-match--actions { background: #0e141d; border-color: #ffffff1f; }
+.nbad-match__teams { display: flex; align-items: center; justify-content: space-around; gap: 10px; padding: 22px 16px 18px; }
+.nbad-match__team { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.nbad-match__team--lost { opacity: .5; }
+.nbad-match__name { margin-top: 10px; font-size: 17px; font-weight: 800; line-height: 1.2; }
+.nbad-match__tag { margin-top: 4px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #c1c9d3; }
+.nbad-match__center { flex-shrink: 0; text-align: center; }
+.nbad-match__bar { display: flex; height: 4px; background: #ffffff12; }
+.nbad-match__bar--away { background: #7d6be8; }
+.nbad-match__bar--home { background: #ff9a45; }
+.nbad-match__bets { display: flex; gap: 10px; padding: 14px; }
+.nbad-bet { padding: 12px 10px; font-size: 14px; }
+.nbad-bet .nbah-bet__meta { font-size: 13px; }
+.nbad-bet .nbah-bet__name { white-space: normal; line-height: 1.2; text-align: center; }
+.nbad-bet--won { opacity: 1 !important; box-shadow: 0 0 0 2px #ffd29b, 0 8px 24px #ff8a3d55; }
+.nbad-bet--lost { opacity: .4 !important; }
+
+@media (max-width: 599px) {
+  .nbad-hero { padding: 14px 14px 16px; }
+  .nbad-pill { font-size: 9.5px; letter-spacing: .12em; padding: 6px 9px; }
+  .nbad-hero__eyebrow { margin-top: 16px; font-size: 10px; letter-spacing: .14em; }
+  .nbad-hero__desc { font-size: 12.5px; }
+  .nbad-stats { gap: 8px; margin-top: 14px; }
+  .nbad-stat { padding: 9px 10px; }
+  .nbad-stat__icon { display: none; }
+  .nbad-stat__label { font-size: 10.5px; }
+  .nbad-stat__value { font-size: 16px; }
+  .nbad-match__teams { padding: 18px 10px 14px; }
+  .nbad-match__name { font-size: 14.5px; }
+  .nbad-match__bets { gap: 8px; padding: 12px; }
+  .nbad-bet { font-size: 13px; padding: 10px 6px; }
+}

@@ -1586,6 +1586,10 @@ export interface NbaTeamSide {
   logo: string | null;
   score: number | null;
   winner: boolean;
+  /** "Lakers"; missing from older backends. */
+  shortName?: string | null;
+  /** Overall win-loss, "8-4"; missing from older backends. */
+  record?: string | null;
 }
 
 /** One game, as the backend reads it from ESPN. */

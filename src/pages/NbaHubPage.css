@@ -1,0 +1,201 @@
+/* NBA hub, under the cover: tab bar and the Matches tab. Same palette as the
+   cover (shared/components/NbaBanner.css): night navy, amber, teal. */
+
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
+.nbah-tabs {
+  display: flex; gap: 0; padding: 4px; margin-bottom: 6px; scroll-margin-top: 12px;
+  border-radius: 14px; border: 1px solid #ffb66d2e; background: #0e141d;
+}
+.nbah-tab {
+  position: relative; flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 6px; border: 1px solid transparent; border-radius: 10px; background: transparent;
+  color: #c1c9d3; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.nbah-tab + .nbah-tab::before { content: ""; position: absolute; left: 0; top: 25%; bottom: 25%; width: 1px; background: #ffffff14; }
+.nbah-tab--active + .nbah-tab::before, .nbah-tab--active::before { display: none; }
+.nbah-tab:not(.nbah-tab--active):hover { color: #fff; }
+.nbah-tab--active {
+  color: #fff; border-color: #ffb66d99;
+  background: linear-gradient(180deg, #e9792a 0%, #a8501b 100%);
+  box-shadow: 0 6px 22px #ff8a3d40, inset 0 1px 0 #ffffff33;
+}
+.nbah-tab:focus-visible { outline: 2px solid #ffb66d; outline-offset: 2px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.nbah-section { margin-top: 22px; }
+.nbah-section__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.nbah-section__icon { display: inline-flex; color: #ff9a45; }
+.nbah-section__title { margin: 0; flex: 1; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+.nbah-section__action {
+  display: inline-flex; align-items: center; gap: 2px; padding: 4px 0; border: 0; background: none;
+  color: #e6e9ee; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.nbah-section__action:hover { color: #ffca8e; }
+.nbah-live-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ff4d5e; display: grid; place-items: center; }
+.nbah-live-dot::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #ff4d5e; animation: nbah-pulse 1.6s ease-in-out infinite; }
+@keyframes nbah-pulse { 50% { opacity: .35; } }
+.nbah-live-text { color: #ff4d5e; }
+
+.nbah-card--link { cursor: pointer; }
+.nbah-card--link:focus-visible { outline: 2px solid #ffb66d; outline-offset: 3px; }
+
+/* ── Prediction buttons ────────────────────────────────────────────────── */
+.nbah-bet {
+  flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px; border: 1px solid; color: #fff;
+  font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: filter .15s, transform .15s;
+}
+.nbah-bet--away { border-color: #5fb3c9a6; background: linear-gradient(180deg, #5fb3c924, #5fb3c90d); }
+.nbah-bet--home { border-color: #ffb66da6; background: linear-gradient(180deg, #ffb66d26, #ffb66d0d); }
+.nbah-bet--filled { border-color: #ffc58a; color: #1a0f05; background: linear-gradient(180deg, #ffad5c 0%, #ea7424 100%); box-shadow: 0 6px 20px #ff8a3d4d; }
+.nbah-bet--away.nbah-bet--filled { border-color: #7d6be8; color: #fff; background: linear-gradient(180deg, #3b2f86 0%, #221a52 100%); box-shadow: 0 6px 20px #5b46d633, inset 0 1px 0 #ffffff1f; }
+.nbah-bet--stacked { flex-direction: column; gap: 3px; padding: 8px 10px; font-size: 12.5px; }
+.nbah-bet--empty { flex: 1; border: 0; }
+.nbah-bet:not(:disabled):hover { filter: brightness(1.15); }
+.nbah-bet:not(:disabled):active { transform: scale(.98); }
+.nbah-bet:disabled { opacity: .55; cursor: default; }
+.nbah-bet:focus-visible { outline: 2px solid #ffb66d; outline-offset: 2px; }
+.nbah-bet__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.nbah-bet__meta { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-variant-numeric: tabular-nums; opacity: .9; white-space: nowrap; }
+.nbah-bet__meta i { width: 1px; height: 12px; background: currentColor; opacity: .35; }
+.nbah-bet--stacked .nbah-bet__meta { font-size: 11.5px; color: #d7dce2; }
+.nbah-bet--filled .nbah-bet__meta { color: inherit; }
+
+/* ── Featured game ─────────────────────────────────────────────────────── */
+.nbah-feat {
+  display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 14px; padding: 14px;
+  border-radius: 16px; border: 1px solid #ffb66d73;
+  /* The arena's lit stands, kept visible: only a vignette over the photo. */
+  background:
+    radial-gradient(ellipse 70% 90% at 40% 55%, #080f1a40 0%, #080f1ab3 75%, #080f1ae6 100%),
+    linear-gradient(0deg, #080f1acc 0%, #080f1a00 45%),
+    url("/nba-hub-arena.webp") center 8% / cover no-repeat, #101722;
+  box-shadow: 0 0 0 1px #ff8a3d14, 0 14px 40px #0008, inset 0 0 60px #ff8a3d14;
+}
+.nbah-feat__main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.nbah-feat__tags { display: flex; align-items: center; gap: 10px; }
+.nbah-badge {
+  padding: 5px 9px; border-radius: 6px; background: linear-gradient(180deg, #ff9a45, #d9661f);
+  color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+}
+.nbah-feat__season { color: #c1c9d3; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.nbah-feat__match { display: flex; align-items: center; justify-content: space-around; gap: 8px; }
+.nbah-feat__team { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.nbah-feat__name { margin-top: 8px; font-size: 18px; font-weight: 800; color: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nbah-feat__record { margin-top: 2px; font-size: 12px; color: #c1c9d3; }
+.nbah-feat__center { flex-shrink: 0; text-align: center; }
+.nbah-feat__vs { font-family: Impact, "Arial Black", system-ui, sans-serif; font-style: italic; font-size: 18px; color: #e6e9ee; }
+.nbah-feat__time { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; font-size: 26px; color: #ff4d5e; white-space: nowrap; }
+.nbah-feat__ampm { font-size: 12px; font-weight: 800; letter-spacing: .08em; color: #ff8a95; }
+.nbah-feat__when { margin-top: 3px; font-size: 12px; color: #c1c9d3; white-space: nowrap; }
+.nbah-feat__score { display: flex; align-items: center; gap: 10px; font-family: Impact, "Arial Black", system-ui, sans-serif; font-style: italic; font-size: 34px; color: #fff; }
+.nbah-feat__score span { font-size: 20px; color: #c1c9d3; }
+.nbah-feat__bets { display: flex; gap: 10px; }
+.nbah-feat__side {
+  display: flex; flex-direction: column; gap: 10px; padding: 12px;
+  border-radius: 12px; border: 1px solid #ffffff1f; background: #080f1ad9;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.nbah-chip { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 9px; border: 1px solid #ffffff1f; background: #ffffff08; color: #e6e9ee; font-size: 12.5px; font-weight: 600; }
+.nbah-chip svg { flex-shrink: 0; color: #c1c9d3; }
+.nbah-chip--open svg { color: #ff9a45; }
+.nbah-chip--live { border-color: #ff4d5e66; color: #ff8a95; }
+.nbah-chip--live svg { color: #ff4d5e; }
+.nbah-feat__odds { display: grid; grid-template-columns: 1fr 1fr; border-radius: 9px; border: 1px solid #ffffff1f; overflow: hidden; }
+.nbah-feat__odd { padding: 10px; min-width: 0; }
+.nbah-feat__odd + .nbah-feat__odd { border-left: 1px solid #ffffff1f; }
+.nbah-feat__odd-name { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #d7dce2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.nbah-feat__odd-pct { margin-top: 6px; font-size: 20px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+.nbah-feat__odd-x { margin-top: 2px; font-size: 13px; color: #8fb4e8; font-variant-numeric: tabular-nums; }
+.nbah-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.nbah-dot--away { background: #5fb3c9; }
+.nbah-dot--home { background: #ffb66d; }
+.nbah-feat__foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11.5px; font-weight: 600; color: #c1c9d3; }
+.nbah-feat__foot span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── Live games ────────────────────────────────────────────────────────── */
+.nbah-live-rail {
+  display: grid; grid-auto-flow: column; grid-auto-columns: min(320px, 86%); gap: 12px;
+  overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; scrollbar-width: none;
+}
+.nbah-live-rail::-webkit-scrollbar { display: none; }
+.nbah-live-rail > * { scroll-snap-align: start; }
+.nbah-live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.nbah-live { padding: 14px 12px 12px; border-radius: 14px; border: 1px solid #ffffff1f; background: linear-gradient(180deg, #141b26, #0e141d); }
+.nbah-live:hover { border-color: #ff4d5e55; }
+.nbah-live__teams { display: flex; align-items: center; gap: 6px; }
+.nbah-live__team { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.nbah-live__team--home { flex-direction: row-reverse; text-align: right; }
+.nbah-live__text { min-width: 0; }
+.nbah-live__name { font-size: 13px; font-weight: 600; color: #e6e9ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nbah-live__score { font-size: 22px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.nbah-live__clock { flex-shrink: 0; align-self: flex-end; padding-bottom: 3px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.nbah-live__bets { display: flex; gap: 8px; margin-top: 12px; }
+
+/* ── Upcoming and results: day groups of rows ──────────────────────────── */
+.nbah-day { border-radius: 14px; border: 1px solid #ffffff1a; background: #0e141d; overflow: hidden; }
+.nbah-day + .nbah-day { margin-top: 12px; }
+.nbah-day__head { padding: 11px 14px; font-size: 13px; font-weight: 700; color: #e6e9ee; background: #ffffff06; border-bottom: 1px solid #ffffff12; }
+.nbah-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; }
+.nbah-row + .nbah-row { border-top: 1px solid #ffffff0f; }
+.nbah-row.nbah-card--link:hover { background: #ffffff05; }
+.nbah-row__match { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.nbah-row__team { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.nbah-row__team--lost { opacity: .5; }
+.nbah-row__name { font-size: 14px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nbah-row__mid { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: #c1c9d3; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.nbah-row__mid b { font-size: 15px; color: #fff; }
+.nbah-row__mid small { font-size: 10.5px; color: #c1c9d3; }
+.nbah-row__aside { flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding-left: 14px; border-left: 1px solid #ffffff14; }
+.nbah-row__status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #c1c9d3; white-space: nowrap; }
+.nbah-row__status i { width: 7px; height: 7px; border-radius: 50%; background: #8a94a3; }
+.nbah-row__status--open { color: #e6e9ee; }
+.nbah-row__status--open i { background: #5fb3c9; box-shadow: 0 0 8px #5fb3c9aa; }
+.nbah-row__status--soon i { background: #ffb66d; }
+.nbah-row__bets { display: flex; gap: 8px; width: 240px; }
+.nbah-row__pool { font-size: 12px; color: #c1c9d3; white-space: nowrap; }
+.nbah-row__score { display: none; }
+
+/* ── Phones ────────────────────────────────────────────────────────────── */
+@media (max-width: 719px) {
+  .nbah-feat { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 599px) {
+  .nbah-tab { font-size: 12.5px; gap: 6px; padding: 10px 4px; }
+  .nbah-section__title { font-size: 16.5px; }
+  .nbah-feat { padding: 12px; }
+  .nbah-feat__name { font-size: 15px; }
+  .nbah-feat__bets { gap: 8px; }
+  .nbah-feat__bets .nbah-bet { flex-direction: column; gap: 3px; padding: 9px 8px; }
+  /* The buttons above already carry both sides' chances. */
+  .nbah-feat__odds { display: none; }
+  .nbah-feat__side { padding: 10px; }
+  /* Phones: one game as a small sportsbook block. Time and status across the
+     top, then each team on its own line with its button beside it. The
+     wrappers dissolve so their pieces sit straight on the row's grid. */
+  .nbah-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) 104px; column-gap: 12px; row-gap: 8px;
+    grid-template-areas: "time status" "away awaybtn" "home homebtn"; padding: 12px 14px 14px;
+  }
+  .nbah-row__match, .nbah-row__aside, .nbah-row__bets { display: contents; }
+  .nbah-row__mid { grid-area: time; flex-direction: row; align-items: baseline; gap: 8px; justify-self: start; font-size: 12px; font-weight: 700; color: #c1c9d3; }
+  .nbah-row__mid b { font-size: 13px; }
+  .nbah-row__team--away { grid-area: away; }
+  .nbah-row__team--home { grid-area: home; }
+  .nbah-row__name { font-size: 15px; }
+  .nbah-row__status, .nbah-row__pool { grid-area: status; justify-self: end; align-self: center; font-size: 11.5px; }
+  .nbah-row .nbah-bet--away { grid-area: awaybtn; }
+  .nbah-row .nbah-bet--home { grid-area: homebtn; }
+  .nbah-row .nbah-bet { flex: none; padding: 8px 6px; border-radius: 9px; }
+  .nbah-row .nbah-bet__name { display: none; }
+  .nbah-row .nbah-bet--stacked .nbah-bet__meta { font-size: 13px; font-weight: 700; color: #fff; }
+  .nbah-row__mid b { display: none; }
+  .nbah-row__score { display: block; justify-self: end; align-self: center; font-size: 17px; font-weight: 800; color: #8a94a3; font-variant-numeric: tabular-nums; }
+  .nbah-row__score--won { color: #fff; }
+  .nbah-row__score--away { grid-area: awaybtn; }
+  .nbah-row__score--home { grid-area: homebtn; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nbah-live-dot::after { animation: none; }
+  .nbah-bet { transition: none; }
+}

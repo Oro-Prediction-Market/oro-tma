@@ -1,7 +1,24 @@
-import { NbaBanner } from "@shared/components/NbaBanner";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { NbaHubCover } from "@shared/components/NbaBanner";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Clock, ListOrdered, Trophy } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock,
+  ListOrdered,
+  Radio,
+  Star,
+  Trophy,
+  Zap,
+} from "lucide-react";
+import "./NbaHubPage.css";
+import { SegmentDisplay } from "@shared/components/SegmentDisplay";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { calcOdds, calcProb, formatOdds } from "@/lib/hubs/worldCup";
@@ -40,7 +57,6 @@ const SILVER = NBA_THEME.muted;
 const GOLD = NBA_THEME.amber;
 const AMBER = NBA_THEME.amber;
 const TEAL = NBA_THEME.teal;
-const LIVE = NBA_THEME.live;
 const PLAYOFF = AMBER;
 const PLAYIN = TEAL;
 const DISPLAY: React.CSSProperties = {
@@ -51,9 +67,9 @@ const DISPLAY: React.CSSProperties = {
 
 type NbaTab = "season" | "matches" | "standings";
 const TABS: { id: NbaTab; label: string; icon: React.ReactNode }[] = [
-  { id: "season", label: "Season", icon: <Trophy size={14} /> },
-  { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
-  { id: "standings", label: "Standings", icon: <ListOrdered size={14} /> },
+  { id: "matches", label: "Matches", icon: <BasketballIcon /> },
+  { id: "season", label: "Season", icon: <Trophy size={16} /> },
+  { id: "standings", label: "Standings", icon: <ListOrdered size={16} /> },
 ];
 
 // ── Time, in Bhutan ───────────────────────────────────────────────────────────
@@ -91,8 +107,6 @@ const seasonLabel = (t: number) =>
         ? "Playoffs"
         : "Regular Season";
 
-const dateTimeOf = (iso: string) => `${dayLabel(dayKey(iso))} · ${timeOf(iso)}`;
-
 /**
  * "3d 5h" / "5h 12m" / "12m" until tip-off, refreshed each minute. Same hook
  * and shape as the EPL and UCL hubs' (kept private there too).
@@ -124,45 +138,7 @@ function useClosesAt(closesAt: string | null | undefined): string {
   return label;
 }
 
-// Two-up on wide screens, one-up on phones: the EPL and UCL match grid.
-const GRID: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
-  gap: 12,
-};
-
 // ── Small pieces ──────────────────────────────────────────────────────────────
-function Heading({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        margin: "18px 0 10px",
-      }}
-    >
-      <span aria-hidden style={{ color: AMBER, fontSize: 11 }}>
-        ✦
-      </span>
-      <span
-        style={{
-          fontSize: 10.5,
-          fontWeight: 900,
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          color: NBA_THEME.amberSoft,
-        }}
-      >
-        {children}
-      </span>
-      <div
-        style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }}
-      />
-    </div>
-  );
-}
-
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -201,315 +177,518 @@ function Skeletons() {
   );
 }
 
-// ── Game card ─────────────────────────────────────────────────────────────────
-function TeamBlock({
-  team,
-  showScore,
-  dim,
-  big = false,
-}: {
+// ── Matches tab ───────────────────────────────────────────────────────────────
+/** "Lakers" from "Los Angeles Lakers", for an older backend without short names. */
+const shortOf = (t: NbaGame["home"]) =>
+  t.shortName || t.name.split(" ").slice(-1)[0] || t.abbr;
+
+type Outcome = NonNullable<Market["outcomes"]>[number];
+interface Side {
   team: NbaGame["home"];
-  showScore: boolean;
-  dim: boolean;
-  big?: boolean;
+  outcome: Outcome | undefined;
+  pct: number;
+  /** Null while the pool is too thin to quote a multiple. */
+  odds: string | null;
+}
+
+/** formatOdds' "—" (nothing to quote yet) as null, so it can be left out. */
+const quoted = (text: string) => (text === "—" ? null : text);
+
+/** The two prediction sides, away first, matched to outcomes by team name. */
+function sidesOf(game: NbaGame, market: Market | null): Side[] | null {
+  const outs = market?.outcomes ?? [];
+  if (!market || outs.length === 0) return null;
+  const byName = (name: string) =>
+    outs.find(
+      (o) => o.label.trim().toLowerCase() === name.trim().toLowerCase(),
+    );
+  return [game.away, game.home].map((team) => {
+    const outcome = byName(team.name);
+    return {
+      team,
+      outcome,
+      pct: outcome ? Math.round(calcProb(market, outcome.id) * 100) : 0,
+      odds:
+        (outcome && quoted(formatOdds(calcOdds(market, outcome.id)))) || null,
+    };
+  });
+}
+
+/** Enter or Space on a focused card opens it, as a click does. */
+const openKeys = (open: () => void) => (e: React.KeyboardEvent) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+    e.preventDefault();
+    open();
+  }
+};
+
+function BasketballIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M12 2.5v19M2.5 12h19" />
+      <path d="M5.3 5.3a9.5 9.5 0 0 1 0 13.4M18.7 5.3a9.5 9.5 0 0 0 0 13.4" />
+    </svg>
+  );
+}
+
+function Section({
+  icon,
+  title,
+  action,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  action?: { label: string; onClick: () => void } | null;
+  children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{
-        textAlign: "center",
-        flex: 1,
-        minWidth: 0,
-        opacity: dim ? 0.55 : 1,
+    <section className="nbah-section">
+      <div className="nbah-section__head">
+        <span className="nbah-section__icon">{icon}</span>
+        <h2 className="nbah-section__title">{title}</h2>
+        {action && (
+          <button
+            type="button"
+            className="nbah-section__action"
+            onClick={action.onClick}
+          >
+            {action.label} <ChevronRight size={15} aria-hidden />
+          </button>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function BetButton({
+  side,
+  tone,
+  filled = false,
+  stacked = false,
+  showPct = true,
+  canBet,
+  onBet,
+}: {
+  side: Side;
+  tone: "away" | "home";
+  filled?: boolean;
+  stacked?: boolean;
+  showPct?: boolean;
+  canBet: boolean;
+  onBet: (outcomeId: string) => void;
+}) {
+  const { outcome } = side;
+  if (!outcome) return <span className="nbah-bet nbah-bet--empty" />;
+  return (
+    <button
+      type="button"
+      className={[
+        "nbah-bet",
+        `nbah-bet--${tone}`,
+        filled && "nbah-bet--filled",
+        stacked && "nbah-bet--stacked",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      disabled={!canBet}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (canBet) onBet(outcome.id);
       }}
     >
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <NbaLogo src={team.logo} abbr={team.abbr} size={big ? 56 : 44} />
-      </div>
-      <div
-        style={{
-          fontSize: big ? 15 : 12.5,
-          fontWeight: 800,
-          color: "#fff",
-          marginTop: 6,
-          // The featured card has room for two lines, so long names
-          // ("Golden State Warriors") wrap there instead of being cut off.
-          ...(big
-            ? { lineHeight: 1.2 }
-            : {
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }),
-        }}
-      >
-        {team.name}
-      </div>
-      {showScore && (
-        <div
-          style={{
-            ...DISPLAY,
-            fontSize: 28,
-            fontWeight: 900,
-            color: "#fff",
-            marginTop: 2,
-            lineHeight: 1.1,
-          }}
-        >
-          {team.score ?? "–"}
-        </div>
-      )}
+      <span className="nbah-bet__name">{shortOf(side.team)}</span>
+      <span className="nbah-bet__meta">
+        {showPct ? (
+          <>
+            <span>{side.pct}%</span>
+            <i aria-hidden />
+            <span>{side.odds ?? "—"}</span>
+          </>
+        ) : (
+          // Rows show the odds alone; until there are any, the chance.
+          <span>{side.odds ?? `${side.pct}%`}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/** Tip-off as a scoreboard clock: "5:00" in segments, "AM" beside it. */
+function ClockTime({ iso }: { iso: string }) {
+  const [clock, ...rest] = timeOf(iso).split(/\s/);
+  return (
+    <div className="nbah-feat__time">
+      <SegmentDisplay value={clock} />
+      <span className="nbah-feat__ampm">{rest.join(" ")}</span>
     </div>
   );
 }
 
-function GameCard({
+function FeaturedTeam({ team }: { team: NbaGame["home"] }) {
+  return (
+    <div className="nbah-feat__team">
+      <NbaLogo src={team.logo} abbr={team.abbr} size={64} />
+      <div className="nbah-feat__name">{shortOf(team)}</div>
+      {team.record && <div className="nbah-feat__record">({team.record})</div>}
+    </div>
+  );
+}
+
+function FeaturedGame({
+  game,
+  market,
+  pinned,
+  onOpen,
+  onBet,
+}: {
+  game: NbaGame;
+  market: Market | null;
+  pinned: boolean;
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const closes = useClosesAt(market?.bettingClosesAt ?? game.tipoff);
+  const live = game.state === "in";
+  const final = game.state === "post";
+  const sides = sidesOf(game, market);
+  const canBet = market?.status === "open";
+  const open = market ? () => onOpen(market.id) : undefined;
+
+  const status = live
+    ? `Live · ${game.statusDetail}`
+    : final
+      ? game.statusDetail || "Final"
+      : canBet
+        ? "Open for prediction"
+        : market
+          ? "Predictions closed"
+          : "Opens closer to tip-off";
+
+  return (
+    <div
+      className={`nbah-feat${market ? " nbah-card--link" : ""}`}
+      onClick={open}
+      role={market ? "button" : undefined}
+      tabIndex={market ? 0 : undefined}
+      onKeyDown={open ? openKeys(open) : undefined}
+    >
+      <div className="nbah-feat__main">
+        <div className="nbah-feat__tags">
+          <span className="nbah-badge">{pinned ? "★ Featured" : "Featured"}</span>
+          <span className="nbah-feat__season">
+            {seasonLabel(game.seasonType)}
+          </span>
+        </div>
+        <div className="nbah-feat__match">
+          <FeaturedTeam team={game.away} />
+          <div className="nbah-feat__center">
+            {live || final ? (
+              <>
+                <div className="nbah-feat__score">
+                  {game.away.score ?? "–"}
+                  <span>–</span>
+                  {game.home.score ?? "–"}
+                </div>
+                <div
+                  className={
+                    live ? "nbah-feat__when nbah-live-text" : "nbah-feat__when"
+                  }
+                >
+                  {game.statusDetail || "Final"}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="nbah-feat__vs">VS</div>
+                <ClockTime iso={game.tipoff} />
+                <div className="nbah-feat__when">
+                  {dayLabel(dayKey(game.tipoff))}
+                </div>
+              </>
+            )}
+          </div>
+          <FeaturedTeam team={game.home} />
+        </div>
+        {sides && !final && market && (
+          <div className="nbah-feat__bets">
+            <BetButton
+              side={sides[0]}
+              tone="away"
+              filled
+              canBet={canBet}
+              onBet={(o) => onBet(market.id, o)}
+            />
+            <BetButton
+              side={sides[1]}
+              tone="home"
+              filled
+              canBet={canBet}
+              onBet={(o) => onBet(market.id, o)}
+            />
+          </div>
+        )}
+      </div>
+
+      <aside className="nbah-feat__side">
+        <div
+          className={`nbah-chip${live ? " nbah-chip--live" : canBet ? " nbah-chip--open" : ""}`}
+        >
+          {live ? <Radio size={15} /> : <Zap size={15} />}
+          <span>{status}</span>
+        </div>
+        {sides && (
+          <div className="nbah-feat__odds">
+            {sides.map((s, i) => (
+              <div key={s.team.id} className="nbah-feat__odd">
+                <div className="nbah-feat__odd-name">
+                  <span
+                    className={`nbah-dot nbah-dot--${i ? "home" : "away"}`}
+                    aria-hidden
+                  />
+                  {shortOf(s.team)}
+                </div>
+                <div className="nbah-feat__odd-pct">{s.pct}%</div>
+                <div className="nbah-feat__odd-x">
+                  {s.odds ?? "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="nbah-feat__foot">
+          {market ? (
+            <>
+              <span>Nu {poolOf(market).toLocaleString()} pool</span>
+              {canBet && closes && (
+                <span>
+                  <Clock size={11} aria-hidden /> {closes}
+                </span>
+              )}
+            </>
+          ) : (
+            <span>Prediction opens closer to tip-off</span>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function LiveGame({
   game,
   market,
   onOpen,
   onBet,
-  featured = false,
 }: {
   game: NbaGame;
   market: Market | null;
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
-  /** Admin-pinned: full width, gold accent, bigger crests, date and countdown. */
-  featured?: boolean;
 }) {
-  const countdown = useClosesAt(featured ? game.tipoff : null);
-  const live = game.state === "in";
-  const final = game.state === "post";
-  const showScore = live || final;
-  const awayWon = final && game.away.winner;
-  const homeWon = final && game.home.winner;
-
-  // Buttons follow the on-screen order (away, home), matched to outcomes by name.
-  const outs = market?.outcomes ?? [];
-  const byName = (name: string) =>
-    outs.find(
-      (o) => o.label.trim().toLowerCase() === name.trim().toLowerCase(),
-    );
-  const sides = [
-    { team: game.away, outcome: byName(game.away.name), color: TEAL },
-    { team: game.home, outcome: byName(game.home.name), color: AMBER },
-  ];
+  const sides = sidesOf(game, market);
   const canBet = market?.status === "open";
-  const pool =
-    Number(market?.totalPool) ||
-    outs.reduce((sum, o) => sum + Number(o.totalBetAmount ?? 0), 0);
+  const open = market ? () => onOpen(market.id) : undefined;
+  const team = (t: NbaGame["home"], home: boolean) => (
+    <div className={`nbah-live__team${home ? " nbah-live__team--home" : ""}`}>
+      <NbaLogo src={t.logo} abbr={t.abbr} size={38} />
+      <div className="nbah-live__text">
+        <div className="nbah-live__name">{shortOf(t)}</div>
+        <div className="nbah-live__score">{t.score ?? "–"}</div>
+      </div>
+    </div>
+  );
+  return (
+    <div
+      className={`nbah-live${market ? " nbah-card--link" : ""}`}
+      onClick={open}
+      role={market ? "button" : undefined}
+      tabIndex={market ? 0 : undefined}
+      onKeyDown={open ? openKeys(open) : undefined}
+    >
+      <div className="nbah-live__teams">
+        {team(game.away, false)}
+        <div className="nbah-live__clock nbah-live-text">
+          {game.statusDetail}
+        </div>
+        {team(game.home, true)}
+      </div>
+      {sides && market && (
+        <div className="nbah-live__bets">
+          <BetButton
+            side={sides[0]}
+            tone="away"
+            stacked
+            canBet={canBet}
+            onBet={(o) => onBet(market.id, o)}
+          />
+          <BetButton
+            side={sides[1]}
+            tone="home"
+            stacked
+            canBet={canBet}
+            onBet={(o) => onBet(market.id, o)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const status = live ? (
+function GameRow({
+  game,
+  market,
+  onOpen,
+  onBet,
+}: {
+  game: NbaGame;
+  market: Market | null;
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const final = game.state === "post";
+  const sides = sidesOf(game, market);
+  const canBet = market?.status === "open";
+  const open = market ? () => onOpen(market.id) : undefined;
+  const team = (t: NbaGame["home"], side: "away" | "home", lost: boolean) => (
     <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        color: LIVE,
-      }}
+      className={`nbah-row__team nbah-row__team--${side}${lost ? " nbah-row__team--lost" : ""}`}
     >
-      <span
-        style={{ width: 6, height: 6, borderRadius: "50%", background: LIVE }}
-        aria-hidden
-      />
-      LIVE · {game.statusDetail}
-    </span>
-  ) : final ? (
-    <span style={{ color: SILVER }}>{game.statusDetail || "Final"}</span>
-  ) : game.statusName !== "STATUS_SCHEDULED" ? (
-    <span style={{ color: GOLD }}>{game.statusDetail}</span>
-  ) : (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 4,
-        color: featured ? GOLD : SILVER,
-      }}
-    >
-      <Clock size={11} /> {featured ? countdown : timeOf(game.tipoff)}
+      <NbaLogo src={t.logo} abbr={t.abbr} size={30} />
+      <span className="nbah-row__name">{shortOf(t)}</span>
     </span>
   );
 
+  const status = final
+    ? null
+    : canBet
+      ? { cls: "open", text: "Open" }
+      : market
+        ? market.status === "closed" || market.status === "resolving"
+          ? { cls: "closed", text: "Awaiting result" }
+          : { cls: "closed", text: "Closed" }
+        : game.statusName !== "STATUS_SCHEDULED"
+          ? { cls: "closed", text: game.statusDetail }
+          : { cls: "soon", text: "Opens soon" };
+
   return (
     <div
-      onClick={market ? () => onOpen(market.id) : undefined}
+      className={`nbah-row${market ? " nbah-card--link" : ""}`}
+      onClick={open}
       role={market ? "button" : undefined}
       tabIndex={market ? 0 : undefined}
-      onKeyDown={
-        market
-          ? (e) => {
-              if (e.key === "Enter" && e.target === e.currentTarget)
-                onOpen(market.id);
-            }
-          : undefined
-      }
-      style={{
-        borderRadius: 16,
-        overflow: "hidden",
-        border: `1px solid ${live ? `${LIVE}66` : featured ? "rgba(255,182,109,0.45)" : "rgba(255,255,255,0.1)"}`,
-        background: featured
-          ? `radial-gradient(ellipse at 85% 0%, ${NBA_THEME.amberHot}40 0%, transparent 55%), radial-gradient(ellipse at 10% 100%, ${NBA_THEME.tealDeep} 0%, transparent 60%), ${NAVY}`
-          : NAVY,
-        cursor: market ? "pointer" : "default",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-      }}
+      onKeyDown={open ? openKeys(open) : undefined}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          padding: "8px 14px",
-          background: featured
-            ? "rgba(255,182,109,0.12)"
-            : "rgba(255,255,255,0.04)",
-          fontSize: 10.5,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
-      >
-        <span style={{ color: featured ? GOLD : SILVER, whiteSpace: "nowrap" }}>
-          {featured ? "★ Featured Match" : seasonLabel(game.seasonType)}
-        </span>
-        <span style={{ whiteSpace: "nowrap" }}>{status}</span>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-around",
-          gap: 10,
-          padding: featured ? "18px 16px 14px" : "14px 16px 12px",
-        }}
-      >
-        <TeamBlock
-          team={game.away}
-          showScore={showScore}
-          dim={homeWon}
-          big={featured}
-        />
-        <div style={{ textAlign: "center", flexShrink: 0 }}>
-          <div
-            style={{
-              display: "inline-block",
-              fontSize: featured ? 18 : 13,
-              fontWeight: 900,
-              color: featured ? "#fff" : SILVER,
-              background: "rgba(255,255,255,0.06)",
-              borderRadius: 8,
-              padding: "4px 10px",
-            }}
-          >
-            @
-          </div>
-          {featured && !showScore && (
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "rgba(255,255,255,0.6)",
-                marginTop: 6,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {dateTimeOf(game.tipoff)}
-            </div>
+      <div className="nbah-row__match">
+        {team(game.away, "away", final && game.home.winner)}
+        <span className="nbah-row__mid">
+          {final ? (
+            <>
+              <b>
+                {game.away.score ?? "–"} – {game.home.score ?? "–"}
+              </b>
+              <small>{game.statusDetail || "Final"}</small>
+            </>
+          ) : (
+            timeOf(game.tipoff)
           )}
-        </div>
-        <TeamBlock
-          team={game.home}
-          showScore={showScore}
-          dim={awayWon}
-          big={featured}
-        />
+        </span>
+        {team(game.home, "home", final && game.away.winner)}
       </div>
-
-      {market && outs.length > 0 && !final && (
-        <div style={{ display: "flex", gap: 8, padding: "0 12px 12px" }}>
-          {sides.map(({ team, outcome, color }) => {
-            if (!outcome) return <div key={team.id} style={{ flex: 1 }} />;
-            const pct = Math.round(calcProb(market, outcome.id) * 100);
-            const od = calcOdds(market, outcome.id);
-            return (
-              <button
-                key={team.id}
-                type="button"
-                disabled={!canBet}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (canBet) onBet(market.id, outcome.id);
-                }}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "9px 4px",
-                  background: `${color}26`,
-                  border: `1px solid ${color}88`,
-                  borderRadius: 11,
-                  textAlign: "center",
-                  cursor: canBet ? "pointer" : "default",
-                  opacity: canBet ? 1 : 0.6,
-                  font: "inherit",
-                }}
+      <div className="nbah-row__aside">
+        {status && (
+          <span className={`nbah-row__status nbah-row__status--${status.cls}`}>
+            <i aria-hidden />
+            {status.text}
+          </span>
+        )}
+        {final ? (
+          <>
+            <span className="nbah-row__pool">
+              {market
+                ? `Nu ${poolOf(market).toLocaleString()} pool`
+                : "No market"}
+            </span>
+            {/* Phones put each score beside its team; wide screens use the middle. */}
+            {[game.away, game.home].map((t, i) => (
+              <span
+                key={t.id}
+                className={`nbah-row__score nbah-row__score--${i ? "home" : "away"}${t.winner ? " nbah-row__score--won" : ""}`}
               >
-                <div
-                  style={{
-                    ...DISPLAY,
-                    fontSize: 20,
-                    color: "#fff",
-                    lineHeight: 1,
-                  }}
-                >
-                  {pct}%
-                </div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    color: GOLD,
-                  }}
-                >
-                  {team.abbr} ·{" "}
-                  {od.kind === "quote"
-                    ? `${od.multiple.toFixed(2)}x`
-                    : formatOdds(od)}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      <div
-        style={{
-          marginTop: "auto",
-          padding: "0 14px 12px",
-          fontSize: 10.5,
-          fontWeight: 700,
-          color: SILVER,
-        }}
-      >
-        {market
-          ? market.status === "open"
-            ? `Nu ${pool.toLocaleString()} pool`
-            : market.status === "closed" || market.status === "resolving"
-              ? `Nu ${pool.toLocaleString()} pool · awaiting result`
-              : `Nu ${pool.toLocaleString()} pool`
-          : game.state === "pre"
-            ? "Prediction opens closer to tip-off"
-            : ""}
+                {t.score ?? "–"}
+              </span>
+            ))}
+          </>
+        ) : (
+          sides &&
+          market && (
+            <div className="nbah-row__bets">
+              <BetButton
+                side={sides[0]}
+                tone="away"
+                stacked
+                showPct={false}
+                canBet={canBet}
+                onBet={(o) => onBet(market.id, o)}
+              />
+              <BetButton
+                side={sides[1]}
+                tone="home"
+                stacked
+                showPct={false}
+                canBet={canBet}
+                onBet={(o) => onBet(market.id, o)}
+              />
+            </div>
+          )
+        )}
       </div>
     </div>
   );
 }
 
-// ── Matches tab ───────────────────────────────────────────────────────────────
+/** "Fri, Oct 17", led by Today / Tomorrow / Yesterday when it is one. */
+function dayHeading(key: string): string {
+  const date = new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${key}T00:00:00Z`));
+  const near = dayLabel(key);
+  return /^(Today|Tomorrow|Yesterday)$/.test(near) ? `${near} · ${date}` : date;
+}
+
+function DayGroup({
+  day,
+  games,
+  row,
+}: {
+  day: string;
+  games: NbaGame[];
+  row: (g: NbaGame) => React.ReactNode;
+}) {
+  return (
+    <div className="nbah-day">
+      <div className="nbah-day__head">{dayHeading(day)}</div>
+      {games.map(row)}
+    </div>
+  );
+}
+
+const DAYS_SHOWN = 3;
+
 function MatchesTab({
   games,
   loading,
@@ -523,15 +702,22 @@ function MatchesTab({
   onOpen: (id: string) => void;
   onBet: (marketId: string, outcomeId: string) => void;
 }) {
-  const [view, setView] = useState<"upcoming" | "results">("upcoming");
-  // Pinned by an admin (the same flag the football hubs use for their
-  // featured slot): shown first as a full-width card, kept there while the
-  // game is live, and not repeated under Live or its day.
-  const isFeatured = (g: NbaGame) =>
-    g.state !== "post" && !!marketFor(g)?.isFeatured;
-  const featured = games.filter(isFeatured);
-  const live = games.filter((g) => g.state === "in" && !isFeatured(g));
-  const upcoming = games.filter((g) => g.state === "pre" && !isFeatured(g));
+  const [allLive, setAllLive] = useState(false);
+  const [allDays, setAllDays] = useState(false);
+  const [allResults, setAllResults] = useState(false);
+
+  // Pinned by an admin (the same flag the football hubs use for their featured
+  // slot) and kept there while live; otherwise the next game open for
+  // prediction. Never repeated in the sections below.
+  const pinned = games.find(
+    (g) => g.state !== "post" && !!marketFor(g)?.isFeatured,
+  );
+  const featured =
+    pinned ??
+    games.find((g) => g.state === "pre" && marketFor(g)?.status === "open");
+  const notFeatured = (g: NbaGame) => g.id !== featured?.id;
+  const live = games.filter((g) => g.state === "in" && notFeatured(g));
+  const upcoming = games.filter((g) => g.state === "pre" && notFeatured(g));
   const results = games.filter((g) => g.state === "post").reverse();
 
   const byDay = (list: NbaGame[]) => {
@@ -542,9 +728,11 @@ function MatchesTab({
     }
     return [...groups.entries()];
   };
+  const upcomingDays = byDay(upcoming);
+  const resultDays = byDay(results);
 
-  const card = (g: NbaGame) => (
-    <GameCard
+  const row = (g: NbaGame) => (
+    <GameRow
       key={g.id}
       game={g}
       market={marketFor(g)}
@@ -552,82 +740,84 @@ function MatchesTab({
       onBet={onBet}
     />
   );
+  const toggle = (
+    count: number,
+    shown: number,
+    on: boolean,
+    set: (v: boolean) => void,
+  ) =>
+    count > shown
+      ? { label: on ? "Show less" : "View all", onClick: () => set(!on) }
+      : null;
+
+  if (loading && games.length === 0) return <Skeletons />;
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-        {(["upcoming", "results"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setView(v)}
-            style={{
-              padding: "7px 14px",
-              borderRadius: 20,
-              border: `1px solid ${view === v ? AMBER : "rgba(255,255,255,0.12)"}`,
-              background: view === v ? `${AMBER}22` : "transparent",
-              color: view === v ? NBA_THEME.amberSoft : SILVER,
-              fontSize: 11.5,
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            {v === "upcoming" ? "Upcoming" : "Results"}
-          </button>
-        ))}
-      </div>
+      {featured && (
+        <Section icon={<Star size={18} fill="currentColor" />} title="Featured Game">
+          <FeaturedGame
+            game={featured}
+            market={marketFor(featured)}
+            pinned={featured === pinned}
+            onOpen={onOpen}
+            onBet={onBet}
+          />
+        </Section>
+      )}
 
-      {loading && games.length === 0 ? (
-        <div style={{ marginTop: 14 }}>
-          <Skeletons />
-        </div>
-      ) : view === "upcoming" ? (
-        <>
-          {featured.length > 0 && (
-            <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
-              {featured.map((g) => (
-                <GameCard
-                  key={g.id}
-                  game={g}
-                  market={marketFor(g)}
-                  onOpen={onOpen}
-                  onBet={onBet}
-                  featured
-                />
-              ))}
-            </div>
-          )}
-          {live.length > 0 && (
-            <>
-              <Heading>Live now</Heading>
-              <div style={GRID}>{live.map(card)}</div>
-            </>
-          )}
-          {byDay(upcoming).map(([day, list]) => (
-            <div key={day}>
-              <Heading>{dayLabel(day)}</Heading>
-              <div style={GRID}>{list.map(card)}</div>
-            </div>
-          ))}
-          {live.length === 0 &&
-            upcoming.length === 0 &&
-            featured.length === 0 && (
-              <div style={{ marginTop: 14 }}>
-                <EmptyState>No games in the next week.</EmptyState>
-              </div>
-            )}
-        </>
-      ) : results.length > 0 ? (
-        byDay(results).map(([day, list]) => (
-          <div key={day}>
-            <Heading>{dayLabel(day)}</Heading>
-            <div style={GRID}>{list.map(card)}</div>
+      {live.length > 0 && (
+        <Section
+          icon={<span className="nbah-live-dot" aria-hidden />}
+          title="Live Games"
+          action={toggle(live.length, 1, allLive, setAllLive)}
+        >
+          <div className={allLive ? "nbah-live-grid" : "nbah-live-rail"}>
+            {live.map((g) => (
+              <LiveGame
+                key={g.id}
+                game={g}
+                market={marketFor(g)}
+                onOpen={onOpen}
+                onBet={onBet}
+              />
+            ))}
           </div>
-        ))
-      ) : (
-        <div style={{ marginTop: 14 }}>
-          <EmptyState>No finished games since yesterday.</EmptyState>
-        </div>
+        </Section>
+      )}
+
+      <Section
+        icon={<CalendarDays size={18} />}
+        title="Upcoming Games"
+        action={toggle(upcomingDays.length, DAYS_SHOWN, allDays, setAllDays)}
+      >
+        {upcomingDays.length > 0 ? (
+          (allDays ? upcomingDays : upcomingDays.slice(0, DAYS_SHOWN)).map(
+            ([day, list]) => (
+              <DayGroup key={day} day={day} games={list} row={row} />
+            ),
+          )
+        ) : (
+          <EmptyState>
+            {live.length || featured
+              ? "No more games scheduled this week."
+              : "No games in the next week."}
+          </EmptyState>
+        )}
+      </Section>
+
+      {results.length > 0 && (
+        <Section
+          icon={<Trophy size={18} />}
+          title="Recent Results"
+          action={toggle(resultDays.length, 1, allResults, setAllResults)}
+        >
+          {(allResults ? resultDays : resultDays.slice(0, 1)).map(
+            ([day, list]) => (
+              <DayGroup key={day} day={day} games={list} row={row} />
+            ),
+          )}
+        </Section>
       )}
     </div>
   );
@@ -1227,6 +1417,7 @@ function StandingsTab({ standings }: { standings: NbaStandings | null }) {
 export function NbaHubPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<NbaTab>("matches");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [games, setGames] = useState<NbaGame[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -1292,6 +1483,12 @@ export function NbaHubPage() {
   const liveCount = games.filter((g) => g.state === "in").length;
   const openCount = markets.filter((m) => m.status === "open").length;
 
+  // The cover's counters all lead to the game list.
+  const showMatches = () => {
+    setTab("matches");
+    tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const activeBetMarket = activeBet
     ? (markets.find((m) => m.id === activeBet.marketId) ?? null)
     : null;
@@ -1299,54 +1496,27 @@ export function NbaHubPage() {
   return (
     <Page>
       <div style={{ minHeight: "100vh", background: BG }}>
-        <NbaBanner variant="hub" showCta={false} onBack={() => navigate(-1)} />
-
-        <div
-          style={{ maxWidth: 860, margin: "0 auto", padding: "14px 16px 0" }}
-        >
-          <div style={{ display: "flex", gap: 12 }}>
-            {[
-              { v: String(todayCount), l: "Games today" },
-              { v: String(liveCount), l: "Live now" },
-              { v: String(openCount), l: "Open markets" },
-            ].map((s) => (
-              <div
-                key={s.l}
-                style={{
-                  flex: 1,
-                  textAlign: "center",
-                  background: NAVY,
-                  borderRadius: 12,
-                  padding: "10px 4px",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div
-                  style={{
-                    ...DISPLAY,
-                    fontSize: 22,
-                    lineHeight: 1,
-                    color: s.l === "Live now" && s.v !== "0" ? LIVE : "#fff",
-                  }}
-                >
-                  {s.v}
-                </div>
-                <div
-                  style={{
-                    fontSize: 8.5,
-                    color: SILVER,
-                    fontWeight: 800,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    marginTop: 5,
-                  }}
-                >
-                  {s.l}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <NbaHubCover
+          onBack={() => navigate(-1)}
+          stats={[
+            {
+              label: "Games today",
+              value: gamesLoading ? "–" : String(todayCount),
+              onClick: showMatches,
+            },
+            {
+              label: "Live now",
+              value: gamesLoading ? "–" : String(liveCount),
+              live: liveCount > 0,
+              onClick: showMatches,
+            },
+            {
+              label: "Open markets",
+              value: String(openCount),
+              onClick: showMatches,
+            },
+          ]}
+        />
 
         <div
           style={{
@@ -1355,45 +1525,20 @@ export function NbaHubPage() {
             padding: "18px 16px 120px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              gap: 4,
-              padding: 4,
-              background: PANEL,
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 14,
-              marginBottom: 14,
-            }}
-          >
-            {TABS.map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 4,
-                    padding: "9px 2px",
-                    borderRadius: 10,
-                    border: "none",
-                    cursor: "pointer",
-                    background: active ? AMBER : "transparent",
-                    color: active ? NBA_THEME.onAmber : SILVER,
-                    fontSize: 11,
-                    fontWeight: 800,
-                  }}
-                >
-                  {t.icon}
-                  <span style={{ whiteSpace: "nowrap" }}>{t.label}</span>
-                </button>
-              );
-            })}
+          <div ref={tabsRef} className="nbah-tabs" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`nbah-tab${tab === t.id ? " nbah-tab--active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.icon}
+                <span>{t.label}</span>
+              </button>
+            ))}
           </div>
 
           {tab === "matches" && (

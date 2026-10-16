@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import "./NbaBanner.css";
+import { SegmentDisplay } from "./SegmentDisplay";
 
 const TEAMS = ["Celtics", "Lakers", "Warriors", "Thunder", "Knicks", "Nuggets", "Bucks", "Cavaliers", "76ers", "Mavericks", "Heat", "Spurs"];
 
@@ -8,17 +9,28 @@ interface NbaBannerProps {
   onClick?: () => void;
   onBack?: () => void;
   showCta?: boolean;
-  variant?: "feed" | "hub";
   style?: CSSProperties;
   className?: string;
 }
 
-/** One court and visual identity for the feed and the hub masthead. */
-export function NbaBanner({ onClick, onBack, showCta = true, variant = "feed", style, className }: NbaBannerProps) {
-  const hub = variant === "hub";
+/** The logo and the headline, for the feed card. */
+function NbaHeadline() {
+  return (
+    <>
+      <div className="nbac__brand">
+        <img className="nbac__logo" src="/nba-logo.webp" alt="" width={86} height={166} decoding="async" />
+        <span className="nbac__wordmark">NBA</span>
+      </div>
+      <div className="nbac__title">Step onto the court.<br />Pick your <em>winner.</em></div>
+    </>
+  );
+}
+
+/** The feed's NBA card: the hub cover's look, and the way into the hub. */
+export function NbaBanner({ onClick, onBack, showCta = true, style, className }: NbaBannerProps) {
   return (
     <div
-      className={["nbab", hub && "nbab--hub", onClick && "nbab--interactive", className].filter(Boolean).join(" ")}
+      className={["nbac nbac--card", onClick && "nbac--interactive", className].filter(Boolean).join(" ")}
       style={style}
       onClick={onClick}
       role={onClick ? "button" : undefined}
@@ -31,53 +43,69 @@ export function NbaBanner({ onClick, onBack, showCta = true, variant = "feed", s
         }
       } : undefined}
     >
-      <NbaCourt />
-      <div className="nbab__shade" aria-hidden="true" />
-      <div className="nbab__top">
-        {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}><ArrowLeft size={20} strokeWidth={2.25} /></button>}
-        <span className="nbab__season"><span />2026/27 SEASON</span>
-      </div>
-      <div className="nbab__content">
-        <div className="nbab__eyebrow">THE GAME IS YOURS</div>
-        <div className="nbab__title">NBA<span className="nbab__title-dot">.</span></div>
-        <div className="nbab__tagline">Big games. Bold calls.</div>
-        <div className="nbab__description">{hub ? "Every game, every night. · Times in Bhutan" : "Step onto the court. Pick your winner."}</div>
-      </div>
-      {!hub && showCta && <div className="nbab__footer">
-        <div className="nbab__ticker" aria-hidden="true">
-          <div className="nbab__ticker-track">{[0, 1].map((copy) => <div className="nbab__ticker-group" key={copy}>{TEAMS.map((team) => <span key={team}>{team}<i>✦</i></span>)}</div>)}</div>
+      <div className="nbac__art" aria-hidden="true" />
+      <div className="nbac__inner">
+        <div className="nbac__top">
+          {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}><ArrowLeft size={20} strokeWidth={2.25} /></button>}
+          <span className="nbac__season"><span />2026/27 SEASON</span>
         </div>
-        <span className="nbab__cta">Predict <span aria-hidden="true">↗</span></span>
+        <NbaHeadline />
+      </div>
+      {showCta && <div className="nbac__footer">
+        <div className="nbac__ticker" aria-hidden="true">
+          <div className="nbac__ticker-track">{[0, 1].map((copy) => <div className="nbac__ticker-group" key={copy}>{TEAMS.map((team) => <span key={team}>{team}<i>✦</i></span>)}</div>)}</div>
+        </div>
+        <span className="nbac__cta">Predict now <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" /></span>
       </div>}
     </div>
   );
 }
 
+export interface NbaHubStat {
+  label: string;
+  value: string;
+  /** Shown in the live red while there is something live. */
+  live?: boolean;
+  onClick?: () => void;
+}
+
 /**
- * The banner's court and its shading, on their own so other NBA surfaces (the
- * market detail header) can stand on the same floor. Place inside an element
- * with the `nbab` class, which positions and clips it.
+ * The hub's cover: the arena photo on the right, fading into the night-navy
+ * page on the left where the lockup sits, and the hub's three counters
+ * along the bottom.
  */
-export function NbaCourt() {
+export function NbaHubCover({ onBack, stats }: { onBack?: () => void; stats: NbaHubStat[] }) {
   return (
-    <>
-      <div className="nbab__arena" aria-hidden="true">
-        <div className="nbab__court">
-          <svg viewBox="0 0 940 500" preserveAspectRatio="none">
-            <rect x="20" y="20" width="900" height="460" rx="2" />
-            <path d="M470 20V480" />
-            <circle cx="470" cy="250" r="60" />
-            <circle cx="470" cy="250" r="9" />
-            <path className="nbab__paint" d="M20 170H200V330H20ZM920 170H740V330H920Z" />
-            <circle cx="200" cy="250" r="60" />
-            <circle cx="740" cy="250" r="60" />
-            <path d="M20 50H80A225 225 0 0 1 80 450H20M920 50H860A225 225 0 0 0 860 450H920" />
-            <path d="M55 220V280M885 220V280" />
-            <circle cx="70" cy="250" r="8" />
-            <circle cx="870" cy="250" r="8" />
-          </svg>
+    <header className="nbac nbac--hub">
+      <div className="nbac__art" aria-hidden="true" />
+      {/* The back arrow sits in the cover's top-left corner, apart from the content column. */}
+      {onBack && <div className="nbac__bar">
+        <button type="button" className="nbab__back" aria-label="Go back" onClick={onBack}><ArrowLeft size={20} strokeWidth={2.25} /></button>
+      </div>}
+      <div className="nbac__inner">
+        <div className={onBack ? "nbac__top nbac__top--back" : "nbac__top"}>
+          <div className="nbac__lockup">
+            <img src="/nba-logo.webp" alt="" width={86} height={166} decoding="async" />
+            <div>
+              <h1 className="nbac__lockup-name">NBA</h1>
+              <div className="nbac__lockup-sub"><span />2026/27 Season</div>
+            </div>
+          </div>
+        </div>
+        <div className="nbac__hero">
+          <p className="nbac__tagline">Follow the action. Predict the outcomes.</p>
+        </div>
+        <div className="nbac__stats">
+          {stats.map((s) => (
+            <button key={s.label} type="button" className="nbac__stat" onClick={s.onClick} disabled={!s.onClick}>
+              {/* The number, scoreboard-style, where an icon would sit. */}
+              <SegmentDisplay value={s.value} className={s.live ? "nbac__stat-value nbac__stat-value--live" : "nbac__stat-value"} />
+              <span className="nbac__stat-label">{s.label}</span>
+              {s.onClick && <ChevronRight className="nbac__stat-chevron" size={18} aria-hidden="true" />}
+            </button>
+          ))}
         </div>
       </div>
-    </>
+    </header>
   );
 }
