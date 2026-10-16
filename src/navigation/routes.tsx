@@ -29,6 +29,9 @@ const NationsLeagueHubPage = lazy(() =>
     default: m.NationsLeagueHubPage,
   })),
 );
+const NbaHubPage = lazy(() =>
+  import("@/pages/NbaHubPage").then((m) => ({ default: m.NbaHubPage })),
+);
 const PlatformAccuracyPage = lazy(() =>
   import("@/pages/PlatformAccuracyPage").then((m) => ({
     default: m.PlatformAccuracyPage,
@@ -121,6 +124,7 @@ export const routes: Route[] = [
     Component: NationsLeagueHubPage,
     title: "Nations League Hub",
   },
+  { path: "/nba", Component: NbaHubPage, title: "NBA Hub" },
   // Esports hub hidden — uncomment to re-enable
   // { path: "/esports", Component: EsportsHubPage, title: "Esports Hub" },
   { path: "/markets", Component: MarketsPage },

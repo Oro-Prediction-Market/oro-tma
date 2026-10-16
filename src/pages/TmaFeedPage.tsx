@@ -47,8 +47,10 @@ import { EsportsBanner } from "@shared/components/EsportsBanner";
 import { UfcBanner } from "@shared/components/UfcBanner";
 import { UclBanner } from "@shared/components/UclBanner";
 import { UnlBanner } from "@shared/components/UnlBanner";
+import { NbaBanner } from "@shared/components/NbaBanner";
 import { isUclMarket } from "@/lib/hubs/ucl";
 import { isUnlMarket } from "@/lib/hubs/nationsLeague";
+import { isNbaMarket } from "@/lib/hubs/nba";
 import { coalesce, pollWhileVisible } from "@shared/helpers/poll";
 
 // "Ask the Crowd" is opened by few people; its chunk loads on first open.
@@ -835,7 +837,7 @@ function OpenPicksStrip({
 
 /**
  * Pinned by an admin to the top of the feed. Any market except a hub match:
- * an EPL, UCL or Nations League match uses the same flag for its hub's
+ * an EPL, UCL, Nations League or NBA match uses the same flag for its hub's
  * featured slot instead. Must match `pinTarget` in the admin's
  * MarketManagement.tsx.
  */
@@ -843,7 +845,7 @@ function isFeedPinned(m: Market): boolean {
   if (!m.isFeatured) return false;
   const sub = (m.subcategory ?? "").toLowerCase();
   const hubMatch =
-    ["epl-", "ucl-", "unl-"].some((p) => sub.startsWith(p)) &&
+    ["epl-", "ucl-", "unl-", "nba-"].some((p) => sub.startsWith(p)) &&
     m.title.toLowerCase().includes(" vs ");
   return !hubMatch;
 }
@@ -1911,7 +1913,7 @@ export const TmaFeedPage: FC = () => {
       </Page>
     );
 
-  // WC, BPL, UFC, EPL, UCL, Nations League and esports markets live in their
+  // WC, BPL, UFC, EPL, UCL, Nations League, NBA and esports markets live in their
   // own hubs — the banners are their entry points
   const nonWCMarkets = markets.filter(
     (m) =>
@@ -1921,6 +1923,7 @@ export const TmaFeedPage: FC = () => {
       !isEplMarket(m) &&
       !isUclMarket(m) &&
       !isUnlMarket(m) &&
+      !isNbaMarket(m) &&
       !isEsportsMarket(m),
   );
   const openMarkets = nonWCMarkets.filter((m) => m.status === "open");
@@ -2995,6 +2998,13 @@ export const TmaFeedPage: FC = () => {
         {showSportsBanners && (
           <div style={{ marginBottom: 16 }}>
             <UnlBanner onClick={() => navigate("/nations-league")} />
+          </div>
+        )}
+
+        {/* ── NBA Banner Card ── */}
+        {showSportsBanners && (
+          <div style={{ marginBottom: 16 }}>
+            <NbaBanner onClick={() => navigate("/nba")} />
           </div>
         )}
 

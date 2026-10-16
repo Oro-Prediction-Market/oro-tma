@@ -1576,6 +1576,70 @@ export function getUnlStats(): Promise<UnlStats> {
 export function getUnlSeason(): Promise<UnlSeason> {
   return request<UnlSeason>("/unl/season");
 }
+
+// ── NBA (ESPN, via /nba) ──────────────────────────────────────────────────────
+
+export interface NbaTeamSide {
+  id: string;
+  name: string;
+  abbr: string;
+  logo: string | null;
+  score: number | null;
+  winner: boolean;
+}
+
+/** One game, as the backend reads it from ESPN. */
+export interface NbaGame {
+  id: string;
+  /** Tip-off, ISO UTC. */
+  tipoff: string;
+  /** 1 preseason, 2 regular season, 3 playoffs, 5 play-in. */
+  seasonType: number;
+  /** "pre" | "in" | "post" */
+  state: string;
+  statusName: string;
+  /** "Final", "Final/OT", "Q3 4:12", … */
+  statusDetail: string;
+  completed: boolean;
+  period: number;
+  home: NbaTeamSide;
+  away: NbaTeamSide;
+}
+
+export interface NbaStandingRow {
+  seed: number;
+  teamId: string;
+  team: string;
+  abbr: string;
+  logo: string | null;
+  w: number;
+  l: number;
+  pct: string;
+  gb: string;
+  streak: string;
+  l10: string;
+  home: string;
+  road: string;
+}
+
+export interface NbaStandings {
+  updatedAt: string;
+  season: number;
+  conferences: { name: string; table: NbaStandingRow[] }[];
+}
+
+/** Games by Bhutan date: `from` (YYYY-MM-DD, default yesterday) for `days`. */
+export function getNbaGames(from?: string, days?: number): Promise<NbaGame[]> {
+  const q = new URLSearchParams();
+  if (from) q.set("from", from);
+  if (days) q.set("days", String(days));
+  const qs = q.toString();
+  return request<NbaGame[]>(qs ? `/nba/games?${qs}` : "/nba/games");
+}
+
+export function getNbaStandings(): Promise<NbaStandings> {
+  return request<NbaStandings>("/nba/standings");
+}
 // ── Market suggestions ("Ask the Crowd") ─────────────────────────────────────
 
 export interface MarketSuggestion {
