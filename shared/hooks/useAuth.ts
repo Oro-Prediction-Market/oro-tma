@@ -184,6 +184,24 @@ function initialize(): Promise<void> {
   return inflight;
 }
 
+/**
+ * A refused session (expired, or ended by "sign out everywhere") signs in
+ * again from Telegram's launch data, as the next screen used to when every
+ * screen signed itself in. The user stays on screen meanwhile. At most once a
+ * minute, so a server that keeps refusing cannot start a login loop; if the
+ * launch data is too old (over 24 h) the sign-in fails and the app shows
+ * signed out, as before.
+ */
+const RECOVERY_GAP_MS = 60_000;
+let lastRecovery = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("oro:unauthorized", () => {
+    if (!started || Date.now() - lastRecovery < RECOVERY_GAP_MS) return;
+    lastRecovery = Date.now();
+    initialize();
+  });
+}
+
 /** A later screen's mount: pick up a changed balance or profile. */
 function refreshUser() {
   const id = state.user?.id;

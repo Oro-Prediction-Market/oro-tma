@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { bustCache, getToken, onTokenChange, request } from "@shared/api/client";
+import {
+  bustCache,
+  getToken,
+  onTokenChange,
+  request,
+} from "@shared/api/client";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const RETRY_MIN_MS = 5_000;
