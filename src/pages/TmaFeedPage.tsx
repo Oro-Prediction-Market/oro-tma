@@ -71,8 +71,8 @@ function trendingTimeLeft(m: Market): string {
   return `${Math.max(1, Math.floor(ms / 60000))}m`;
 }
 
-// The market's own picture, top right across from the category, when it has
-// one — there, not beside the title, so a narrow card keeps the title's width.
+// The market's own picture, top left with the category across from it, when it
+// has one — there, not beside the title, so a narrow card keeps the title's width.
 // A broken link hides itself rather than leaving an empty box in the strip.
 function TrendingThumb({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
@@ -152,6 +152,7 @@ function TrendingMiniCard({
               gap: 8,
             }}
           >
+            {m.imageUrl && <TrendingThumb src={m.imageUrl} />}
             <span
               style={{
                 fontSize: 8.5,
@@ -172,7 +173,6 @@ function TrendingMiniCard({
             >
               {m.category || "market"}
             </span>
-            {m.imageUrl && <TrendingThumb src={m.imageUrl} />}
           </div>
           <div
             style={{
