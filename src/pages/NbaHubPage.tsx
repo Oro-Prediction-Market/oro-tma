@@ -1,7 +1,7 @@
 import { NbaBanner } from "@shared/components/NbaBanner";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Clock, ListOrdered } from "lucide-react";
+import { CalendarDays, Clock, ListOrdered, Trophy } from "lucide-react";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { calcOdds, calcProb, formatOdds } from "@/lib/hubs/worldCup";
@@ -44,8 +44,9 @@ const DISPLAY: React.CSSProperties = {
   letterSpacing: "-0.02em",
 };
 
-type NbaTab = "matches" | "standings";
+type NbaTab = "season" | "matches" | "standings";
 const TABS: { id: NbaTab; label: string; icon: React.ReactNode }[] = [
+  { id: "season", label: "Season", icon: <Trophy size={14} /> },
   { id: "matches", label: "Matches", icon: <CalendarDays size={14} /> },
   { id: "standings", label: "Standings", icon: <ListOrdered size={14} /> },
 ];
@@ -627,6 +628,272 @@ function MatchesTab({
   );
 }
 
+// ── Season tab ────────────────────────────────────────────────────────────────
+/** Season-long markets: any NBA market that is not a single game. */
+const isSeasonMarket = (m: Market) =>
+  (m.subcategory ?? "").toLowerCase() !== "nba-match" && !nbaGameIdOf(m);
+
+function SeasonMarketCard({
+  market,
+  onOpen,
+  onBet,
+}: {
+  market: Market;
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const closes = useClosesAt(market.bettingClosesAt ?? market.closesAt);
+  const canBet = market.status === "open";
+  const VISIBLE = 5;
+  // Favourite first, by the money on each side; probability breaks ties.
+  const outcomes = [...(market.outcomes ?? [])].sort(
+    (a, b) =>
+      Number(b.totalBetAmount ?? 0) - Number(a.totalBetAmount ?? 0) ||
+      calcProb(market, b.id) - calcProb(market, a.id),
+  );
+  const shown = expanded ? outcomes : outcomes.slice(0, VISIBLE);
+  const pool =
+    Number(market.totalPool) ||
+    outcomes.reduce((sum, o) => sum + Number(o.totalBetAmount ?? 0), 0);
+
+  return (
+    <div
+      style={{
+        borderRadius: 16,
+        overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.1)",
+        background: NAVY,
+      }}
+    >
+      <div
+        onClick={() => onOpen(market.id)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && e.target === e.currentTarget)
+            onOpen(market.id);
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          padding: "12px 14px",
+          background: `radial-gradient(ellipse at 100% 0%, ${NBA_THEME.amberHot}30 0%, transparent 60%), rgba(255,255,255,0.03)`,
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          cursor: "pointer",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              ...DISPLAY,
+              fontSize: 19,
+              lineHeight: 1.05,
+              color: "#fff",
+            }}
+          >
+            {market.title}
+          </div>
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: SILVER,
+            }}
+          >
+            Nu {pool.toLocaleString()} pool
+          </div>
+        </div>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            flexShrink: 0,
+            fontSize: 10,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: canBet ? NBA_THEME.amberSoft : SILVER,
+          }}
+        >
+          {canBet ? (
+            <>
+              <Clock size={11} /> {closes}
+            </>
+          ) : market.status === "resolving" ? (
+            "Result proposed"
+          ) : (
+            "Closed"
+          )}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {shown.map((o, i) => {
+          const pct = Math.round(calcProb(market, o.id) * 100);
+          const od = calcOdds(market, o.id);
+          return (
+            <div
+              key={o.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 14px",
+                borderTop: i ? "1px solid rgba(255,255,255,0.06)" : "none",
+              }}
+            >
+              <div
+                style={{
+                  ...DISPLAY,
+                  width: 20,
+                  textAlign: "center",
+                  fontSize: 15,
+                  color: SILVER,
+                  flexShrink: 0,
+                }}
+              >
+                {i + 1}
+              </div>
+              <NbaLogo
+                src={o.imageUrl}
+                abbr={o.label.split(" ").pop() ?? o.label}
+                size={32}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {o.label}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    height: 3,
+                    borderRadius: 2,
+                    background: "rgba(255,255,255,0.08)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${pct}%`,
+                      height: "100%",
+                      background: i === 0 ? AMBER : TEAL,
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0, minWidth: 48 }}>
+                <div
+                  style={{
+                    ...DISPLAY,
+                    fontSize: 18,
+                    color: "#fff",
+                    lineHeight: 1,
+                  }}
+                >
+                  {pct}%
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    color: GOLD,
+                  }}
+                >
+                  {formatOdds(od)}
+                </div>
+              </div>
+              {canBet && (
+                <button
+                  type="button"
+                  onClick={() => onBet(market.id, o.id)}
+                  style={{
+                    flexShrink: 0,
+                    border: "none",
+                    borderRadius: 7,
+                    padding: "8px 12px",
+                    background: AMBER,
+                    color: NBA_THEME.onAmber,
+                    fontSize: 11,
+                    fontWeight: 900,
+                    cursor: "pointer",
+                  }}
+                >
+                  Predict
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {outcomes.length > VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            width: "100%",
+            padding: "10px 0",
+            border: "none",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,182,109,0.06)",
+            color: NBA_THEME.amberSoft,
+            fontSize: 11.5,
+            fontWeight: 800,
+            cursor: "pointer",
+          }}
+        >
+          {expanded ? "Show less" : `Show all ${outcomes.length} teams`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SeasonTab({
+  markets,
+  onOpen,
+  onBet,
+}: {
+  markets: Market[];
+  onOpen: (id: string) => void;
+  onBet: (marketId: string, outcomeId: string) => void;
+}) {
+  const season = markets.filter(isSeasonMarket);
+  if (season.length === 0)
+    return (
+      <div style={{ marginTop: 14 }}>
+        <EmptyState>
+          <div style={{ fontSize: 22, marginBottom: 6 }}>🏆</div>
+          Season predictions are coming soon.
+          <br />
+          NBA Champion · Conference winners · MVP
+        </EmptyState>
+      </div>
+    );
+  return (
+    <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
+      {season.map((m) => (
+        <SeasonMarketCard key={m.id} market={m} onOpen={onOpen} onBet={onBet} />
+      ))}
+    </div>
+  );
+}
+
 // ── Standings tab ─────────────────────────────────────────────────────────────
 function StandingsTable({
   rows,
@@ -1036,6 +1303,15 @@ export function NbaHubPage() {
               games={games}
               loading={gamesLoading}
               marketFor={marketFor}
+              onOpen={(id) => navigate(`/market/${id}`)}
+              onBet={(marketId, outcomeId) =>
+                setActiveBet({ marketId, outcomeId })
+              }
+            />
+          )}
+          {tab === "season" && (
+            <SeasonTab
+              markets={markets}
               onOpen={(id) => navigate(`/market/${id}`)}
               onBet={(marketId, outcomeId) =>
                 setActiveBet({ marketId, outcomeId })
