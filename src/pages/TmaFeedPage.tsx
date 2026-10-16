@@ -146,6 +146,9 @@ function TrendingMiniCard({
           <div
             style={{
               marginBottom: 8,
+              // The thumbnail's height on every card, image or not, so the
+              // titles across the strip start on the same line.
+              minHeight: 30,
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
