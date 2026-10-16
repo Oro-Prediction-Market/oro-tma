@@ -23,6 +23,28 @@ export function nbaGameIdOf(m: Market): string | null {
 export const NBA_BLUE = "#1d428a";
 export const NBA_RED = "#c8102e";
 
+/**
+ * The court banner's palette (shared/components/NbaBanner.css), so the hub and
+ * the market detail read as the same place as the banner that leads to them:
+ * a night-navy arena, amber from the Predict button, teal from the painted key.
+ */
+export const NBA_THEME = {
+  ink: "#080f1a",
+  card: "#101722",
+  panel: "#111b28",
+  line: "rgba(255,255,255,0.09)",
+  amber: "#ffb66d",
+  amberHot: "#ffa34d",
+  amberSoft: "#ffca8e",
+  /** Text on an amber fill, as on the banner's CTA. */
+  onAmber: "#17120c",
+  teal: "#5fb3c9",
+  tealDeep: "#18394a",
+  muted: "#c1c9d3",
+  live: "#ff4d5e",
+  display: 'Impact, "Arial Black", system-ui, sans-serif',
+} as const;
+
 /** A team logo, falling back to the abbreviation when the image fails. */
 export function NbaLogo({
   src,
@@ -58,7 +80,7 @@ export function NbaLogo({
         height: size,
         borderRadius: "50%",
         flexShrink: 0,
-        background: `linear-gradient(135deg, ${NBA_BLUE} 0%, ${NBA_RED} 100%)`,
+        background: `linear-gradient(135deg, ${NBA_THEME.tealDeep} 0%, ${NBA_THEME.amberHot} 100%)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -1,17 +1,11 @@
 import { NbaBanner } from "@shared/components/NbaBanner";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Clock, ListOrdered, Star } from "lucide-react";
+import { CalendarDays, Clock, ListOrdered } from "lucide-react";
 import { Page } from "@/components/Page";
 import { TmaBetModal } from "@/components/TmaBetModal";
 import { calcOdds, calcProb, formatOdds } from "@/lib/hubs/worldCup";
-import {
-  NBA_BLUE,
-  NBA_RED,
-  NbaLogo,
-  isNbaMarket,
-  nbaGameIdOf,
-} from "@/lib/hubs/nba";
+import { NBA_THEME, NbaLogo, isNbaMarket, nbaGameIdOf } from "@/lib/hubs/nba";
 import type {
   Market,
   NbaGame,
@@ -33,15 +27,22 @@ import { getMarkets, getNbaGames, getNbaStandings } from "@shared/api/client";
  * NBA convention throughout: away team on the left, "@", home on the right.
  */
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
-const BG = "#070b1a";
-const NAVY = "#0d1530";
-const PANEL = "#121d3d";
-const SILVER = "#a9b4cf";
-const GOLD = "#e8c766";
-const LIVE = "#ff4d5e";
-const PLAYOFF = "#3ddc97";
-const PLAYIN = GOLD;
+// ── Theme: the court banner's palette ─────────────────────────────────────────
+const BG = NBA_THEME.ink;
+const NAVY = NBA_THEME.card;
+const PANEL = NBA_THEME.panel;
+const SILVER = NBA_THEME.muted;
+const GOLD = NBA_THEME.amber;
+const AMBER = NBA_THEME.amber;
+const TEAL = NBA_THEME.teal;
+const LIVE = NBA_THEME.live;
+const PLAYOFF = AMBER;
+const PLAYIN = TEAL;
+const DISPLAY: React.CSSProperties = {
+  fontFamily: NBA_THEME.display,
+  fontStyle: "italic",
+  letterSpacing: "-0.02em",
+};
 
 type NbaTab = "matches" | "standings";
 const TABS: { id: NbaTab; label: string; icon: React.ReactNode }[] = [
@@ -135,14 +136,16 @@ function Heading({ children }: { children: React.ReactNode }) {
         margin: "18px 0 10px",
       }}
     >
-      <Star size={13} color={NBA_RED} fill={NBA_RED} />
+      <span aria-hidden style={{ color: AMBER, fontSize: 11 }}>
+        ✦
+      </span>
       <span
         style={{
-          fontSize: 12,
+          fontSize: 10.5,
           fontWeight: 900,
-          letterSpacing: "0.1em",
+          letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: SILVER,
+          color: NBA_THEME.amberSoft,
         }}
       >
         {children}
@@ -238,7 +241,8 @@ function TeamBlock({
       {showScore && (
         <div
           style={{
-            fontSize: 26,
+            ...DISPLAY,
+            fontSize: 28,
             fontWeight: 900,
             color: "#fff",
             marginTop: 2,
@@ -280,8 +284,8 @@ function GameCard({
       (o) => o.label.trim().toLowerCase() === name.trim().toLowerCase(),
     );
   const sides = [
-    { team: game.away, outcome: byName(game.away.name), color: NBA_BLUE },
-    { team: game.home, outcome: byName(game.home.name), color: NBA_RED },
+    { team: game.away, outcome: byName(game.away.name), color: TEAL },
+    { team: game.home, outcome: byName(game.home.name), color: AMBER },
   ];
   const canBet = market?.status === "open";
   const pool =
@@ -336,9 +340,9 @@ function GameCard({
       style={{
         borderRadius: 16,
         overflow: "hidden",
-        border: `1px solid ${live ? `${LIVE}66` : featured ? "rgba(232,199,102,0.45)" : "rgba(255,255,255,0.1)"}`,
+        border: `1px solid ${live ? `${LIVE}66` : featured ? "rgba(255,182,109,0.45)" : "rgba(255,255,255,0.1)"}`,
         background: featured
-          ? `radial-gradient(ellipse at 85% 0%, ${NBA_RED}55 0%, transparent 55%), radial-gradient(ellipse at 10% 100%, ${NBA_BLUE}aa 0%, transparent 60%), ${NAVY}`
+          ? `radial-gradient(ellipse at 85% 0%, ${NBA_THEME.amberHot}40 0%, transparent 55%), radial-gradient(ellipse at 10% 100%, ${NBA_THEME.tealDeep} 0%, transparent 60%), ${NAVY}`
           : NAVY,
         cursor: market ? "pointer" : "default",
         height: "100%",
@@ -354,7 +358,7 @@ function GameCard({
           gap: 8,
           padding: "8px 14px",
           background: featured
-            ? "rgba(232,199,102,0.12)"
+            ? "rgba(255,182,109,0.12)"
             : "rgba(255,255,255,0.04)",
           fontSize: 10.5,
           fontWeight: 800,
@@ -449,8 +453,8 @@ function GameCard({
               >
                 <div
                   style={{
-                    fontSize: 17,
-                    fontWeight: 900,
+                    ...DISPLAY,
+                    fontSize: 20,
                     color: "#fff",
                     lineHeight: 1,
                   }}
@@ -492,8 +496,8 @@ function GameCard({
               ? `Nu ${pool.toLocaleString()} pool · awaiting result`
               : `Nu ${pool.toLocaleString()} pool`
           : game.state === "pre"
-              ? "Prediction opens closer to tip-off"
-              : ""}
+            ? "Prediction opens closer to tip-off"
+            : ""}
       </div>
     </div>
   );
@@ -554,9 +558,9 @@ function MatchesTab({
             style={{
               padding: "7px 14px",
               borderRadius: 20,
-              border: `1px solid ${view === v ? NBA_RED : "rgba(255,255,255,0.12)"}`,
-              background: view === v ? `${NBA_RED}33` : "transparent",
-              color: view === v ? "#fff" : SILVER,
+              border: `1px solid ${view === v ? AMBER : "rgba(255,255,255,0.12)"}`,
+              background: view === v ? `${AMBER}22` : "transparent",
+              color: view === v ? NBA_THEME.amberSoft : SILVER,
               fontSize: 11.5,
               fontWeight: 800,
               cursor: "pointer",
@@ -794,9 +798,8 @@ function StandingsTab({ standings }: { standings: NbaStandings | null }) {
               borderRadius: 9,
               border: "none",
               cursor: "pointer",
-              background:
-                conf === i ? (i === 0 ? NBA_BLUE : NBA_RED) : "transparent",
-              color: conf === i ? "#fff" : SILVER,
+              background: conf === i ? AMBER : "transparent",
+              color: conf === i ? NBA_THEME.onAmber : SILVER,
               fontSize: 11.5,
               fontWeight: 800,
             }}
@@ -953,15 +956,24 @@ export function NbaHubPage() {
                   border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>
+                <div
+                  style={{
+                    ...DISPLAY,
+                    fontSize: 22,
+                    lineHeight: 1,
+                    color: s.l === "Live now" && s.v !== "0" ? LIVE : "#fff",
+                  }}
+                >
                   {s.v}
                 </div>
                 <div
                   style={{
-                    fontSize: 10,
-                    color: "rgba(255,255,255,0.55)",
-                    fontWeight: 600,
-                    marginTop: 2,
+                    fontSize: 8.5,
+                    color: SILVER,
+                    fontWeight: 800,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    marginTop: 5,
                   }}
                 >
                   {s.l}
@@ -1006,10 +1018,8 @@ export function NbaHubPage() {
                     borderRadius: 10,
                     border: "none",
                     cursor: "pointer",
-                    background: active
-                      ? `linear-gradient(180deg, ${NBA_RED} 0%, #8f0b21 100%)`
-                      : "transparent",
-                    color: active ? "#fff" : SILVER,
+                    background: active ? AMBER : "transparent",
+                    color: active ? NBA_THEME.onAmber : SILVER,
                     fontSize: 11,
                     fontWeight: 800,
                   }}
