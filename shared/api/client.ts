@@ -21,6 +21,23 @@ export function onTokenChange(fn: () => void): () => void {
   };
 }
 
+/**
+ * Resolves once there is a session token: at once if signed in already,
+ * otherwise when sign-in finishes. For calls that need an account but are
+ * made as the app opens, before the Telegram sign-in has come back — sent
+ * early, they were refused and never retried.
+ */
+export function whenSignedIn(): Promise<void> {
+  if (_token) return Promise.resolve();
+  return new Promise((resolve) => {
+    const off = onTokenChange(() => {
+      if (!_token) return;
+      off();
+      resolve();
+    });
+  });
+}
+
 export function setToken(token: string) {
   if (_token === token) return;
   _token = token;
@@ -102,7 +119,9 @@ export interface UserNotification {
 
 /** Unseen in-app notifications for the current user (popped once on app open). */
 export function getMyNotifications(): Promise<UserNotification[]> {
-  return request<UserNotification[]>("/users/me/notifications").catch(() => []);
+  return whenSignedIn()
+    .then(() => request<UserNotification[]>("/users/me/notifications"))
+    .catch(() => []);
 }
 
 /** Mark notifications seen (by id, or all unseen when omitted) so they don't pop again. */
@@ -210,13 +229,20 @@ async function fetchAndCache<T>(
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (_token) headers["Authorization"] = `Bearer ${_token}`;
+  const sentToken = _token;
+  if (sentToken) headers["Authorization"] = `Bearer ${sentToken}`;
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (res.status === 401) {
-    clearToken();
-    window.dispatchEvent(new Event("oro:unauthorized"));
+    // Only a refused token that is still the current one ends the session. A
+    // request sent before sign-in (no token) or with a token since replaced
+    // says nothing about the session we hold now; clearing on it signed
+    // people out when such an answer landed just after sign-in.
+    if (sentToken && sentToken === _token) {
+      clearToken();
+      window.dispatchEvent(new Event("oro:unauthorized"));
+    }
     const err = await res.json().catch(() => ({ message: "Unauthorized" }));
     throw new Error(err.message || "Unauthorized");
   }
@@ -734,7 +760,9 @@ export interface ActivityEvent {
 }
 
 export function getRecentActivity(): Promise<ActivityEvent[]> {
-  return request<ActivityEvent[]>("/markets/activity");
+  return whenSignedIn().then(() =>
+    request<ActivityEvent[]>("/markets/activity"),
+  );
 }
 
 export function feedHeartbeat(sessionId: string): Promise<{ count: number }> {
@@ -1334,10 +1362,15 @@ export type TrackEventPayload = {
 
 /** Fire-and-forget — never throws, never blocks UI. */
 export function trackEvent(payload: TrackEventPayload): void {
-  request<void>("/events", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }).catch(() => {
+  // Events need an account; one fired as the app opens waits for sign-in.
+  whenSignedIn()
+    .then(() =>
+      request<void>("/events", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    )
+    .catch(() => {
     // Silently discard — tracking must never break the user flow
   });
 }
