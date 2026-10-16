@@ -22,16 +22,22 @@ import { CONSENT_VERSION } from "@shared/consent/consentText";
  * who has not consented will be asked on the next load that succeeds.
  */
 export function useConsentRequired(authed: boolean) {
-  const [required, setRequired] = useState(false);
+  // What the last check found, and for which sign-in state. Kept together so
+  // `checking` is true from the first render after sign-in, not one render
+  // later when an effect would get round to setting it.
+  const [result, setResult] = useState<{
+    authed: boolean;
+    required: boolean;
+  } | null>(null);
 
   const check = useCallback(() => {
     if (!authed) {
-      setRequired(false);
+      setResult({ authed: false, required: false });
       return;
     }
     getMe()
-      .then((me) => setRequired(!me.consentedAt))
-      .catch(() => setRequired(false));
+      .then((me) => setResult({ authed: true, required: !me.consentedAt }))
+      .catch(() => setResult({ authed: true, required: false }));
   }, [authed]);
 
   useEffect(check, [check]);
@@ -39,8 +45,14 @@ export function useConsentRequired(authed: boolean) {
   /** Record the acceptance and close the gate. Throws so the form can stay open. */
   const accept = useCallback(async () => {
     await recordConsent(CONSENT_VERSION);
-    setRequired(false);
+    setResult({ authed: true, required: false });
   }, []);
 
-  return { consentRequired: required, acceptConsent: accept };
+  return {
+    // Signing out closes the gate at once, without waiting for a re-check.
+    consentRequired: authed && result?.authed === true && result.required,
+    /** Signed in, but the answer is not back yet. */
+    consentChecking: authed && result?.authed !== true,
+    acceptConsent: accept,
+  };
 }

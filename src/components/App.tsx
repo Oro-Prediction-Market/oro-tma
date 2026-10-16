@@ -46,9 +46,8 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(shouldOnboard);
   // Only once a real account exists — a user still in the signup wizard has no
   // row to record consent against.
-  const { consentRequired, acceptConsent } = useConsentRequired(
-    !loading && !requiresKYC,
-  );
+  const { consentRequired, consentChecking, acceptConsent } =
+    useConsentRequired(!loading && !requiresKYC && !!auth.user);
   const [showTerms, setShowTerms] = useState(false);
 
   const isDark =
@@ -151,7 +150,9 @@ export function App() {
           </Suspense>
         </div>
         <PwaBottomNav />
-        {showOnboarding && (
+        {/* The tour waits for consent: shown together, it covered the consent
+            form and a new user had to close it before they could tick. */}
+        {showOnboarding && auth.user && !consentChecking && !consentRequired && (
           <OnboardingModal onDone={() => setShowOnboarding(false)} />
         )}
       </HashRouter>
