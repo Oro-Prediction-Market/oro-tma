@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
  * behind the lit ones like a real arena clock. Sized by font-size (a digit is
  * 1em tall) and coloured by `color`, so it drops into text like a font would.
  *
- * Digits, ":" and "-" are drawn; anything else (a space, "AM") is left to the
+ * Digits, ":", "-" and "/" are drawn; anything else (a space, "AM") is left to the
  * surrounding text, so pass only the numeric part.
  */
 
@@ -92,6 +92,18 @@ function Colon() {
   );
 }
 
+function Slash() {
+  return (
+    <svg
+      viewBox={`0 0 36 ${H}`}
+      style={{ height: "1em", width: "0.36em", overflow: "visible" }}
+      aria-hidden
+    >
+      <polygon points="26,4 34,4 10,96 2,96" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SegmentDisplay({
   value,
   className,
@@ -120,6 +132,8 @@ export function SegmentDisplay({
       {[...value].map((ch, i) =>
         ch === ":" ? (
           <Colon key={i} />
+        ) : ch === "/" ? (
+          <Slash key={i} />
         ) : ch === " " ? (
           <span key={i} style={{ width: "0.25em" }} />
         ) : (

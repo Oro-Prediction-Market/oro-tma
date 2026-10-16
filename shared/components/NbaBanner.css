@@ -11,7 +11,10 @@
 .nbac__inner { position: relative; max-width: 860px; margin: 0 auto; padding: 18px 16px 22px; box-sizing: border-box; }
 .nbac__top { display: flex; align-items: center; gap: 12px; }
 .nbac__season { display: inline-flex; align-items: center; gap: 10px; border: 1px solid #ffbb704a; background: #0b111bcc; padding: 9px 14px; border-radius: 8px; color: #ffca8e; font-size: 12px; font-weight: 800; letter-spacing: .16em; white-space: nowrap; }
-.nbac__season > span { width: 7px; height: 7px; border-radius: 50%; background: #ffad57; box-shadow: 0 0 10px #ffad5777; }
+/* The year as a small scoreboard readout, the word quiet beside it. */
+.nbac__season > .nbac__season-year { width: auto; height: auto; border-radius: 0; background: none; box-shadow: none; font-size: 11px; color: #ff4d5e; }
+.nbac__season > .nbac__season-word { width: auto; height: auto; border-radius: 0; background: none; box-shadow: none; color: #c1c9d3; font-size: 9px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; line-height: 1; }
+.nbac__season > span:first-child { width: 7px; height: 7px; border-radius: 50%; background: #ffad57; box-shadow: 0 0 10px #ffad5777; }
 .nbac__brand { display: flex; align-items: center; gap: 14px; margin-top: 26px; }
 .nbac__logo { height: 84px; width: auto; display: block; }
 .nbac__wordmark { font-family: Impact, "Arial Black", system-ui, sans-serif; font-size: 80px; line-height: 1; letter-spacing: -.01em; }

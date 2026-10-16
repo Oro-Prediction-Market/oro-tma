@@ -47,7 +47,7 @@ export function NbaBanner({ onClick, onBack, showCta = true, style, className }:
       <div className="nbac__inner">
         <div className="nbac__top">
           {onBack && <button type="button" className="nbab__back" aria-label="Go back" onClick={(event) => { event.stopPropagation(); onBack(); }}><ArrowLeft size={20} strokeWidth={2.25} /></button>}
-          <span className="nbac__season"><span />2026/27 SEASON</span>
+          <span className="nbac__season"><span /><SegmentDisplay value="2026/27" className="nbac__season-year" /><span className="nbac__season-word">Season</span></span>
         </div>
         <NbaHeadline />
       </div>
