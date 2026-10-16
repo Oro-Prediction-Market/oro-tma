@@ -57,3 +57,10 @@
   .nbab--hub .nbab__court { left: 24%; width: 125%; height: 120%; top: -2%; }
 }
 @media (prefers-reduced-motion: reduce) { .nbab__ticker-track { animation: none; } }
+/* Market detail header: the same floor, sized to its content and rounded like the cards around it. */
+.nbab--detail { min-height: 0; border-radius: 18px; border-width: 1px; }
+.nbab--detail .nbab__court { left: 42%; width: 85%; height: 175%; top: -42%; }
+@media (max-width: 599px) {
+  .nbab--detail { min-height: 0; }
+  .nbab--detail .nbab__court { left: 34%; width: 120%; height: 130%; top: -14%; }
+}
